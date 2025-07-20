@@ -25,6 +25,13 @@
                         <li class="nav-item"><a class="nav-link" href="{{ url_for('index') }}">Home</a></li>
                         <li class="nav-item"><a class="nav-link" href="{{ url_for('quiz') }}">Quiz</a></li>
                         <li class="nav-item"><a class="nav-link" href="{{ url_for('summary') }}">Summary</a></li>
+                        {% if current_user.is_authenticated %}
+                            <li class="nav-item"><a class="nav-link" href="{{ url_for('premium') }}">Premium</a></li>
+                            <li class="nav-item"><a class="nav-link" href="{{ url_for('logout') }}">Logout</a></li>
+                        {% else %}
+                            <li class="nav-item"><a class="nav-link" href="{{ url_for('login') }}">Login</a></li>
+                            <li class="nav-item"><a class="nav-link" href="{{ url_for('register') }}">Register</a></li>
+                        {% endif %}
                     </ul>
                 </div>
             </div>
@@ -35,10 +42,12 @@
     </main>
     <footer class="text-center mb-4">
         <p class="small">&copy; {{ datetime.utcnow().year }} Anonymous Survey</p>
+        <p class="small"><a href="{{ url_for('terms') }}">Terms</a> | <a href="{{ url_for('privacy') }}">Privacy</a></p>
     </footer>
 
-    {# Optional ad script placeholder - enable when ready #}
-    {# <script src="https://example.com/ads.js"></script> #}
+    {% if config.ENABLE_ADS %}
+    <script src="https://example.com/ads.js"></script>
+    {% endif %}
 
     {% if config.ENABLE_ANALYTICS %}
     <!-- Analytics script placeholder -->

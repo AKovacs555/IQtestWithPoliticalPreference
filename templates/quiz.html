@@ -1,20 +1,18 @@
 {% extends 'base.html' %}
 {% block content %}
 <form method="post">
-    {% for i, q in enumerate(questions) %}
     <div class="card mb-3">
-        <div class="card-header">Question {{ i + 1 }} of {{ questions|length }}</div>
+        <div class="card-header">Question {{ progress }}</div>
         <div class="card-body">
-            <p class="card-text fw-bold">{{ q.question }}</p>
-            {% for option in q.options %}
+            <p class="card-text fw-bold">{{ question.question }}</p>
+            {% for idx in range(4) %}
             <div class="form-check">
-                <input class="form-check-input" type="radio" name="q{{ i }}" id="q{{ i }}_{{ loop.index0 }}" value="{{ loop.index0 }}" required>
-                <label class="form-check-label" for="q{{ i }}_{{ loop.index0 }}">{{ option }}</label>
+                <input class="form-check-input" type="radio" name="choice" id="opt{{ idx }}" value="{{ idx }}" required>
+                <label class="form-check-label" for="opt{{ idx }}">{{ question['option' ~ (idx + 1)] }}</label>
             </div>
             {% endfor %}
         </div>
     </div>
-    {% endfor %}
     <button type="submit" class="btn btn-primary">Next</button>
 </form>
 {% endblock %}
