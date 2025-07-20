@@ -1,38 +1,25 @@
 # IQtestWithPoliticalPreference
 
-This is a small Flask web application that presents a short IQ quiz followed by a political preference survey. Responses are stored anonymously and aggregated for a summary view. The interface now uses Bootstrap styling with a responsive hero section, sticky navigation and toast notifications. Authenticated users can view a profile page with their quiz history and reset their password via email links (simulated in logs).
+This project provides an IQ quiz and political preference survey using a mobile‑first freemium design. The original Flask code has been moved to `legacy_flask_app.py`. The new stack uses **FastAPI** for the backend and a **React** single‑page application for the frontend.
 
-## Setup
+## Backend (FastAPI)
 
-Install the dependencies:
+- Located in `backend/`.
+- Install dependencies with `pip install -r backend/requirements.txt`.
+- Run locally using:
+  ```bash
+  uvicorn backend.main:app --reload
+  ```
+- Environment variables:
+  - `DATABASE_URL` – Supabase Postgres connection string.
+  - `SUPABASE_API_KEY` – API key for Supabase.
+  - `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_VERIFY_SERVICE_SID` – Twilio Verify credentials.
+  - `STRIPE_API_KEY` – Stripe secret key for payments.
+  - `PHONE_SALT` – salt for hashing phone numbers.
 
-```bash
-pip install -r requirements.txt
-```
+## Frontend (React)
 
-Run the application with:
+- Located in `frontend/` and built with Vite, React Router, Tailwind CSS and framer‑motion.
+- Install dependencies with `npm install` and start the dev server with `npm run dev`.
 
-```bash
-python app.py
-```
-
-To seed the default questions into the database, run:
-
-```bash
-python manage.py
-```
-
-Environment variables:
-
-- `SECRET_KEY` – Flask secret key (default `devkey`).
-- `DATABASE_URL` – SQLAlchemy database URI (default uses a local SQLite file).
-- `ENABLE_ANALYTICS` – set to `1` to include the optional Google Analytics snippet.
-- `ENABLE_ADS` – set to `1` to load Google AdSense ads.
-- `STRIPE_PUBLISHABLE_KEY` and `STRIPE_SECRET_KEY` – Stripe credentials for premium payments.
-- `GOOGLE_ADSENSE_CLIENT_ID` – client ID for Google AdSense when ads are enabled. Obtain this from your AdSense account.
-- `GA_MEASUREMENT_ID` – measurement ID for Google Analytics when analytics are enabled. Generate it from your GA4 property.
-
-When deploying to a platform like Heroku or Render, set these environment variables along with `DATABASE_URL` and `SECRET_KEY`. Ensure HTTPS is enabled and cookies are sent securely.
-
-The quiz is for entertainment/research purposes only and does **not** collect any personal information beyond the IQ score and selected party. No IP addresses are logged.
-
+This repository now serves as a starting point for the revamped freemium quiz platform.
