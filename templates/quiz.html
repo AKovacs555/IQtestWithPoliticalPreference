@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% block content %}
+<form method="post">
+    {% for i, q in enumerate(questions) %}
+    <fieldset>
+        <legend>{{ q.question }}</legend>
+        {% for option in q.options %}
+        <label><input type="radio" name="q{{ i }}" value="{{ loop.index0 }}" required> {{ option }}</label><br>
+        {% endfor %}
+    </fieldset>
+    {% endfor %}
+    <button type="submit">Next</button>
+</form>
+{% endblock %}
