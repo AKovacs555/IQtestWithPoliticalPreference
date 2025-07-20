@@ -4,9 +4,9 @@
     <canvas id="scoreChart" width="180" height="180" class="mb-3" aria-label="Score gauge" role="img"></canvas>
     <p class="h5">Your score: {{ result.score }}</p>
     <p>Your selected party: {{ result.party }}</p>
-    <a class="btn btn-info mb-3" href="{{ tweet_url }}" target="_blank" rel="noopener">Share on Twitter</a>
-    <a class="btn btn-primary mb-3" href="{{ fb_url }}" target="_blank" rel="noopener">Share on Facebook</a>
-    <a class="btn btn-success mb-3" href="{{ line_url }}" target="_blank" rel="noopener">Share on LINE</a>
+    <a class="btn btn-info mb-3" href="{{ tweet_url }}" target="_blank" rel="noopener" onclick="trackEvent('share', {platform:'twitter'})">Share on Twitter</a>
+    <a class="btn btn-primary mb-3" href="{{ fb_url }}" target="_blank" rel="noopener" onclick="trackEvent('share', {platform:'facebook'})">Share on Facebook</a>
+    <a class="btn btn-success mb-3" href="{{ line_url }}" target="_blank" rel="noopener" onclick="trackEvent('share', {platform:'line'})">Share on LINE</a>
     <p><a href="{{ url_for('summary') }}">View aggregated statistics</a></p>
 </div>
 <script>
@@ -19,5 +19,6 @@ new Chart(ctx, {
   },
   options:{cutout:'70%', plugins:{tooltip:false, legend:{display:false}}}
 });
+trackEvent('quiz_completed', { score: {{ result.score }} });
 </script>
 {% endblock %}

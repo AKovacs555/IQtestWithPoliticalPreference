@@ -1,15 +1,36 @@
 :root {
-  --bs-primary: #0d6efd;
-  --bs-secondary: #6c757d;
+  --color-bg: #ffffff;
+  --color-text: #212529;
+  --color-primary: #0d6efd;
+  --color-secondary: #6c757d;
   --bs-body-font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 }
-body { font-family: var(--bs-body-font-family); }
+
+[data-theme='dark'] {
+  --color-bg: #121212;
+  --color-text: #e0e0e0;
+  --color-primary: #0d6efd;
+  --color-secondary: #adb5bd;
+}
+
+body {
+  font-family: var(--bs-body-font-family);
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  transition: background-color 0.3s, color 0.3s;
+}
 body{padding-top:4.5rem;}
 .hero {
   padding: 6rem 0;
+  animation: fadein 0.7s ease-in;
+}
+
+@keyframes fadein {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 footer {
-  background-color: #f8f9fa;
+  background-color: var(--color-bg);
   padding: 2rem 0;
 }
 .progress {
