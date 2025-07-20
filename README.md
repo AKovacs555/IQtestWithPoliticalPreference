@@ -18,6 +18,8 @@ This project provides an IQ quiz and political preference survey using a mobileâ
   - `PHONE_SALT` â€“ salt for hashing phone numbers (used as fallback).
 - OTP endpoints: `/auth/request-otp` and `/auth/verify-otp` store phone numbers with per-record salts.
 - Quiz endpoints: `/quiz/start` returns 20 questions; `/quiz/submit` accepts answers and returns a score.
+- Adaptive endpoints: `/adaptive/start` begins an adaptive quiz and `/adaptive/answer` returns the next question until the ability estimate stabilizes.
+- The question bank with psychometric metadata lives in `backend/data/question_bank.json`. Use `tools/generate_questions.py` to regenerate items via the `o3pro` model.
 
 ## Frontend (React)
 
