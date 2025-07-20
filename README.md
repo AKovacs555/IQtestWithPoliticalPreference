@@ -1,11 +1,13 @@
 # IQtestWithPoliticalPreference
 
-This is a simple Flask web application that presents a short IQ quiz and asks which political party the user supports. Results are stored anonymously and aggregated to show summary statistics.
+This is a small Flask web application that presents a short IQ quiz followed by a political preference survey. Responses are stored anonymously and aggregated for a summary view.
 
 ## Setup
 
+Install the dependencies:
+
 ```bash
-pip install Flask Flask-WTF Flask-SQLAlchemy
+pip install -r requirements.txt
 ```
 
 Run the application with:
@@ -14,5 +16,12 @@ Run the application with:
 python app.py
 ```
 
-The quiz is for entertainment/research purposes only and does not collect any personal information.
+Environment variables:
+
+- `SECRET_KEY` – Flask secret key (default `devkey`).
+- `DATABASE_URL` – SQLAlchemy database URI (default uses a local SQLite file).
+- `FLASK_DEBUG` – set to `1` to enable debug mode.
+- `ENABLE_ANALYTICS` – set to `1` to include the optional analytics snippet.
+
+The quiz is for entertainment/research purposes only and does **not** collect any personal information beyond the IQ score and selected party. No IP addresses are logged.
 

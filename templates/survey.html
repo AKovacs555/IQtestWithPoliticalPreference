@@ -2,10 +2,15 @@
 {% block content %}
 <form method="post">
     {{ form.hidden_tag() }}
-    {{ form.party.label }}<br>
-    {% for subfield in form.party %}
-    <label>{{ subfield() }} {{ subfield.label.text }}</label><br>
-    {% endfor %}
-    {{ form.submit() }}
+    <div class="mb-3">
+        <p class="fw-bold">{{ form.party.label.text }}</p>
+        {% for subfield in form.party %}
+        <div class="form-check">
+            {{ subfield(class_='form-check-input', id=subfield.id) }}
+            <label class="form-check-label" for="{{ subfield.id }}">{{ subfield.label.text }}</label>
+        </div>
+        {% endfor %}
+    </div>
+    {{ form.submit(class_='btn btn-primary') }}
 </form>
 {% endblock %}

@@ -1,13 +1,24 @@
 {% extends 'base.html' %}
 {% block content %}
-<h2>Aggregate Results</h2>
-<canvas id="chart" width="400" height="200"></canvas>
+<h2 class="mb-4">Aggregate Results</h2>
+<div class="row">
+    <div class="col-md-6">
+        <canvas id="avgChart" aria-label="Average IQ chart" role="img"></canvas>
+    </div>
+    <div class="col-md-6">
+        <canvas id="countChart" aria-label="Response count chart" role="img"></canvas>
+    </div>
+</div>
 <script>
 fetch("{{ url_for('api_summary') }}")
   .then(r => r.json())
   .then(data => {
-    const ctx = document.getElementById('chart').getContext('2d');
-    new Chart(ctx, {
+    if (data.parties.length === 0) {
+        document.querySelector('main').insertAdjacentHTML('beforeend', '<p>No data available.</p>');
+        return;
+    }
+    const avgCtx = document.getElementById('avgChart').getContext('2d');
+    new Chart(avgCtx, {
       type: 'bar',
       data: {
         labels: data.parties,
@@ -15,6 +26,19 @@ fetch("{{ url_for('api_summary') }}")
           label: 'Average IQ Score',
           data: data.averages,
           backgroundColor: 'rgba(54, 162, 235, 0.5)'
+        }]
+      }
+    });
+
+    const countCtx = document.getElementById('countChart').getContext('2d');
+    new Chart(countCtx, {
+      type: 'bar',
+      data: {
+        labels: data.parties,
+        datasets: [{
+          label: 'Number of Responses',
+          data: data.counts,
+          backgroundColor: 'rgba(255, 99, 132, 0.5)'
         }]
       }
     });
