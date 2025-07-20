@@ -2,13 +2,19 @@
 {% block content %}
 <form method="post">
     {% for i, q in enumerate(questions) %}
-    <fieldset>
-        <legend>{{ q.question }}</legend>
-        {% for option in q.options %}
-        <label><input type="radio" name="q{{ i }}" value="{{ loop.index0 }}" required> {{ option }}</label><br>
-        {% endfor %}
-    </fieldset>
+    <div class="card mb-3">
+        <div class="card-header">Question {{ i + 1 }} of {{ questions|length }}</div>
+        <div class="card-body">
+            <p class="card-text fw-bold">{{ q.question }}</p>
+            {% for option in q.options %}
+            <div class="form-check">
+                <input class="form-check-input" type="radio" name="q{{ i }}" id="q{{ i }}_{{ loop.index0 }}" value="{{ loop.index0 }}" required>
+                <label class="form-check-label" for="q{{ i }}_{{ loop.index0 }}">{{ option }}</label>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
     {% endfor %}
-    <button type="submit">Next</button>
+    <button type="submit" class="btn btn-primary">Next</button>
 </form>
 {% endblock %}

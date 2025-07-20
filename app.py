@@ -5,14 +5,21 @@ from wtforms.validators import InputRequired
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 import os
+import urllib.parse
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'devkey')
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///responses.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///responses.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['DEBUG'] = bool(os.environ.get('FLASK_DEBUG'))
+app.config['ENABLE_ANALYTICS'] = os.environ.get('ENABLE_ANALYTICS', '0') == '1'
 
 csrf = CSRFProtect(app)
 db = SQLAlchemy(app)
+
+@app.context_processor
+def inject_config():
+    return dict(config=app.config, datetime=datetime)
 
 class Response(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -49,16 +56,19 @@ QUIZ_QUESTIONS = [
     }
 ]
 
-PARTIES = ['Party A', 'Party B', 'Party C', 'None']
+PARTIES = ['Party A', 'Party B', 'Party C', 'None/No preference']
 
 class PartyForm(FlaskForm):
     party = RadioField('Which party do you support?', choices=[(p, p) for p in PARTIES],
                        validators=[InputRequired()])
     submit = SubmitField('Submit')
 
-@app.before_first_request
+
 def create_tables():
-    db.create_all()
+    with app.app_context():
+        db.create_all()
+
+create_tables()
 
 @app.route('/')
 def index():
@@ -96,12 +106,13 @@ def result():
     result = session.get('last_result')
     if not result:
         return redirect(url_for('index'))
-    tweet_text = (
-        f"I scored {result['score']} on this quick IQ quiz and support {result['party']}! Try it yourself"
+    text = (
+        f"I scored {result['score']} on this quick IQ quiz and support {result['party']}! Try it yourself:"
     )
-    tweet_url = "https://twitter.com/intent/tweet?text=" + request.host_url + \
-        url_for('index')
-    return render_template('result.html', result=result, tweet_text=tweet_text)
+    url = url_for('index', _external=True)
+    params = urllib.parse.urlencode({"text": text, "url": url})
+    tweet_url = f"https://twitter.com/intent/tweet?{params}"
+    return render_template('result.html', result=result, tweet_url=tweet_url)
 
 @app.route('/summary')
 def summary():
