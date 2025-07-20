@@ -1,6 +1,15 @@
 {% extends 'base.html' %}
 {% block content %}
 <h2 class="mb-4">Aggregate Results</h2>
+<div class="row mb-3">
+    <div class="col-auto">
+        <label for="chartType" class="form-label">Chart type</label>
+        <select id="chartType" class="form-select form-select-sm">
+            <option value="bar">Bar</option>
+            <option value="pie">Pie</option>
+        </select>
+    </div>
+</div>
 <div class="row">
     <div class="col-md-6">
         <canvas id="avgChart" aria-label="Average IQ chart" role="img"></canvas>
@@ -10,6 +19,7 @@
     </div>
 </div>
 <script>
+let avgChart, countChart;
 fetch("{{ url_for('api_summary') }}")
   .then(r => r.json())
   .then(data => {
@@ -18,29 +28,39 @@ fetch("{{ url_for('api_summary') }}")
         return;
     }
     const avgCtx = document.getElementById('avgChart').getContext('2d');
-    new Chart(avgCtx, {
-      type: 'bar',
-      data: {
-        labels: data.parties,
-        datasets: [{
-          label: 'Average IQ Score',
-          data: data.averages,
-          backgroundColor: 'rgba(54, 162, 235, 0.5)'
-        }]
-      }
-    });
-
     const countCtx = document.getElementById('countChart').getContext('2d');
-    new Chart(countCtx, {
-      type: 'bar',
-      data: {
-        labels: data.parties,
-        datasets: [{
-          label: 'Number of Responses',
-          data: data.counts,
-          backgroundColor: 'rgba(255, 99, 132, 0.5)'
-        }]
-      }
+
+    function render(type) {
+        if (avgChart) { avgChart.destroy(); countChart.destroy(); }
+        avgChart = new Chart(avgCtx, {
+            type: type,
+            data: {
+                labels: data.parties,
+                datasets: [{
+                    label: 'Average IQ Score',
+                    data: data.averages,
+                    backgroundColor: 'rgba(54,162,235,0.5)'
+                }]
+            },
+            options: { animation: true }
+        });
+        countChart = new Chart(countCtx, {
+            type: type,
+            data: {
+                labels: data.parties,
+                datasets: [{
+                    label: 'Number of Responses',
+                    data: data.counts,
+                    backgroundColor: 'rgba(255,99,132,0.5)'
+                }]
+            },
+            options: { animation: true }
+        });
+    }
+
+    render('bar');
+    document.getElementById('chartType').addEventListener('change', e => {
+        render(e.target.value);
     });
   });
 </script>

@@ -14,6 +14,9 @@
             {% endfor %}
         </div>
     </div>
+    <div class="progress mb-3" aria-label="Progress">
+        <div class="progress-bar" role="progressbar" style="width: {{ progress_percent }}%" aria-valuenow="{{ progress_percent }}" aria-valuemin="0" aria-valuemax="100"></div>
+    </div>
     <button type="submit" class="btn btn-primary">Next</button>
 </form>
 {% endblock %}

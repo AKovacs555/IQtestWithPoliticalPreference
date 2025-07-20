@@ -1,6 +1,6 @@
 # IQtestWithPoliticalPreference
 
-This is a small Flask web application that presents a short IQ quiz followed by a political preference survey. Responses are stored anonymously and aggregated for a summary view.
+This is a small Flask web application that presents a short IQ quiz followed by a political preference survey. Responses are stored anonymously and aggregated for a summary view. The interface now uses Bootstrap styling with a responsive hero section, sticky navigation and toast notifications. Authenticated users can view a profile page with their quiz history and reset their password via email links (simulated in logs).
 
 ## Setup
 
