@@ -1,10 +1,13 @@
 {% extends 'base.html' %}
 {% block content %}
-<h2>Premium Content</h2>
-<p>This area is for premium members.</p>
+<h2>Premium Membership</h2>
+<p>Upgrade to enjoy an extended 20‑question IQ test, detailed analysis of your results, and an ad‑free experience.</p>
 {% if not current_user.is_premium %}
+<p class="fw-bold">Current price: $5 one‑time payment</p>
 <form action="{{ url_for('subscribe') }}" method="post">
     <button type="submit" class="btn btn-success">Subscribe for $5</button>
 </form>
+{% else %}
+<p>You have access to all premium features.</p>
 {% endif %}
 {% endblock %}
