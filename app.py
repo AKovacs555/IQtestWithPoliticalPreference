@@ -5,6 +5,7 @@ from flask import (
 from flask_wtf import FlaskForm, CSRFProtect
 from wtforms import RadioField, SubmitField, StringField, PasswordField
 from wtforms.validators import InputRequired, Length
+from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import (
     LoginManager, UserMixin, login_user, logout_user,
@@ -33,6 +34,7 @@ csrf = CSRFProtect(app)
 db = SQLAlchemy(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
+serializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
 
 @app.context_processor
 def inject_config():
@@ -43,13 +45,16 @@ class Response(db.Model):
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
     iq_score = db.Column(db.Integer, nullable=False)
     party = db.Column(db.String(50), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
 
 
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
+    email = db.Column(db.String(120), unique=True)
     password_hash = db.Column(db.String(128), nullable=False)
     is_premium = db.Column(db.Boolean, default=False)
+    responses = db.relationship('Response', backref='user', lazy=True)
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -182,6 +187,7 @@ class PartyForm(FlaskForm):
 
 class RegistrationForm(FlaskForm):
     username = StringField('Username', validators=[InputRequired(), Length(min=3, max=80)])
+    email = StringField('Email', validators=[InputRequired(), Length(max=120)])
     password = PasswordField('Password', validators=[InputRequired(), Length(min=6)])
     submit = SubmitField('Register')
 
@@ -190,6 +196,16 @@ class LoginForm(FlaskForm):
     username = StringField('Username', validators=[InputRequired()])
     password = PasswordField('Password', validators=[InputRequired()])
     submit = SubmitField('Login')
+
+
+class ForgotPasswordForm(FlaskForm):
+    email = StringField('Email', validators=[InputRequired(), Length(max=120)])
+    submit = SubmitField('Reset Password')
+
+
+class ResetPasswordForm(FlaskForm):
+    password = PasswordField('New Password', validators=[InputRequired(), Length(min=6)])
+    submit = SubmitField('Set Password')
 
 
 def create_tables():
@@ -225,8 +241,10 @@ def register():
     if form.validate_on_submit():
         if User.query.filter_by(username=form.username.data).first():
             flash('Username already exists.')
+        elif User.query.filter_by(email=form.email.data).first():
+            flash('Email already registered.')
         else:
-            user = User(username=form.username.data)
+            user = User(username=form.username.data, email=form.email.data)
             user.set_password(form.password.data)
             db.session.add(user)
             db.session.commit()
@@ -245,6 +263,41 @@ def login():
             return redirect(url_for('index'))
         flash('Invalid credentials')
     return render_template('login.html', form=form)
+
+
+@app.route('/forgot-password', methods=['GET', 'POST'])
+def forgot_password():
+    form = ForgotPasswordForm()
+    if form.validate_on_submit():
+        user = User.query.filter_by(email=form.email.data).first()
+        if user:
+            token = serializer.dumps(user.id)
+            reset_url = url_for('reset_password', token=token, _external=True)
+            app.logger.info('Password reset link for %s: %s', user.email, reset_url)
+            flash('Password reset link sent to your email (simulated).')
+        else:
+            flash('Email not found.')
+    return render_template('forgot_password.html', form=form)
+
+
+@app.route('/reset-password/<token>', methods=['GET', 'POST'])
+def reset_password(token):
+    try:
+        user_id = serializer.loads(token, max_age=3600)
+    except (BadSignature, SignatureExpired):
+        flash('Invalid or expired token.')
+        return redirect(url_for('login'))
+    user = User.query.get(user_id)
+    if not user:
+        flash('Invalid user.')
+        return redirect(url_for('login'))
+    form = ResetPasswordForm()
+    if form.validate_on_submit():
+        user.set_password(form.password.data)
+        db.session.commit()
+        flash('Password updated.')
+        return redirect(url_for('login'))
+    return render_template('reset_password.html', form=form)
 
 
 @app.route('/logout')
@@ -344,7 +397,9 @@ def quiz():
 
     question = questions[index]
     progress = f"{index + 1} / {len(questions)}"
-    return render_template('quiz.html', question=question, progress=progress)
+    progress_percent = int((index + 1) / len(questions) * 100)
+    return render_template('quiz.html', question=question,
+                           progress=progress, progress_percent=progress_percent)
 
 @app.route('/survey', methods=['GET', 'POST'])
 def survey():
@@ -353,7 +408,8 @@ def survey():
         score = session.get('score')
         if score is None:
             return redirect(url_for('quiz'))
-        response = Response(iq_score=score, party=form.party.data)
+        response = Response(iq_score=score, party=form.party.data,
+                            user_id=current_user.id if current_user.is_authenticated else None)
         db.session.add(response)
         db.session.commit()
         session.pop('score', None)
@@ -386,6 +442,22 @@ def summary():
 @login_required
 def premium():
     return render_template('premium.html')
+
+
+@app.route('/profile')
+@login_required
+def profile():
+    responses = Response.query.filter_by(user_id=current_user.id).order_by(Response.timestamp.desc()).all()
+    return render_template('profile.html', responses=responses)
+
+
+@app.route('/delete-history', methods=['POST'])
+@login_required
+def delete_history():
+    Response.query.filter_by(user_id=current_user.id).delete()
+    db.session.commit()
+    flash('History deleted.')
+    return redirect(url_for('profile'))
 
 
 @app.route('/terms')
