@@ -1,0 +1,15 @@
+{
+  "home": "Home",
+  "quiz": "Quiz",
+  "summary": "Summary",
+  "premium": "Premium",
+  "profile": "Profile",
+  "login": "Login",
+  "logout": "Logout",
+  "register": "Register",
+  "settings": "Settings",
+  "take_quiz": "Take the Quiz",
+  "upgrade": "Upgrade to premium for a longer quiz",
+  "verified": "Verified",
+  "referral_link": "Your referral link"
+}

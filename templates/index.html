@@ -1,19 +1,17 @@
 {% extends 'base.html' %}
 {% block content %}
 <section class="hero text-center">
-    <div class="container">
-        <div class="row align-items-center">
-            <div class="col-md-6 mb-4 mb-md-0">
-                <h1 class="display-5 fw-bold">Test Your IQ and Share Your View</h1>
-                <p class="lead">Answer a few brain teasers and tell us which political party you lean toward. It's quick, fun and anonymous.</p>
-                <a class="btn btn-primary btn-lg" href="{{ url_for('quiz') }}">Take the Quiz</a>
-                {% if current_user.is_authenticated and not current_user.is_premium %}
-                <p class="mt-3"><a href="{{ url_for('premium') }}">Upgrade to premium for a longer quiz</a></p>
-                {% endif %}
-            </div>
-            <div class="col-md-6">
-                <img src="{{ url_for('static', filename='img/hero.svg') }}" class="img-fluid" alt="Brain illustration">
-            </div>
+    <div class="container d-grid gap-4" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));">
+        <div>
+            <h1 class="display-5 fw-bold">Test Your IQ and Share Your View</h1>
+            <p class="lead">Answer a few brain teasers and tell us which political party you lean toward. It's quick, fun and anonymous.</p>
+            <a class="btn btn-primary btn-lg" href="{{ url_for('quiz') }}">{{ _('take_quiz') }}</a>
+            {% if current_user.is_authenticated and not current_user.is_premium %}
+            <p class="mt-3"><a href="{{ url_for('premium') }}">{{ _('upgrade') }}</a></p>
+            {% endif %}
+        </div>
+        <div>
+            <img src="{{ url_for('static', filename='img/hero.svg') }}" class="img-fluid" alt="Brain illustration">
         </div>
     </div>
 </section>
