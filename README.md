@@ -15,7 +15,9 @@ This project provides an IQ quiz and political preference survey using a mobile�
   - `SUPABASE_API_KEY` – API key for Supabase.
   - `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_VERIFY_SERVICE_SID` – Twilio Verify credentials.
   - `STRIPE_API_KEY` – Stripe secret key for payments.
-  - `PHONE_SALT` – salt for hashing phone numbers.
+  - `PHONE_SALT` – salt for hashing phone numbers (used as fallback).
+- OTP endpoints: `/auth/request-otp` and `/auth/verify-otp` store phone numbers with per-record salts.
+- Quiz endpoints: `/quiz/start` returns 20 questions; `/quiz/submit` accepts answers and returns a score.
 
 ## Frontend (React)
 
