@@ -25,6 +25,8 @@ app.config['ENABLE_ANALYTICS'] = os.environ.get('ENABLE_ANALYTICS', '0') == '1'
 app.config['ENABLE_ADS'] = os.environ.get('ENABLE_ADS', '0') == '1'
 app.config['STRIPE_PUBLISHABLE_KEY'] = os.environ.get('STRIPE_PUBLISHABLE_KEY', '')
 app.config['STRIPE_SECRET_KEY'] = os.environ.get('STRIPE_SECRET_KEY', '')
+app.config['GOOGLE_ADSENSE_CLIENT_ID'] = os.environ.get('GOOGLE_ADSENSE_CLIENT_ID', '')
+app.config['GA_MEASUREMENT_ID'] = os.environ.get('GA_MEASUREMENT_ID', '')
 
 stripe.api_key = app.config['STRIPE_SECRET_KEY']
 
@@ -92,6 +94,76 @@ DEFAULT_QUESTIONS = [
         'question': 'Which number is the smallest?',
         'options': ['-2', '0', '1', '3'],
         'answer': 0
+    },
+    {
+        'question': 'Which word is the odd one out?',
+        'options': ['Dog', 'Cat', 'Car', 'Mouse'],
+        'answer': 2
+    },
+    {
+        'question': 'What is 15 divided by 3?',
+        'options': ['3', '5', '7', '9'],
+        'answer': 1
+    },
+    {
+        'question': 'If you rearrange the letters "CIFAIPC" you get the name of a(n)?',
+        'options': ['Ocean', 'Country', 'City', 'Animal'],
+        'answer': 2
+    },
+    {
+        'question': 'Which number best completes the analogy: 8 : 4 as 10 : ?',
+        'options': ['3', '5', '7', '9'],
+        'answer': 1
+    },
+    {
+        'question': 'Which of these is a mammal?',
+        'options': ['Shark', 'Dolphin', 'Octopus', 'Trout'],
+        'answer': 1
+    },
+    {
+        'question': 'How many sides does a hexagon have?',
+        'options': ['5', '6', '7', '8'],
+        'answer': 1
+    },
+    {
+        'question': 'Which month of the year has 28 days?',
+        'options': ['February', 'April', 'September', 'All of them'],
+        'answer': 3
+    },
+    {
+        'question': 'What is the next number in the series: 3, 6, 9, 12, ...?',
+        'options': ['14', '15', '16', '18'],
+        'answer': 3
+    },
+    {
+        'question': 'Which planet is known as the Red Planet?',
+        'options': ['Earth', 'Mars', 'Jupiter', 'Venus'],
+        'answer': 1
+    },
+    {
+        'question': 'Which is heavier: a pound of feathers or a pound of bricks?',
+        'options': ['Feathers', 'Bricks', 'They weigh the same', 'Cannot tell'],
+        'answer': 2
+    },
+    {
+        'question': 'If 5x = 20, what is x?',
+        'options': ['2', '3', '4', '5'],
+        'answer': 2
+    },
+    {
+        'question': 'Which of these is a prime number?',
+        'options': ['9', '15', '17', '21'],
+        'answer': 2
+    },
+    {
+        'question': 'What color do you get when you mix blue and yellow?',
+        'options': ['Green', 'Purple', 'Orange', 'Brown'],
+        'answer': 0
+    },
+    {
+        'question': 'Which animal is known for its trunk?',
+        'options': ['Lion', 'Elephant', 'Giraffe', 'Horse'],
+        'answer': 1
     }
 ]
 
@@ -204,7 +276,13 @@ def subscription_success():
     current_user.is_premium = True
     db.session.commit()
     flash('Subscription successful!')
-    return redirect(url_for('index'))
+    return redirect(url_for('premium_success'))
+
+
+@app.route('/premium/success')
+@login_required
+def premium_success():
+    return render_template('subscribe_success.html')
 
 @app.route('/quiz', methods=['GET', 'POST'])
 def quiz():
@@ -222,11 +300,18 @@ def quiz():
         index += 1
         session['quiz_index'] = index
 
-    if index >= len(questions) or (not current_user.is_authenticated and index >= 5):
+    if not current_user.is_authenticated and index >= 5:
+        flash('Create an account to access the full quiz.')
+        return redirect(url_for('premium'))
+    if current_user.is_authenticated and not current_user.is_premium and index >= 10:
+        flash('Upgrade to premium to access the rest of the quiz.')
+        return redirect(url_for('premium'))
+    if index >= len(questions):
         score = 0
         for i, q in enumerate(questions):
             if str(i) in session['answers'] and session['answers'][str(i)] == q.answer_index:
-                score += 20
+                score += 1
+        score = round((score / len(questions)) * 100)
         session.pop('quiz_index', None)
         session.pop('answers', None)
         session['score'] = score

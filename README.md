@@ -30,6 +30,8 @@ Environment variables:
 - `ENABLE_ANALYTICS` – set to `1` to include the optional analytics snippet.
 - `ENABLE_ADS` – set to `1` to include ad scripts.
 - `STRIPE_PUBLISHABLE_KEY` and `STRIPE_SECRET_KEY` – Stripe credentials for premium payments.
+- `GOOGLE_ADSENSE_CLIENT_ID` – client ID for Google AdSense when ads are enabled.
+- `GA_MEASUREMENT_ID` – measurement ID for Google Analytics when analytics are enabled.
 
 When deploying to a platform like Heroku or Render, set these environment variables along with `DATABASE_URL` and `SECRET_KEY`. Ensure HTTPS is enabled and cookies are sent securely.
 
