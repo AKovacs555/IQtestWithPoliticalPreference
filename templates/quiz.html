@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
 {% block content %}
 <form method="post">
+    {{ csrf_token() }}
     <div class="card mb-3">
         <div class="card-header">Question {{ progress }}</div>
         <div class="card-body">

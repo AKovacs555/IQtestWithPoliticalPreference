@@ -20,7 +20,6 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'devkey')
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///responses.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['DEBUG'] = bool(os.environ.get('FLASK_DEBUG'))
 app.config['ENABLE_ANALYTICS'] = os.environ.get('ENABLE_ANALYTICS', '0') == '1'
 app.config['ENABLE_ADS'] = os.environ.get('ENABLE_ADS', '0') == '1'
 app.config['STRIPE_PUBLISHABLE_KEY'] = os.environ.get('STRIPE_PUBLISHABLE_KEY', '')
@@ -164,6 +163,11 @@ DEFAULT_QUESTIONS = [
         'question': 'Which animal is known for its trunk?',
         'options': ['Lion', 'Elephant', 'Giraffe', 'Horse'],
         'answer': 1
+    },
+    {
+        'question': 'Which gas do plants absorb from the atmosphere?',
+        'options': ['Oxygen', 'Hydrogen', 'Carbon Dioxide', 'Nitrogen'],
+        'answer': 2
     }
 ]
 
@@ -253,19 +257,40 @@ def logout():
 @app.route('/subscribe', methods=['POST'])
 @login_required
 def subscribe():
+    plan = request.form.get('plan', 'one_time')
+    if plan == 'monthly':
+        price_data = {
+            'currency': 'usd',
+            'product_data': {'name': 'Premium Monthly'},
+            'unit_amount': 500,
+            'recurring': {'interval': 'month'},
+        }
+        mode = 'subscription'
+    elif plan == 'annual':
+        price_data = {
+            'currency': 'usd',
+            'product_data': {'name': 'Premium Annual'},
+            'unit_amount': 5000,
+            'recurring': {'interval': 'year'},
+        }
+        mode = 'subscription'
+    else:
+        price_data = {
+            'currency': 'usd',
+            'product_data': {'name': 'Premium Access'},
+            'unit_amount': 500,
+        }
+        mode = 'payment'
+
     session_data = stripe.checkout.Session.create(
         payment_method_types=['card'],
-        mode='payment',
+        mode=mode,
         line_items=[{
-            'price_data': {
-                'currency': 'usd',
-                'product_data': {'name': 'Premium Access'},
-                'unit_amount': 500,
-            },
+            'price_data': price_data,
             'quantity': 1,
         }],
         success_url=url_for('subscription_success', _external=True),
-        cancel_url=url_for('index', _external=True)
+        cancel_url=url_for('premium', _external=True)
     )
     return redirect(session_data.url)
 
@@ -282,7 +307,7 @@ def subscription_success():
 @app.route('/premium/success')
 @login_required
 def premium_success():
-    return render_template('subscribe_success.html')
+    return render_template('premium_success.html')
 
 @app.route('/quiz', methods=['GET', 'POST'])
 def quiz():
@@ -301,8 +326,8 @@ def quiz():
         session['quiz_index'] = index
 
     if not current_user.is_authenticated and index >= 5:
-        flash('Create an account to access the full quiz.')
-        return redirect(url_for('premium'))
+        flash('Create an account to unlock more questions.')
+        return redirect(url_for('register'))
     if current_user.is_authenticated and not current_user.is_premium and index >= 10:
         flash('Upgrade to premium to access the rest of the quiz.')
         return redirect(url_for('premium'))
@@ -342,7 +367,7 @@ def result():
     if not result:
         return redirect(url_for('index'))
     text = (
-        f"I scored {result['score']} on this quick IQ quiz and support {result['party']}! Try it yourself:"
+        f"I scored {result['score']} on this IQ & politics quiz! Can you beat me?"
     )
     url = url_for('index', _external=True)
     params = urllib.parse.urlencode({"text": text, "url": url})
@@ -360,9 +385,6 @@ def summary():
 @app.route('/premium')
 @login_required
 def premium():
-    if not current_user.is_premium:
-        flash('Premium membership required')
-        return redirect(url_for('index'))
     return render_template('premium.html')
 
 
