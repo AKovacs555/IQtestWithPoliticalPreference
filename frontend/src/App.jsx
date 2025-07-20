@@ -18,15 +18,18 @@ const Home = () => (
 );
 
 const Quiz = () => {
-  const [questions, setQuestions] = React.useState([]);
-  const [index, setIndex] = React.useState(0);
-  const [answers, setAnswers] = React.useState([]);
+  const [session, setSession] = React.useState(null);
+  const [question, setQuestion] = React.useState(null);
+  const [count, setCount] = React.useState(0);
   const [timeLeft, setTimeLeft] = React.useState(360);
 
   React.useEffect(() => {
-    fetch('/quiz/start')
+    fetch('/adaptive/start')
       .then(res => res.json())
-      .then(data => setQuestions(data.questions));
+      .then(data => {
+        setSession(data.session_id);
+        setQuestion(data.question);
+      });
   }, []);
 
   React.useEffect(() => {
@@ -34,21 +37,22 @@ const Quiz = () => {
     return () => clearInterval(t);
   }, []);
 
-  const current = questions[index];
-
   const select = (i) => {
-    setAnswers([...answers, { id: current.id, answer: i }]);
-    if (index + 1 < questions.length) {
-      setIndex(index + 1);
-    } else {
-      fetch('/quiz/submit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ answers: [...answers, { id: current.id, answer: i }] })
-      })
-        .then(res => res.json())
-        .then(() => window.location.href = '/result');
-    }
+    fetch('/adaptive/answer', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ session_id: session, answer: i })
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.finished) {
+          const params = new URLSearchParams({ score: data.score, percentile: data.percentile });
+          window.location.href = '/result?' + params.toString();
+        } else {
+          setQuestion(data.next_question);
+          setCount(c => c + 1);
+        }
+      });
   };
 
   return (
@@ -57,14 +61,14 @@ const Quiz = () => {
         <div className="h-2 bg-gray-200 rounded">
           <div
             className="h-2 bg-blue-600 rounded"
-            style={{ width: `${(index / 20) * 100}%` }}
+            style={{ width: `${(count / 20) * 100}%` }}
           />
         </div>
         <div className="text-right">{Math.floor(timeLeft / 60)}:{`${timeLeft % 60}`.padStart(2, '0')}</div>
-        {current && (
+        {question && (
           <div>
-            <p className="font-semibold mb-2">{current.question}</p>
-            {current.options.map((opt, i) => (
+            <p className="font-semibold mb-2">{question.question}</p>
+            {question.options.map((opt, i) => (
               <button
                 key={i}
                 onClick={() => select(i)}
@@ -80,11 +84,21 @@ const Quiz = () => {
   );
 };
 
-const Result = () => (
-  <PageTransition>
-    <div className="p-4">Result page.</div>
-  </PageTransition>
-);
+const Result = () => {
+  const params = new URLSearchParams(window.location.search);
+  const score = params.get('score');
+  const percentile = params.get('percentile');
+  return (
+    <PageTransition>
+      <div className="p-4 text-center space-y-2">
+        <h2 className="text-xl font-bold">Your Results</h2>
+        <p>Ability score: {Number(score).toFixed(2)}</p>
+        <p>Percentile: {Number(percentile).toFixed(1)}%</p>
+        <Link to="/" className="underline">Home</Link>
+      </div>
+    </PageTransition>
+  );
+};
 
 export default function App() {
   const location = useLocation();
