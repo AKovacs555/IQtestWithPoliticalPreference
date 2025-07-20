@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Aggregate Results</h2>
+<canvas id="chart" width="400" height="200"></canvas>
+<script>
+fetch("{{ url_for('api_summary') }}")
+  .then(r => r.json())
+  .then(data => {
+    const ctx = document.getElementById('chart').getContext('2d');
+    new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: data.parties,
+        datasets: [{
+          label: 'Average IQ Score',
+          data: data.averages,
+          backgroundColor: 'rgba(54, 162, 235, 0.5)'
+        }]
+      }
+    });
+  });
+</script>
+{% endblock %}

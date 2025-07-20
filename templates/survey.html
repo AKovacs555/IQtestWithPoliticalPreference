@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+{% block content %}
+<form method="post">
+    {{ form.hidden_tag() }}
+    {{ form.party.label }}<br>
+    {% for subfield in form.party %}
+    <label>{{ subfield() }} {{ subfield.label.text }}</label><br>
+    {% endfor %}
+    {{ form.submit() }}
+</form>
+{% endblock %}
