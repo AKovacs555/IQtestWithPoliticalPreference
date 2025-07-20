@@ -4,5 +4,8 @@
     <p class="lead">This anonymous survey combines a short IQ quiz with a question about which political party you support. It's just for entertainment and research purposes.</p>
     <p class="text-muted">Results should not be used to judge individuals.</p>
     <a class="btn btn-primary btn-lg" href="{{ url_for('quiz') }}">Start</a>
+    {% if current_user.is_authenticated and not current_user.is_premium %}
+    <p class="mt-3"><a href="{{ url_for('premium') }}">Upgrade to premium for a longer quiz</a></p>
+    {% endif %}
 </section>
 {% endblock %}

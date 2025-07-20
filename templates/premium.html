@@ -1,0 +1,10 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Premium Content</h2>
+<p>This area is for premium members.</p>
+{% if not current_user.is_premium %}
+<form action="{{ url_for('subscribe') }}" method="post">
+    <button type="submit" class="btn btn-success">Subscribe for $5</button>
+</form>
+{% endif %}
+{% endblock %}
