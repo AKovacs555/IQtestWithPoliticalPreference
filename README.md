@@ -26,12 +26,11 @@ Environment variables:
 
 - `SECRET_KEY` – Flask secret key (default `devkey`).
 - `DATABASE_URL` – SQLAlchemy database URI (default uses a local SQLite file).
-- `FLASK_DEBUG` – set to `1` to enable debug mode.
-- `ENABLE_ANALYTICS` – set to `1` to include the optional analytics snippet.
-- `ENABLE_ADS` – set to `1` to include ad scripts.
+- `ENABLE_ANALYTICS` – set to `1` to include the optional Google Analytics snippet.
+- `ENABLE_ADS` – set to `1` to load Google AdSense ads.
 - `STRIPE_PUBLISHABLE_KEY` and `STRIPE_SECRET_KEY` – Stripe credentials for premium payments.
-- `GOOGLE_ADSENSE_CLIENT_ID` – client ID for Google AdSense when ads are enabled.
-- `GA_MEASUREMENT_ID` – measurement ID for Google Analytics when analytics are enabled.
+- `GOOGLE_ADSENSE_CLIENT_ID` – client ID for Google AdSense when ads are enabled. Obtain this from your AdSense account.
+- `GA_MEASUREMENT_ID` – measurement ID for Google Analytics when analytics are enabled. Generate it from your GA4 property.
 
 When deploying to a platform like Heroku or Render, set these environment variables along with `DATABASE_URL` and `SECRET_KEY`. Ensure HTTPS is enabled and cookies are sent securely.
 

@@ -1,11 +1,18 @@
 {% extends 'base.html' %}
 {% block content %}
 <h2>Premium Membership</h2>
-<p>Upgrade to enjoy an extended 20‑question IQ test, detailed analysis of your results, and an ad‑free experience.</p>
+<p>Premium members unlock the full 20‑question IQ test, detailed performance breakdowns, and an ad‑free experience.</p>
 {% if not current_user.is_premium %}
-<p class="fw-bold">Current price: $5 one‑time payment</p>
+<p class="fw-bold">Choose a plan:</p>
+<form action="{{ url_for('subscribe') }}" method="post" class="mb-2">
+    {{ csrf_token() }}
+    <input type="hidden" name="plan" value="monthly">
+    <button type="submit" class="btn btn-success">$5 / month</button>
+</form>
 <form action="{{ url_for('subscribe') }}" method="post">
-    <button type="submit" class="btn btn-success">Subscribe for $5</button>
+    {{ csrf_token() }}
+    <input type="hidden" name="plan" value="annual">
+    <button type="submit" class="btn btn-primary">$50 / year</button>
 </form>
 {% else %}
 <p>You have access to all premium features.</p>
