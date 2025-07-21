@@ -1,0 +1,20 @@
+[
+  {
+    "id": 0,
+    "question": "Which number completes the series: 3, 6, 12, 24, ?",
+    "options": ["30", "36", "40", "48"],
+    "answer": 3,
+    "difficulty": 2,
+    "domain": "quantitative",
+    "irt": {"a": 1.0, "b": -0.5}
+  },
+  {
+    "id": 1,
+    "question": "If some Fribs are Zogs and all Zogs are Pibs, can we say all Fribs are definitely Pibs?",
+    "options": ["Yes", "No", "Only some", "Can't tell"],
+    "answer": 0,
+    "difficulty": 3,
+    "domain": "logic",
+    "irt": {"a": 1.2, "b": 0.0}
+  }
+]

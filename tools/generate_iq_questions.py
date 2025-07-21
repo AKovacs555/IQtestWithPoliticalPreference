@@ -43,10 +43,10 @@ def main() -> None:
     parser.add_argument("-o", "--output", default="iq_items.json")
     args = parser.parse_args()
 
+    global PROMPT_TEMPLATE
     prompt = PROMPT_TEMPLATE
     if args.prompt_file:
         prompt = Path(args.prompt_file).read_text()
-    global PROMPT_TEMPLATE
     PROMPT_TEMPLATE = prompt
 
     items = generate(args.n)
