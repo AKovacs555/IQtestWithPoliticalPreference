@@ -15,6 +15,7 @@ from .todo_features import (
     generate_share_image,
     update_normative_distribution,
     dp_average,
+    MIN_BUCKET_SIZE,
 )
 from .demographics import collect_demographics
 from .party import update_party_affiliation
@@ -612,10 +613,10 @@ async def dp_data_api(
         for s in user.get("scores", []):
             scores.append(s.get("iq"))
 
-    if len(scores) < 100:
+    if len(scores) < MIN_BUCKET_SIZE:
         raise HTTPException(status_code=400, detail="Not enough data")
 
-    mean = dp_average(scores, epsilon, min_count=100)
+    mean = dp_average(scores, epsilon, min_count=MIN_BUCKET_SIZE)
     if mean is None:
         raise HTTPException(status_code=400, detail="Not enough data")
 

@@ -264,12 +264,16 @@ const Result = () => {
         <span className="text-xs text-gray-500" title="Scores are for entertainment and may not reflect a clinical IQ">what's this?</span>
         {avg && <p className="text-sm">Overall average IQ: {avg.toFixed(1)}</p>}
         <canvas ref={ref} height="120"></canvas>
+        {share && <img src={share} alt="Share card" className="mx-auto rounded" />}
         {share && (
           <div className="space-x-2">
             <a href={`https://twitter.com/intent/tweet?url=${url}&text=${text}`} target="_blank" rel="noreferrer" className="btn btn-sm">Share on X</a>
             <a href={`https://social-plugins.line.me/lineit/share?url=${url}`} target="_blank" rel="noreferrer" className="btn btn-sm">LINE</a>
           </div>
         )}
+        <div className="mt-4">
+          <a href="/premium.html" className="btn btn-primary btn-sm">Upgrade to Pro Pass</a>
+        </div>
         <p className="text-sm text-gray-600">This test is for research and entertainment.</p>
         <Link to="/" className="underline">Home</Link>
       </div>

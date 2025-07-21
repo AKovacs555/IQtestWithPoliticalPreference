@@ -13,8 +13,9 @@ export default function MobileOnlyWrapper({ children }) {
 
   if (!allowed) {
     return (
-      <div className="p-4 text-center">
-        <p className="text-lg">Please open this service on a smartphone.</p>
+      <div className="min-h-screen flex flex-col items-center justify-center p-4 text-center space-y-2">
+        <h1 className="text-2xl font-bold">Mobile Device Required</h1>
+        <p>This quiz is optimised for phones. Please visit again on your smartphone.</p>
       </div>
     );
   }

@@ -7,3 +7,4 @@ python-multipart
 twilio
 SQLAlchemy
 boto3
+pillow
