@@ -11,7 +11,7 @@ export default function Home() {
         <h1 className="text-4xl font-bold">{t('take_quiz')}</h1>
         <p className="max-w-xl mx-auto">Take our quick adaptive test and see how you compare.</p>
         <div className="space-x-2">
-          <Link to="/start" className="btn btn-primary">{t('take_quiz')}</Link>
+          <Link to="/select-set" className="btn btn-primary">{t('take_quiz')}</Link>
           <Link to="/pricing" className="btn btn-secondary">Pricing</Link>
         </div>
         <div className="max-w-md mx-auto mt-8">

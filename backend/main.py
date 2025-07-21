@@ -22,6 +22,7 @@ from .party import update_party_affiliation
 from .dp import add_laplace
 
 from .questions import DEFAULT_QUESTIONS, QUESTION_MAP, get_random_questions
+from .questions import available_sets
 from .irt import update_theta, percentile
 from .scoring import estimate_theta, iq_score, ability_summary
 from .payment import select_processor
@@ -331,6 +332,12 @@ async def share_image(user_id: str, iq: float, percentile: float):
     """Generate and return a shareable result image URL."""
     url = generate_share_image(user_id, iq, percentile)
     return {"url": url}
+
+
+@app.get("/quiz/sets")
+async def quiz_sets():
+    """Return available question set IDs."""
+    return {"sets": available_sets()}
 
 
 @app.get("/quiz/start", response_model=QuizStartResponse)
