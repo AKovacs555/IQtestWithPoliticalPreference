@@ -31,8 +31,20 @@ This project provides an IQ quiz and political preference survey using a respons
   - `SUPABASE_URL` – base URL for Supabase (required for share images).
   - `SUPABASE_SHARE_BUCKET` – bucket name for storing generated share images.
   - `ADMIN_API_KEY` – token for admin endpoints such as normative updates.
+  - `AD_UNIT_ID_ANDROID`, `AD_UNIT_ID_IOS`, `ADMOB_APP_ID` – Google AdMob ad identifiers.
+  - `AD_REWARD_POINTS` – points awarded per ad view.
+  - `RETRY_POINT_COST` – points required for an extra attempt.
   - `VITE_API_BASE` – base URL of the backend API for the React app.
   - `VITE_STRIPE_PUBLISHABLE_KEY` – public Stripe key used by the frontend.
+
+## 環境設定
+
+Supabase、Stripe、AWS SNS、Google AdMob のアカウントを作成し、それぞれのダッシュボードから API キーを取得してください。取得したキーは Vercel または Render の環境変数に設定します。
+
+- [Supabase ドキュメント](https://supabase.com/docs)
+- [Stripe ドキュメント](https://stripe.com/docs)
+- [AWS SNS ドキュメント](https://docs.aws.amazon.com/sns)
+- [Google AdMob ドキュメント](https://developers.google.com/admob)
 - OTP endpoints: `/auth/request-otp` and `/auth/verify-otp` support SMS via Twilio or SNS and fallback email codes through Supabase. Identifiers are hashed with per-record salts.
 - Quiz endpoints: `/quiz/start` returns a random set of questions from the `questions/` directory; `/quiz/submit` accepts answers and records a play. Optional query `set_id` selects a specific set file. `/quiz/sets` lists the available set IDs for the frontend.
 - Adaptive endpoints: `/adaptive/start` begins an adaptive quiz and `/adaptive/answer` returns the next question until the ability estimate stabilizes.
@@ -40,9 +52,9 @@ This project provides an IQ quiz and political preference survey using a respons
 - Demographic and party endpoints: `/user/demographics` records age, gender and income band. `/user/party` stores supported parties and enforces monthly change limits.
 - Aggregated data is available via `/leaderboard` and the authenticated `/data/iq` endpoint which returns differentially private averages.
 - The question bank with psychometric metadata lives in `backend/data/question_bank.json`. Run `tools/generate_questions.py` to create new items with the `o3pro` model. The script filters out content resembling proprietary IQ tests.
- - Individual question sets for the live quiz are stored under `questions/`. Each file follows the schema shown in `questions/set01.json` and can be fetched via `/quiz/start?set_id=set01`.
- - The backend reads these JSON files at runtime so new sets can be added via GitHub without redeploying the API.
-  - Additional sets can simply be placed in the top-level `questions/` directory. Ensure each file is
+ - Individual question sets for the live quiz are stored under `questions/`. Each file must conform to `questions/schema.json` and can be fetched via `/quiz/start?set_id=set01`.
+- The backend reads these JSON files at runtime so new sets can be added via GitHub without redeploying the API.
+  - Additional sets can simply be placed in the top-level `questions/` directory. Each file is validated against `schema.json` on startup so redeploy is unnecessary. Ensure all items are
     manually reviewed before use. The helper `tools/generate_iq_questions.py` can
     create new items in this format. It accepts `--n`, `--start_id` and
     `--outfile` arguments and validates IDs to avoid collisions.

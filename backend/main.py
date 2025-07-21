@@ -3,6 +3,7 @@ import hashlib
 import hmac
 import secrets
 import random
+import time
 from typing import List, Optional
 
 from fastapi import FastAPI, HTTPException
@@ -57,6 +58,7 @@ MAX_FREE_ATTEMPTS = int(os.getenv("MAX_FREE_ATTEMPTS", "1"))
 # In-memory placeholder for user records
 # {hashed_id: {"salt": str, "plays": int, "referrals": int}}
 USERS = {}
+EVENTS: list[dict] = []
 
 # Dynamic pricing tiers loaded from RETRY_PRICE_TIERS
 def _load_price_tiers() -> list[int]:
@@ -69,6 +71,12 @@ def _load_price_tiers() -> list[int]:
 
 PRICES = _load_price_tiers()
 PRO_PRICE_MONTHLY = int(os.getenv("PRO_PRICE_MONTHLY", "980"))
+
+PRICE_VARIANTS = [480, 720, 980]
+
+# Reward ad configuration
+AD_REWARD_POINTS = int(os.getenv("AD_REWARD_POINTS", "1"))
+RETRY_POINT_COST = int(os.getenv("RETRY_POINT_COST", "5"))
 
 # Load normative distribution for percentile scores
 _dist_path = os.path.join(
@@ -180,9 +188,11 @@ class SurveyResult(BaseModel):
 
 class PricingResponse(BaseModel):
     price: int
+    retry_price: int
     plays: int
     processor: str
     pro_price: int
+    variant: int
 
 
 class UserStats(BaseModel):
@@ -247,6 +257,7 @@ async def verify_otp(data: OTPVerify):
             "salt": salt,
             "plays": 0,
             "referrals": 0,
+            "points": 0,
             "scores": [],
             "party_log": [],
             "demographics": {},
@@ -255,11 +266,17 @@ async def verify_otp(data: OTPVerify):
     return {"status": "verified", "id": hashed}
 
 
-def _current_price(user) -> int:
+def _retry_price(user) -> int:
     plays_paid = max(user.get("plays", 0) - user.get("referrals", 0), 0)
     idx = plays_paid if plays_paid < len(PRICES) else len(PRICES) - 1
-    user["price_variant"] = idx
     return PRICES[idx]
+
+
+def _assign_variant(user_id: str, user: dict) -> int:
+    if "variant" not in user:
+        h = int(hashlib.sha256(user_id.encode()).hexdigest(), 16)
+        user["variant"] = h % len(PRICE_VARIANTS)
+    return user["variant"]
 
 
 @app.get("/pricing/{user_id}", response_model=PricingResponse)
@@ -270,18 +287,23 @@ async def pricing(user_id: str, region: str = "US"):
             "salt": "",
             "plays": 0,
             "referrals": 0,
+            "points": 0,
             "scores": [],
             "party_log": [],
             "demographics": {},
         },
     )
     processor = select_processor(region)
-    price = _current_price(user)
+    variant_idx = _assign_variant(user_id, user)
+    price = PRICE_VARIANTS[variant_idx]
+    retry_price = _retry_price(user)
     return {
         "price": price,
+        "retry_price": retry_price,
         "plays": user.get("plays", 0),
         "processor": processor,
         "pro_price": PRO_PRICE_MONTHLY,
+        "variant": variant_idx,
     }
 
 
@@ -293,16 +315,19 @@ async def record_play(action: UserAction):
             "salt": "",
             "plays": 0,
             "referrals": 0,
+            "points": 0,
             "scores": [],
             "party_log": [],
             "demographics": {},
         },
     )
     if user.get("plays", 0) >= MAX_FREE_ATTEMPTS:
-        # TODO: verify payment before incrementing when paid retries are implemented
-        raise HTTPException(status_code=402, detail="Payment required")
+        if user.get("points", 0) >= RETRY_POINT_COST:
+            user["points"] -= RETRY_POINT_COST
+        else:
+            raise HTTPException(status_code=402, detail="Payment required")
     user["plays"] = user.get("plays", 0) + 1
-    return {"plays": user["plays"]}
+    return {"plays": user["plays"], "points": user.get("points", 0)}
 
 
 @app.post("/referral")
@@ -313,6 +338,7 @@ async def referral(action: UserAction):
             "salt": "",
             "plays": 0,
             "referrals": 0,
+            "points": 0,
             "scores": [],
             "party_log": [],
             "demographics": {},
@@ -320,6 +346,22 @@ async def referral(action: UserAction):
     )
     user["referrals"] = user.get("referrals", 0) + 1
     return {"referrals": user["referrals"]}
+
+
+@app.post("/ads/start")
+async def ads_start(action: UserAction):
+    user = USERS.setdefault(action.user_id, {"salt": "", "plays": 0, "referrals": 0, "points": 0, "scores": [], "party_log": [], "demographics": {}})
+    # log event
+    EVENTS.append({"event": "ad_start", "user_id": action.user_id, "timestamp": time.time()})
+    return {"status": "started"}
+
+
+@app.post("/ads/complete")
+async def ads_complete(action: UserAction):
+    user = USERS.setdefault(action.user_id, {"salt": "", "plays": 0, "referrals": 0, "points": 0, "scores": [], "party_log": [], "demographics": {}})
+    user["points"] = user.get("points", 0) + AD_REWARD_POINTS
+    EVENTS.append({"event": "ad_complete", "user_id": action.user_id, "timestamp": time.time()})
+    return {"points": user["points"]}
 
 
 @app.get("/ping")
@@ -347,7 +389,10 @@ async def start_quiz(set_id: str | None = None):
     If ``set_id`` is provided, questions are drawn from that set;
     otherwise the global pool is used.
     """
-    questions = get_random_questions(NUM_QUESTIONS, set_id)
+    try:
+        questions = get_random_questions(NUM_QUESTIONS, set_id)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     session_id = secrets.token_hex(8)
     SESSIONS[session_id] = {"question_ids": [q["id"] for q in questions]}
     models = [
@@ -577,10 +622,19 @@ async def user_stats(user_id: str):
     }
 
 
+@app.get("/points/{user_id}")
+async def points_balance(user_id: str):
+    user = USERS.get(user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return {"points": user.get("points", 0)}
+
+
 @app.post("/analytics")
 async def analytics(event: dict):
     """Log client-side events to self-hosted analytics."""
     app.logger.info("Event: %s", event)
+    EVENTS.append(event)
     return {}
 
 

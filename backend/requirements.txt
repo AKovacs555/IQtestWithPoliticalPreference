@@ -8,4 +8,5 @@ twilio
 SQLAlchemy
 boto3
 pillow
+jsonschema
 pytest

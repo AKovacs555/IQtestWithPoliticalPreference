@@ -1,0 +1,36 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["id", "language", "title", "questions"],
+  "properties": {
+    "id": {"type": "string"},
+    "language": {"type": "string"},
+    "title": {"type": "string"},
+    "questions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "question", "options", "answer", "irt"],
+        "properties": {
+          "id": {"type": "integer"},
+          "question": {"type": "string"},
+          "options": {
+            "type": "array",
+            "items": {"type": "string"},
+            "minItems": 2
+          },
+          "answer": {"type": "integer"},
+          "explanation": {"type": "string"},
+          "irt": {
+            "type": "object",
+            "required": ["a", "b"],
+            "properties": {
+              "a": {"type": "number"},
+              "b": {"type": "number"}
+            }
+          }
+        }
+      }
+    }
+  }
+}
