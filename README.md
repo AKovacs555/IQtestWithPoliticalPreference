@@ -34,7 +34,7 @@ This project provides an IQ quiz and political preference survey using a mobileâ
   OPENAI_API_KEY=your-key python tools/generate_questions.py -n 60
   ```
   The JSON output is saved to `backend/data/question_bank.json` with sequential `id` values.
-  To create a new pool file with the updated generator:
+  To create a new pool file with the updated generator or your own prompt:
   ```bash
   OPENAI_API_KEY=your-key python tools/generate_iq_questions.py -n 50 -o new_items.json
   ```
@@ -50,9 +50,24 @@ This project provides an IQ quiz and political preference survey using a mobileâ
 - Basic anti-cheat measures disable text selection, render questions on a canvas
   and watermark the screen. They cannot fully prevent screenshots.
 
-To deploy on serverless hosting, point the platform to `backend/main.py` and serve the built frontend from `frontend/dist`. Environment variables configure SMS and payment providers so you can select the cheapest option for each region.
+To deploy on serverless hosting, point Vercel to `frontend` for the React build
+and Render (or another provider) to `backend/main.py`. Provide the environment
+variables below to both platforms. After pushing to GitHub, redeployments will
+occur automatically.
 
 This repository now serves as a starting point for the revamped freemium quiz platform. Terms of Service and a Privacy Policy are provided under `templates/` and personal identifiers are hashed with per-record salts. Aggregated statistics apply differential privacy noise for research use only.
+
+## Monetisation model
+
+- Users get **one free play**. Further attempts follow a paid retry ladder. The
+  `/pricing/{user}` endpoint reveals the next price tier based on previous
+  plays.
+- A **Pro Pass** subscription (configurable via `PRO_PRICE_MONTHLY`) grants
+  multiple plays per month and early access to new question sets.
+- Each account has a **referral code**. When someone signs up with that code
+  both parties receive a free retry credit (`/referral`).
+- Business customers can request aggregated data via the `/leaderboard`
+  endpoint once differential privacy safeguards are implemented.
 
 ## Services and Costs
 
