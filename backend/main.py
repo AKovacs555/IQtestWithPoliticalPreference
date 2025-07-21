@@ -10,6 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from .sms_service import send_otp, SMS_PROVIDER
+from .todo_features import leaderboard_by_party
 
 from .questions import DEFAULT_QUESTIONS, QUESTION_MAP, get_random_questions
 from .irt import update_theta, percentile
@@ -419,3 +420,13 @@ async def analytics(event: dict):
     """Log client-side events to self-hosted analytics."""
     app.logger.info("Event: %s", event)
     return {}
+
+
+@app.get("/leaderboard")
+async def leaderboard():
+    """Return party IQ leaderboard with differential privacy noise."""
+    try:
+        data = leaderboard_by_party()
+    except NotImplementedError:
+        raise HTTPException(status_code=501, detail="Leaderboard not implemented")
+    return {"leaderboard": data}
