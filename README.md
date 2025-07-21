@@ -20,21 +20,35 @@ This project provides an IQ quiz and political preference survey using a mobile�
   - The backend logs an estimated cost for each OTP sent based on the selected SMS provider.
   - `STRIPE_API_KEY` – Stripe secret key for payments.
   - `PHONE_SALT` – salt for hashing phone or email identifiers.
+  - `MAX_FREE_ATTEMPTS` – number of free quiz attempts allowed before payment is required (default `1`).
   - OTP endpoints: `/auth/request-otp` and `/auth/verify-otp` support SMS via Twilio or SNS and fallback email codes through Supabase. Identifiers are hashed with per-record salts.
-- Quiz endpoints: `/quiz/start` returns 20 questions; `/quiz/submit` accepts answers and records a play.
+- Quiz endpoints: `/quiz/start` returns a random set of questions from `backend/data/iq_pool/`; `/quiz/submit` accepts answers and records a play.
 - Adaptive endpoints: `/adaptive/start` begins an adaptive quiz and `/adaptive/answer` returns the next question until the ability estimate stabilizes.
 - Pricing endpoints: `/pricing/{id}` shows the dynamic price for a user, `/play/record` registers a completed play and `/referral` adds a referral credit.
 - The question bank with psychometric metadata lives in `backend/data/question_bank.json`. Run `tools/generate_questions.py` to create new items with the `o3pro` model. The script filters out content resembling proprietary IQ tests.
+- Additional sets can be placed in `backend/data/iq_pool/`. Ensure each file is
+  manually reviewed before use. The helper `tools/generate_iq_questions.py` can
+  create new items in this format.
   To regenerate questions:
   ```bash
   OPENAI_API_KEY=your-key python tools/generate_questions.py -n 60
   ```
   The JSON output is saved to `backend/data/question_bank.json` with sequential `id` values.
+  To create a new pool file with the updated generator:
+  ```bash
+  OPENAI_API_KEY=your-key python tools/generate_iq_questions.py -n 50 -o new_items.json
+  ```
+  After reviewing `new_items.json`, move it into `backend/data/iq_pool/`.
 
 ## Frontend (React)
 
 - Located in `frontend/` and built with Vite, React Router, Tailwind CSS and framer‑motion.
 - Install dependencies with `npm install` and start the dev server with `npm run dev`.
+- The app is intended for smartphones. A `MobileOnlyWrapper` component blocks
+  desktop browsers with a friendly message. Disable or adjust this behaviour by
+  editing `frontend/src/MobileOnlyWrapper.jsx`.
+- Basic anti-cheat measures disable text selection, render questions on a canvas
+  and watermark the screen. They cannot fully prevent screenshots.
 
 To deploy on serverless hosting, point the platform to `backend/main.py` and serve the built frontend from `frontend/dist`. Environment variables configure SMS and payment providers so you can select the cheapest option for each region.
 

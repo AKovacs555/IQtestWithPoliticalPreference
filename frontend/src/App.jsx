@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Chart } from 'chart.js/auto';
+import QuestionCanvas from './QuestionCanvas';
 
 const PageTransition = ({ children }) => (
   <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
@@ -26,6 +27,8 @@ const Quiz = () => {
   const [question, setQuestion] = React.useState(null);
   const [count, setCount] = React.useState(0);
   const [timeLeft, setTimeLeft] = React.useState(360);
+  const [suspicious, setSuspicious] = React.useState(false);
+  const watermark = React.useMemo(() => `${session?.slice(0,6) || ''}-${Date.now()}`,[session]);
 
   React.useEffect(() => {
     fetch('/adaptive/start')
@@ -39,6 +42,25 @@ const Quiz = () => {
   React.useEffect(() => {
     const t = setInterval(() => setTimeLeft(t => Math.max(t - 1, 0)), 1000);
     return () => clearInterval(t);
+  }, []);
+
+  React.useEffect(() => {
+    let hideTime = null;
+    const onHide = () => { hideTime = Date.now(); };
+    const onShow = () => {
+      if (hideTime && Date.now() - hideTime > 3000) setSuspicious(true);
+      hideTime = null;
+    };
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) onHide(); else onShow();
+    });
+    window.addEventListener('blur', onHide);
+    window.addEventListener('focus', onShow);
+    return () => {
+      document.removeEventListener('visibilitychange', () => {});
+      window.removeEventListener('blur', onHide);
+      window.removeEventListener('focus', onShow);
+    };
   }, []);
 
   const select = (i) => {
@@ -70,18 +92,15 @@ const Quiz = () => {
         </div>
         <div className="text-right">{Math.floor(timeLeft / 60)}:{`${timeLeft % 60}`.padStart(2, '0')}</div>
         {question && (
-          <div>
-            <p className="font-semibold mb-2">{question.question}</p>
-            {question.options.map((opt, i) => (
-              <button
-                key={i}
-                onClick={() => select(i)}
-                className="block w-full mb-2 p-2 border rounded"
-              >
-                {opt}
-              </button>
-            ))}
-          </div>
+          <QuestionCanvas
+            question={question.question}
+            options={question.options}
+            onSelect={select}
+            watermark={watermark}
+          />
+        )}
+        {suspicious && (
+          <p className="text-red-600 text-sm">Session flagged for leaving the page.</p>
         )}
       </div>
     </PageTransition>
