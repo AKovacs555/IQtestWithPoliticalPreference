@@ -1,14 +1,17 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
-import App from './App';
-import MobileOnlyWrapper from './MobileOnlyWrapper';
-import './index.css';
+import App from './pages/App';
+import MobileOnlyWrapper from './components/MobileOnlyWrapper';
+import { SessionProvider } from './hooks/useSession';
+import './styles.css';
 
 createRoot(document.getElementById('root')).render(
   <BrowserRouter>
-    <MobileOnlyWrapper>
-      <App />
-    </MobileOnlyWrapper>
+    <SessionProvider>
+      <MobileOnlyWrapper>
+        <App />
+      </MobileOnlyWrapper>
+    </SessionProvider>
   </BrowserRouter>
 );

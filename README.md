@@ -1,6 +1,6 @@
 # IQtestWithPoliticalPreference
 
-This project provides an IQ quiz and political preference survey using a mobile‑first freemium design. The original Flask code has been moved to `legacy_flask_app.py`. The new stack uses **FastAPI** for the backend and a **React** single‑page application for the frontend.
+This project provides an IQ quiz and political preference survey using a responsive freemium design. The original Flask code has been moved to `legacy_flask_app.py`. The new stack uses **FastAPI** for the backend and a **React** single‑page application for the frontend. The frontend now uses DaisyUI with a custom theme and works on mobile and desktop devices.
 
 ## Backend (FastAPI)
 
@@ -57,11 +57,11 @@ This project provides an IQ quiz and political preference survey using a mobile�
 
  - Located in `frontend/` and built with Vite, React Router, Tailwind CSS with DaisyUI components and framer‑motion.
 - Install dependencies with `npm install` and start the dev server with `npm run dev`.
-- The UI is smartphone only. `MobileOnlyWrapper` checks the user agent and screen
-  width to redirect desktop visitors. Adjust the behaviour in
-  `frontend/src/MobileOnlyWrapper.jsx`.
+- The UI uses a responsive layout. The previous mobile restriction was removed and
+  `MobileOnlyWrapper` now simply renders its children.
 - Basic anti-cheat measures disable text selection, draw questions on a canvas
   and apply a watermark. Comments note that screenshots cannot be fully blocked.
+ - React components are organised under `src/components` and `src/pages` for clarity.
 
 To deploy on serverless hosting, point Vercel to `frontend` for the React build
 and Render (or another provider) to `backend/main.py`. Provide the environment

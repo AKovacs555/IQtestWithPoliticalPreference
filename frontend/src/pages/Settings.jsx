@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import Layout from '../components/Layout';
 
 export default function Settings() {
   const { userId } = useParams();
@@ -15,18 +16,21 @@ export default function Settings() {
 
   if (!userId) {
     return (
-      <div className="p-4 text-center">
-        <p className="mb-2">No user specified.</p>
-        <Link to="/" className="underline">Home</Link>
-      </div>
+      <Layout>
+        <div className="p-4 text-center">
+          <p className="mb-2">No user specified.</p>
+          <Link to="/" className="underline">Home</Link>
+        </div>
+      </Layout>
     );
   }
 
-  if (!stats) return <div className="p-4">Loading...</div>;
+  if (!stats) return <Layout><div className="p-4">Loading...</div></Layout>;
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-      <div className="p-4 space-y-2">
+    <Layout>
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+        <div className="p-4 space-y-2">
         <h2 className="text-xl font-bold mb-2">Your Stats</h2>
         <p>Plays: {stats.plays}</p>
         <p>Referrals: {stats.referrals}</p>
@@ -46,8 +50,9 @@ export default function Settings() {
             ))}
           </ul>
         </div>
-        <Link to="/" className="underline">Home</Link>
-      </div>
-    </motion.div>
+          <Link to="/" className="underline">Home</Link>
+        </div>
+      </motion.div>
+    </Layout>
   );
 }

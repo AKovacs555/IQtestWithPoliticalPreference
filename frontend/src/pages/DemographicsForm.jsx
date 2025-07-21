@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import Layout from '../components/Layout';
 
 export default function DemographicsForm() {
   const navigate = useNavigate();
@@ -17,7 +18,8 @@ export default function DemographicsForm() {
   };
 
   return (
-    <div className="p-4 space-y-4 max-w-md mx-auto">
+    <Layout>
+      <div className="p-4 space-y-4 max-w-md mx-auto">
       <h2 className="text-xl font-bold">Before you start</h2>
       <div className="form-control">
         <label className="label">Age Range</label>
@@ -46,6 +48,7 @@ export default function DemographicsForm() {
         </select>
       </div>
       <button className="btn btn-primary w-full" onClick={save}>Start Quiz</button>
-    </div>
+      </div>
+    </Layout>
   );
 }
