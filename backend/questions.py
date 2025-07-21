@@ -29,10 +29,12 @@ import json
 import random
 from pathlib import Path
 from typing import List, Dict, Any
+from jsonschema import validate, ValidationError
 
 # Question sets are stored under the repository level ``questions`` directory
 # so that new sets can be added without modifying the code base.
 POOL_PATH = Path(__file__).resolve().parents[1] / "questions"
+SCHEMA_PATH = POOL_PATH / "schema.json"
 
 
 def available_sets() -> List[str]:
@@ -62,6 +64,9 @@ def load_questions(set_id: str | None = None) -> List[Dict[str, Any]]:
     if not POOL_PATH.exists():
         return questions
 
+    # Validate files before loading
+    validate_questions(set_id)
+
     seen_ids = set()
     next_id = 0
     paths = [POOL_PATH / f"{set_id}.json"] if set_id else sorted(POOL_PATH.glob("*.json"))
@@ -83,7 +88,36 @@ def load_questions(set_id: str | None = None) -> List[Dict[str, Any]]:
     return questions
 
 
-DEFAULT_QUESTIONS: List[Dict[str, Any]] = load_questions()
+def validate_questions(set_id: str | None = None) -> None:
+    """Validate question files against the schema and check ID uniqueness."""
+    if not SCHEMA_PATH.exists():
+        return
+
+    with SCHEMA_PATH.open() as f:
+        schema = json.load(f)
+
+    paths = [POOL_PATH / f"{set_id}.json"] if set_id else sorted(POOL_PATH.glob("*.json"))
+    seen_ids = set()
+    for path in paths:
+        with path.open() as f:
+            data = json.load(f)
+        try:
+            validate(data, schema)
+        except ValidationError as e:
+            raise ValueError(f"{path.name}: {e.message}")
+        for item in data.get("questions", []):
+            qid = item.get("id")
+            if qid in seen_ids:
+                raise ValueError(f"Duplicate question id {qid}")
+            seen_ids.add(qid)
+
+
+DEFAULT_QUESTIONS: List[Dict[str, Any]] = []
+try:
+    validate_questions()
+    DEFAULT_QUESTIONS = load_questions()
+except Exception as e:
+    print(f"Question validation failed: {e}")
 
 # Convenient lookup table by ID
 QUESTION_MAP: Dict[int, Dict[str, Any]] = {q["id"]: q for q in DEFAULT_QUESTIONS}
