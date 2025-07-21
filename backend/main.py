@@ -334,13 +334,13 @@ async def share_image(user_id: str, iq: float, percentile: float):
 
 
 @app.get("/quiz/start", response_model=QuizStartResponse)
-async def start_quiz(question_set_id: str | None = None):
+async def start_quiz(set_id: str | None = None):
     """Begin a fixed-form quiz.
 
-    If ``question_set_id`` is provided, questions are drawn from that set;
+    If ``set_id`` is provided, questions are drawn from that set;
     otherwise the global pool is used.
     """
-    questions = get_random_questions(NUM_QUESTIONS, question_set_id)
+    questions = get_random_questions(NUM_QUESTIONS, set_id)
     session_id = secrets.token_hex(8)
     SESSIONS[session_id] = {"question_ids": [q["id"] for q in questions]}
     models = [
@@ -408,11 +408,11 @@ def _to_model(q) -> QuizQuestion:
 
 
 @app.get("/adaptive/start", response_model=AdaptiveStartResponse)
-async def adaptive_start(question_set_id: str | None = None):
+async def adaptive_start(set_id: str | None = None):
     """Begin an adaptive quiz session."""
     theta = 0.0
     session_id = secrets.token_hex(8)
-    questions = get_random_questions(NUM_QUESTIONS, question_set_id)
+    questions = get_random_questions(NUM_QUESTIONS, set_id)
     pool_ids = [q["id"] for q in questions]
     question = _select_question(theta, [], pool_ids)
     SESSIONS[session_id] = {
