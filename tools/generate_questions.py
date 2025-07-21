@@ -14,12 +14,19 @@ MODEL = os.getenv("O3PRO_MODEL", "o3pro")
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
 PROMPT = (
-    "Generate {n} IQ test questions referencing Spearman's g factor, fluid vs "
-    "crystallized intelligence, and Raven's Progressive Matrices. Each item "
-    "should include: question text, four answer options, the correct option "
-    "index (0-3), an estimated difficulty on a 1-5 scale, and a short "
-    "rationale. Use only original content."
+    "Using open psychometric theory such as Spearman's g and common formats "
+    "like Raven's matrices, generate {n} original IQ test questions. Each "
+    "question should be JSON with the fields: 'question', 'options' (four "
+    "strings), 'answer' (index 0-3), 'difficulty' (1-5), and 'rationale'. "
+    "Do not copy or paraphrase items from proprietary tests."
 )
+
+PROPRIETARY_KEYWORDS = [
+    "wechsler",
+    "wais",
+    "wisc",
+    "raven",
+]
 
 
 def generate(n: int = 50):
@@ -32,6 +39,16 @@ def generate(n: int = 50):
     return items
 
 
+def filter_proprietary(items):
+    filtered = []
+    for it in items:
+        content = json.dumps(it).lower()
+        if any(k in content for k in PROPRIETARY_KEYWORDS):
+            continue
+        filtered.append(it)
+    return filtered
+
+
 def main():
     import argparse
     parser = argparse.ArgumentParser()
@@ -39,9 +56,13 @@ def main():
     parser.add_argument("-o", "--output", default="backend/data/question_bank.json")
     args = parser.parse_args()
     items = generate(args.n)
+    items = filter_proprietary(items)
+    # ensure sequential ids and include difficulty metadata
+    for i, item in enumerate(items):
+        item["id"] = i
     with open(args.output, "w") as f:
         json.dump(items, f, indent=2)
-    print(f"Saved {len(items)} items to {args.output}")
+    print(f"Saved {len(items)} filtered items to {args.output}")
 
 
 if __name__ == "__main__":

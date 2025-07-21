@@ -8,7 +8,13 @@ from typing import List, Optional
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from twilio.rest import Client
+SMS_PROVIDER = os.getenv("SMS_PROVIDER", "twilio")
+if SMS_PROVIDER == "twilio":
+    from twilio.rest import Client as TwilioClient
+elif SMS_PROVIDER == "sns":
+    import boto3
+else:
+    raise RuntimeError("Unsupported SMS provider")
 
 from .questions import DEFAULT_QUESTIONS
 from .irt import update_theta, percentile
@@ -26,12 +32,17 @@ app.add_middleware(
     allow_headers=["*"]
 )
 
-# Twilio Verify setup
-TWILIO_ACCOUNT_SID = os.environ.get("TWILIO_ACCOUNT_SID", "")
-TWILIO_AUTH_TOKEN = os.environ.get("TWILIO_AUTH_TOKEN", "")
-TWILIO_VERIFY_SID = os.environ.get("TWILIO_VERIFY_SERVICE_SID", "")
-
-twilio_client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
+# SMS provider setup
+if SMS_PROVIDER == "twilio":
+    TWILIO_ACCOUNT_SID = os.environ.get("TWILIO_ACCOUNT_SID", "")
+    TWILIO_AUTH_TOKEN = os.environ.get("TWILIO_AUTH_TOKEN", "")
+    TWILIO_VERIFY_SID = os.environ.get("TWILIO_VERIFY_SERVICE_SID", "")
+    sms_client = TwilioClient(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
+elif SMS_PROVIDER == "sns":
+    AWS_REGION = os.environ.get("AWS_REGION", "us-east-1")
+    sms_client = boto3.client("sns", region_name=AWS_REGION)
+else:
+    sms_client = None
 
 # Database placeholder (Supabase)
 DATABASE_URL = os.environ.get("DATABASE_URL", "")
@@ -48,10 +59,12 @@ with open(_dist_path) as f:
     NORMATIVE_DIST = json.load(f)
 
 class OTPRequest(BaseModel):
-    phone: str
+    phone: Optional[str] = None
+    email: Optional[str] = None
 
 class OTPVerify(BaseModel):
-    phone: str
+    phone: Optional[str] = None
+    email: Optional[str] = None
     code: str
 
 
@@ -97,26 +110,53 @@ def hash_phone(phone: str, salt: str) -> str:
 
 # Adaptive testing session store
 SESSIONS = {}
+OTP_CODES = {}
 
 @app.post("/auth/request-otp")
 async def request_otp(data: OTPRequest):
-    verification = twilio_client.verify.v2.services(TWILIO_VERIFY_SID).verifications.create(
-        to=data.phone,
-        channel="sms"
-    )
-    return {"status": verification.status}
+    if data.phone and SMS_PROVIDER == "twilio":
+        verification = sms_client.verify.v2.services(TWILIO_VERIFY_SID).verifications.create(
+            to=data.phone,
+            channel="sms"
+        )
+        return {"status": verification.status}
+    if data.phone and SMS_PROVIDER == "sns":
+        code = str(random.randint(100000, 999999))
+        sms_client.publish(PhoneNumber=data.phone, Message=f"Your code is {code}")
+        OTP_CODES[data.phone] = code
+        return {"status": "sent"}
+    if data.email:
+        from supabase import create_client
+        supa = create_client(DATABASE_URL, SUPABASE_API_KEY)
+        supa.auth.sign_in_with_otp({"email": data.email})
+        return {"status": "email_sent"}
+    raise HTTPException(status_code=400, detail="No contact provided")
 
 @app.post("/auth/verify-otp")
 async def verify_otp(data: OTPVerify):
-    check = twilio_client.verify.v2.services(TWILIO_VERIFY_SID).verification_checks.create(
-        to=data.phone,
-        code=data.code
-    )
-    if check.status != "approved":
-        raise HTTPException(status_code=400, detail="Invalid code")
+    if data.phone and SMS_PROVIDER == "twilio":
+        check = sms_client.verify.v2.services(TWILIO_VERIFY_SID).verification_checks.create(
+            to=data.phone,
+            code=data.code
+        )
+        if check.status != "approved":
+            raise HTTPException(status_code=400, detail="Invalid code")
+    elif data.phone and SMS_PROVIDER == "sns":
+        if OTP_CODES.get(data.phone) != data.code:
+            raise HTTPException(status_code=400, detail="Invalid code")
+        OTP_CODES.pop(data.phone, None)
+    elif data.email:
+        from supabase import create_client
+        supa = create_client(DATABASE_URL, SUPABASE_API_KEY)
+        user = supa.auth.verify_otp({"email": data.email, "token": data.code, "type": "email"})
+        if not user:
+            raise HTTPException(status_code=400, detail="Invalid code")
+    else:
+        raise HTTPException(status_code=400, detail="Invalid contact")
     # store hashed phone with per-record salt
+    phone_or_email = data.phone or data.email
     salt = secrets.token_hex(8)
-    hashed = hash_phone(data.phone, salt)
+    hashed = hash_phone(phone_or_email, salt)
     USERS[hashed] = {"salt": salt}
     # TODO: save hashed phone and salt to database with user record
     return {"status": "verified", "id": hashed}
