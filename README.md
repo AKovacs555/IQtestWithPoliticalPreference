@@ -13,13 +13,15 @@ This project provides an IQ quiz and political preference survey using a mobile�
 - Environment variables:
   - `DATABASE_URL` – Supabase Postgres connection string.
   - `SUPABASE_API_KEY` – API key for Supabase.
-  - `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_VERIFY_SERVICE_SID` – Twilio Verify credentials.
+  - `SMS_PROVIDER` – `twilio` (default) or `sns` for Amazon SNS.
+  - When using Twilio: `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_VERIFY_SERVICE_SID`.
+  - When using SNS: `AWS_REGION` and AWS credentials configured in the environment.
   - `STRIPE_API_KEY` – Stripe secret key for payments.
-  - `PHONE_SALT` – salt for hashing phone numbers (used as fallback).
-- OTP endpoints: `/auth/request-otp` and `/auth/verify-otp` store phone numbers with per-record salts.
+  - `PHONE_SALT` – salt for hashing phone or email identifiers.
+  - OTP endpoints: `/auth/request-otp` and `/auth/verify-otp` support SMS via Twilio or SNS and fallback email codes through Supabase. Identifiers are hashed with per-record salts.
 - Quiz endpoints: `/quiz/start` returns 20 questions; `/quiz/submit` accepts answers and returns a score.
 - Adaptive endpoints: `/adaptive/start` begins an adaptive quiz and `/adaptive/answer` returns the next question until the ability estimate stabilizes.
-- The question bank with psychometric metadata lives in `backend/data/question_bank.json`. Use `tools/generate_questions.py` to regenerate items via the `o3pro` model.
+  - The question bank with psychometric metadata lives in `backend/data/question_bank.json`. Run `tools/generate_questions.py` to create new items with the `o3pro` model. The script filters out content resembling proprietary IQ tests.
 
 ## Frontend (React)
 

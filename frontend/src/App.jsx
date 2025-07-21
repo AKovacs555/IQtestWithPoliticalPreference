@@ -94,6 +94,7 @@ const Result = () => {
         <h2 className="text-xl font-bold">Your Results</h2>
         <p>Ability score: {Number(score).toFixed(2)}</p>
         <p>Percentile: {Number(percentile).toFixed(1)}%</p>
+        <p className="text-sm text-gray-600">This test is for research and entertainment; results may not reflect a clinically validated IQ.</p>
         <Link to="/" className="underline">Home</Link>
       </div>
     </PageTransition>
