@@ -19,6 +19,7 @@ This project provides an IQ quiz and political preference survey using a mobile�
   - `PAYPAY_API_KEY` or `LINEPAY_API_KEY` – enable local payment gateways in Japan.
   - The backend logs an estimated cost for each OTP sent based on the selected SMS provider.
   - `STRIPE_API_KEY` – Stripe secret key for payments.
+  - `STRIPE_PUBLISHABLE_KEY` – Stripe public key for the client.
   - `PHONE_SALT` – salt for hashing phone or email identifiers.
   - `MAX_FREE_ATTEMPTS` – number of free quiz attempts allowed before payment is required (default `1`).
   - `DATA_API_KEY` – authentication token for the paid differential‑privacy API.
@@ -46,11 +47,11 @@ This project provides an IQ quiz and political preference survey using a mobile�
 
 - Located in `frontend/` and built with Vite, React Router, Tailwind CSS and framer‑motion.
 - Install dependencies with `npm install` and start the dev server with `npm run dev`.
-- The app is intended for smartphones. A `MobileOnlyWrapper` component blocks
-  desktop browsers with a friendly message. Disable or adjust this behaviour by
-  editing `frontend/src/MobileOnlyWrapper.jsx`.
-- Basic anti-cheat measures disable text selection, render questions on a canvas
-  and watermark the screen. They cannot fully prevent screenshots.
+- The UI is smartphone only. `MobileOnlyWrapper` checks the user agent and screen
+  width to redirect desktop visitors. Adjust the behaviour in
+  `frontend/src/MobileOnlyWrapper.jsx`.
+- Basic anti-cheat measures disable text selection, draw questions on a canvas
+  and apply a watermark. Comments note that screenshots cannot be fully blocked.
 
 To deploy on serverless hosting, point Vercel to `frontend` for the React build
 and Render (or another provider) to `backend/main.py`. Provide the environment

@@ -49,3 +49,10 @@ def generate_share_image(user_id: str, iq: float, percentile: float) -> str:
     TODO: create an image with OpenGraph/Twitter metadata and upload to storage.
     """
     raise NotImplementedError
+
+
+def update_normative_distribution(new_scores: List[float]) -> None:
+    """Recompute normative distribution with incoming scores."""
+    # TODO: load existing distribution, merge with ``new_scores`` and store back
+    #       to ``backend/data/normative_distribution.json``
+    raise NotImplementedError
