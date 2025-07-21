@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import useShareMeta from '../hooks/useShareMeta';
 import { AnimatePresence, motion } from 'framer-motion';
 import Layout from '../components/Layout';
@@ -30,6 +31,7 @@ const Quiz = () => {
   const [count, setCount] = React.useState(0);
   const [timeLeft, setTimeLeft] = React.useState(360);
   const [suspicious, setSuspicious] = React.useState(false);
+  const { t } = useTranslation();
   const watermark = React.useMemo(() => `${session?.slice(0,6) || ''}-${Date.now()}`,[session]);
 
   React.useEffect(() => {
@@ -93,10 +95,15 @@ const Quiz = () => {
     <PageTransition>
       <Layout>
         <div className="space-y-4 max-w-lg mx-auto">
-          <ProgressBar value={(count / 20) * 100} />
-          <div className="text-right font-mono">
-            {Math.floor(timeLeft / 60)}:{`${timeLeft % 60}`.padStart(2, '0')}
+          <div className="flex justify-between items-center">
+            <span className="text-sm font-mono">
+              {t('quiz.progress', { current: count + 1, total: 20 })}
+            </span>
+            <div className="text-right font-mono">
+              {Math.floor(timeLeft / 60)}:{`${timeLeft % 60}`.padStart(2, '0')}
+            </div>
           </div>
+          <ProgressBar value={(count / 20) * 100} />
           {question && (
             <QuestionCard
               question={question.question}
