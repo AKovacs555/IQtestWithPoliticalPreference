@@ -11,7 +11,7 @@ from pydantic import BaseModel
 
 from .sms_service import send_otp, SMS_PROVIDER
 
-from .questions import DEFAULT_QUESTIONS
+from .questions import DEFAULT_QUESTIONS, QUESTION_MAP, get_random_questions
 from .irt import update_theta, percentile
 from .scoring import estimate_theta, iq_score, ability_summary
 from .payment import select_processor
@@ -34,6 +34,12 @@ app.add_middleware(
 # Database placeholder (Supabase)
 DATABASE_URL = os.environ.get("DATABASE_URL", "")
 SUPABASE_API_KEY = os.environ.get("SUPABASE_API_KEY", "")
+
+# Number of questions per quiz session
+NUM_QUESTIONS = int(os.getenv("NUM_QUESTIONS", "20"))
+
+# Maximum free attempts before payment is required
+MAX_FREE_ATTEMPTS = int(os.getenv("MAX_FREE_ATTEMPTS", "1"))
 
 # TODO: initialize Supabase client here when available
 
@@ -75,6 +81,7 @@ class QuizQuestion(BaseModel):
 
 
 class QuizStartResponse(BaseModel):
+    session_id: str
     questions: List[QuizQuestion]
 
 
@@ -86,6 +93,7 @@ class QuizAnswer(BaseModel):
 class QuizSubmitRequest(BaseModel):
     answers: List[QuizAnswer]
     user_id: Optional[str] = None
+    session_id: Optional[str] = None
 
 
 class AdaptiveStartResponse(BaseModel):
@@ -212,6 +220,9 @@ async def pricing(user_id: str, region: str = "US"):
 @app.post("/play/record")
 async def record_play(action: UserAction):
     user = USERS.setdefault(action.user_id, {"salt": "", "plays": 0, "referrals": 0})
+    if user.get("plays", 0) >= MAX_FREE_ATTEMPTS:
+        # TODO: verify payment before incrementing when paid retries are implemented
+        raise HTTPException(status_code=402, detail="Payment required")
     user["plays"] = user.get("plays", 0) + 1
     return {"plays": user["plays"]}
 
@@ -230,24 +241,28 @@ async def ping():
 
 @app.get("/quiz/start", response_model=QuizStartResponse)
 async def start_quiz():
-    sample = random.sample(list(enumerate(DEFAULT_QUESTIONS)), k=20)
-    questions = [
-        QuizQuestion(id=idx, question=q["question"], options=q["options"])
-        for idx, q in sample
+    questions = get_random_questions(NUM_QUESTIONS)
+    session_id = secrets.token_hex(8)
+    SESSIONS[session_id] = {"question_ids": [q["id"] for q in questions]}
+    models = [
+        QuizQuestion(id=q["id"], question=q["question"], options=q["options"])
+        for q in questions
     ]
-    return {"questions": questions}
+    return {"session_id": session_id, "questions": models}
 
 
 @app.post("/quiz/submit")
 async def submit_quiz(payload: QuizSubmitRequest):
-    if len(payload.answers) != 20:
-        raise HTTPException(status_code=400, detail="Expected 20 answers")
+    if not payload.session_id or payload.session_id not in SESSIONS:
+        raise HTTPException(status_code=400, detail="Invalid session")
+    question_ids = SESSIONS[payload.session_id]["question_ids"]
+    if len(payload.answers) != len(question_ids):
+        raise HTTPException(status_code=400, detail="Expected all answers")
 
     responses = []
     for item in payload.answers:
-        try:
-            q = DEFAULT_QUESTIONS[item.id]
-        except IndexError:
+        q = QUESTION_MAP.get(item.id)
+        if not q or item.id not in question_ids:
             continue
         correct = item.answer == q["answer"]
         responses.append({
@@ -264,11 +279,14 @@ async def submit_quiz(payload: QuizSubmitRequest):
     if payload.user_id and payload.user_id in USERS:
         USERS[payload.user_id]["plays"] = USERS[payload.user_id].get("plays", 0) + 1
 
+    # remove session once quiz is graded
+    SESSIONS.pop(payload.session_id, None)
+
     return {"theta": theta, "iq": iq, "percentile": pct, "ability": ability}
 
 
-def _select_question(theta: float, asked: List[int]):
-    remaining = [q for q in DEFAULT_QUESTIONS if q["id"] not in asked]
+def _select_question(theta: float, asked: List[int], pool: List[int]):
+    remaining = [QUESTION_MAP[qid] for qid in pool if qid not in asked]
     if not remaining:
         return None
     return min(remaining, key=lambda q: abs(q["irt"]["b"] - theta))
@@ -282,8 +300,15 @@ def _to_model(q) -> QuizQuestion:
 async def adaptive_start():
     theta = 0.0
     session_id = secrets.token_hex(8)
-    question = _select_question(theta, [])
-    SESSIONS[session_id] = {"theta": theta, "asked": [question["id"]], "answers": []}
+    questions = get_random_questions(NUM_QUESTIONS)
+    pool_ids = [q["id"] for q in questions]
+    question = _select_question(theta, [], pool_ids)
+    SESSIONS[session_id] = {
+        "theta": theta,
+        "asked": [question["id"]],
+        "answers": [],
+        "pool": pool_ids,
+    }
     return {"session_id": session_id, "question": _to_model(question)}
 
 
@@ -293,7 +318,9 @@ async def adaptive_answer(payload: AdaptiveAnswerRequest):
     if not session:
         raise HTTPException(status_code=400, detail="Invalid session")
     qid = session["asked"][-1]
-    question = next(q for q in DEFAULT_QUESTIONS if q["id"] == qid)
+    question = QUESTION_MAP.get(qid)
+    if not question:
+        raise HTTPException(status_code=400, detail="Question not found")
     correct = payload.answer == question["answer"]
     old_theta = session["theta"]
     session["theta"] = update_theta(
@@ -305,9 +332,11 @@ async def adaptive_answer(payload: AdaptiveAnswerRequest):
         len(session["answers"]) >= 5 and abs(session["theta"] - old_theta) < 0.05
     ):
         theta = estimate_theta([
-            {"a": DEFAULT_QUESTIONS[a["id"]]["irt"]["a"],
-             "b": DEFAULT_QUESTIONS[a["id"]]["irt"]["b"],
-             "correct": a["correct"]}
+            {
+                "a": QUESTION_MAP[a["id"]]["irt"]["a"],
+                "b": QUESTION_MAP[a["id"]]["irt"]["b"],
+                "correct": a["correct"],
+            }
             for a in session["answers"]
         ])
         iq_val = iq_score(theta)
@@ -316,12 +345,14 @@ async def adaptive_answer(payload: AdaptiveAnswerRequest):
         del SESSIONS[payload.session_id]
         return {"finished": True, "score": iq_val, "percentile": pct, "ability": ability}
 
-    next_q = _select_question(session["theta"], session["asked"])
+    next_q = _select_question(session["theta"], session["asked"], session["pool"])
     if next_q is None:
         theta = estimate_theta([
-            {"a": DEFAULT_QUESTIONS[a["id"]]["irt"]["a"],
-             "b": DEFAULT_QUESTIONS[a["id"]]["irt"]["b"],
-             "correct": a["correct"]}
+            {
+                "a": QUESTION_MAP[a["id"]]["irt"]["a"],
+                "b": QUESTION_MAP[a["id"]]["irt"]["b"],
+                "correct": a["correct"],
+            }
             for a in session["answers"]
         ])
         iq_val = iq_score(theta)
