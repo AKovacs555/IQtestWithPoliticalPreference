@@ -15,6 +15,10 @@ def test_ad_flow():
     assert r.status_code == 200
     assert r.json()['points'] == USERS[user_id]['points']
 
+    r = client.get(f'/points/{user_id}')
+    assert r.status_code == 200
+    assert r.json()['points'] == USERS[user_id]['points']
+
 
 def test_pricing_variant():
     user_id = 'variant_user'
