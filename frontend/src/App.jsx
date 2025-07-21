@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
+import { Chart } from 'chart.js/auto';
 
 const PageTransition = ({ children }) => (
   <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
@@ -13,6 +14,9 @@ const Home = () => (
     <div className="p-4 text-center">
       <h1 className="text-2xl font-bold mb-4">IQ Test</h1>
       <Link to="/quiz" className="bg-blue-600 text-white px-4 py-2 rounded">Start Quiz</Link>
+      <div className="mt-4">
+        <Link to="/survey" className="underline text-sm">Political Survey</Link>
+      </div>
     </div>
   </PageTransition>
 );
@@ -84,16 +88,125 @@ const Quiz = () => {
   );
 };
 
+const Survey = () => {
+  const [items, setItems] = useState([]);
+  const [index, setIndex] = useState(0);
+  const [answers, setAnswers] = useState([]);
+
+  useEffect(() => {
+    fetch('/survey/start').then(res => res.json()).then(data => setItems(data.items));
+  }, []);
+
+  const back = () => setIndex(i => Math.max(i - 1, 0));
+  const next = (v) => {
+    const a = [...answers];
+    a[index] = { id: items[index].id, value: v };
+    setAnswers(a);
+    if (index + 1 < items.length) {
+      setIndex(index + 1);
+    } else {
+      fetch('/survey/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ answers: a })
+      })
+        .then(res => res.json())
+        .then(data => {
+          const params = new URLSearchParams({
+            lr: data.left_right,
+            auth: data.libertarian_authoritarian,
+            cat: data.category,
+            desc: data.description
+          });
+          window.location.href = '/survey-result?' + params.toString();
+        });
+    }
+  };
+
+  const item = items[index];
+  return (
+    <PageTransition>
+      <div className="p-4 space-y-4">
+        <div className="h-2 bg-gray-200 rounded">
+          <div className="h-2 bg-green-600 rounded" style={{ width: `${(index / items.length) * 100}%` }} />
+        </div>
+        {item && (
+          <div>
+            <p className="mb-2 font-semibold">{item.statement}</p>
+            <div className="space-y-2">
+              {[1,2,3,4,5].map(v => (
+                <button key={v} onClick={() => next(v)} className="w-full p-2 border rounded">
+                  {v}
+                </button>
+              ))}
+            </div>
+            {index > 0 && <button onClick={back} className="mt-2 underline text-sm">Back</button>}
+          </div>
+        )}
+      </div>
+    </PageTransition>
+  );
+};
+
+const SurveyResult = () => {
+  const params = new URLSearchParams(window.location.search);
+  const lr = parseFloat(params.get('lr'));
+  const auth = parseFloat(params.get('auth'));
+  const cat = params.get('cat');
+  const desc = params.get('desc');
+
+  useEffect(() => {
+    const ctx = document.getElementById('chart');
+    new Chart(ctx, {
+      type: 'radar',
+      data: {
+        labels: ['Left/Right', 'Libertarian/Authoritarian'],
+        datasets: [{
+          data: [lr, auth],
+          backgroundColor: 'rgba(54,162,235,0.2)',
+          borderColor: 'rgb(54,162,235)'
+        }]
+      },
+      options: { scales: { r: { min: -1, max: 1 } } }
+    });
+  }, []);
+
+  return (
+    <PageTransition>
+      <div className="p-4 text-center space-y-2">
+        <h2 className="text-xl font-bold">{cat}</h2>
+        <p>{desc}</p>
+        <canvas id="chart" height="200"></canvas>
+        <Link to="/" className="underline">Home</Link>
+      </div>
+    </PageTransition>
+  );
+};
+
 const Result = () => {
   const params = new URLSearchParams(window.location.search);
   const score = params.get('score');
   const percentile = params.get('percentile');
+  const ref = React.useRef();
+
+  useEffect(() => {
+    const ctx = ref.current.getContext('2d');
+    new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: ['IQ'],
+        datasets: [{ data: [score], backgroundColor: 'rgb(75,192,192)' }]
+      },
+      options: { scales: { y: { beginAtZero: true } } }
+    });
+  }, []);
   return (
     <PageTransition>
       <div className="p-4 text-center space-y-2">
         <h2 className="text-xl font-bold">Your Results</h2>
-        <p>Ability score: {Number(score).toFixed(2)}</p>
+        <p>IQ: {Number(score).toFixed(2)}</p>
         <p>Percentile: {Number(percentile).toFixed(1)}%</p>
+        <canvas ref={ref} height="120"></canvas>
         <p className="text-sm text-gray-600">This test is for research and entertainment; results may not reflect a clinically validated IQ.</p>
         <Link to="/" className="underline">Home</Link>
       </div>
@@ -108,6 +221,8 @@ export default function App() {
       <Routes location={location} key={location.pathname}>
         <Route path="/" element={<Home />} />
         <Route path="/quiz" element={<Quiz />} />
+        <Route path="/survey" element={<Survey />} />
+        <Route path="/survey-result" element={<SurveyResult />} />
         <Route path="/result" element={<Result />} />
       </Routes>
     </AnimatePresence>

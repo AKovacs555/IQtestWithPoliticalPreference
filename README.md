@@ -16,6 +16,8 @@ This project provides an IQ quiz and political preference survey using a mobile�
   - `SMS_PROVIDER` – `twilio` (default) or `sns` for Amazon SNS.
   - When using Twilio: `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_VERIFY_SERVICE_SID`.
   - When using SNS: `AWS_REGION` and AWS credentials configured in the environment.
+  - `PAYPAY_API_KEY` or `LINEPAY_API_KEY` – enable local payment gateways in Japan.
+  - The backend logs an estimated cost for each OTP sent based on the selected SMS provider.
   - `STRIPE_API_KEY` – Stripe secret key for payments.
   - `PHONE_SALT` – salt for hashing phone or email identifiers.
   - OTP endpoints: `/auth/request-otp` and `/auth/verify-otp` support SMS via Twilio or SNS and fallback email codes through Supabase. Identifiers are hashed with per-record salts.
@@ -23,11 +25,18 @@ This project provides an IQ quiz and political preference survey using a mobile�
 - Adaptive endpoints: `/adaptive/start` begins an adaptive quiz and `/adaptive/answer` returns the next question until the ability estimate stabilizes.
 - Pricing endpoints: `/pricing/{id}` shows the dynamic price for a user, `/play/record` registers a completed play and `/referral` adds a referral credit.
 - The question bank with psychometric metadata lives in `backend/data/question_bank.json`. Run `tools/generate_questions.py` to create new items with the `o3pro` model. The script filters out content resembling proprietary IQ tests.
+  To regenerate questions:
+  ```bash
+  OPENAI_API_KEY=your-key python tools/generate_questions.py -n 60
+  ```
+  The JSON output is saved to `backend/data/question_bank.json` with sequential `id` values.
 
 ## Frontend (React)
 
 - Located in `frontend/` and built with Vite, React Router, Tailwind CSS and framer‑motion.
 - Install dependencies with `npm install` and start the dev server with `npm run dev`.
+
+To deploy on serverless hosting, point the platform to `backend/main.py` and serve the built frontend from `frontend/dist`. Environment variables configure SMS and payment providers so you can select the cheapest option for each region.
 
 This repository now serves as a starting point for the revamped freemium quiz platform. Terms of Service and a Privacy Policy are provided under `templates/` and personal identifiers are hashed with per-record salts. Aggregated statistics apply differential privacy noise for research use only.
 
@@ -37,4 +46,4 @@ This repository now serves as a starting point for the revamped freemium quiz pl
 - **Email OTP:** provided free via Supabase auth as a fallback for users without SMS.
 - **Serverless hosting:** deploy FastAPI on platforms such as Vercel or Cloudflare Workers. Supabase provides the managed Postgres database and authentication layer.
 - **Payments:** Stripe is used by default but the `/pricing` API enables switching to local processors like PayPay or Line Pay with minimal code changes.
-- **Analytics:** use self-hosted or free solutions (e.g. Plausible) to avoid recurring fees.
+- **Analytics:** the `/analytics` endpoint logs anonymous events to a self-hosted solution, avoiding third-party trackers.
