@@ -52,6 +52,7 @@ Supabase、Stripe、AWS SNS、Google AdMob のアカウントを作成し、そ�
 2. 取得した **アプリ ID** と **広告ユニット ID (Android/iOS)** を `.env` の
    `ADMOB_APP_ID`, `AD_UNIT_ID_ANDROID`, `AD_UNIT_ID_IOS` に設定します。
 3. 同じ値を Vercel または Render の環境変数にも追加してください。
+4. アドネットワークに広告が表示されるまで数時間かかる場合があります。
 
 AWS SNS を利用する場合は IAM コンソールでアクセスキーを発行し、
 `AWS_ACCESS_KEY_ID` と `AWS_SECRET_ACCESS_KEY` を設定します。
@@ -80,6 +81,8 @@ AWS SNS を利用する場合は IAM コンソールでアクセスキーを発�
   After reviewing `new_items.json`, move it into `backend/data/iq_pool/`.
   追加した JSON ファイルを `questions/` ディレクトリに置き、GitHub にコミットすると
   次回起動時に自動で読み込まれます。再デプロイは不要です。
+  新しいファイルを追加する際は `questions/schema.json` に従って必ずバリデーション
+  してください。
 
 ## Frontend (React)
 

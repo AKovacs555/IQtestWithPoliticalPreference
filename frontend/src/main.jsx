@@ -9,8 +9,21 @@ import CssBaseline from '@mui/material/CssBaseline';
 import './styles.css';
 
 const theme = createTheme({
+  typography: {
+    fontFamily: 'Helvetica Neue, Roboto, sans-serif',
+  },
   palette: {
     mode: 'light',
+    primary: { main: '#1db954' },
+    secondary: { main: '#0a84ff' },
+    background: { default: '#f5f5f7' },
+  },
+  components: {
+    MuiButton: {
+      styleOverrides: {
+        root: { minWidth: 44, minHeight: 44 },
+      },
+    },
   },
 });
 

@@ -225,6 +225,7 @@ const Result = () => {
   const share = params.get('share');
   const ref = React.useRef();
   const [avg, setAvg] = React.useState(null);
+  const { t } = useTranslation();
 
   useEffect(() => {
     confetti({ particleCount: 150, spread: 70 });
@@ -271,6 +272,9 @@ const Result = () => {
             <div className="space-x-2">
               <a href={`https://twitter.com/intent/tweet?url=${url}&text=${text}`} target="_blank" rel="noreferrer" className="btn btn-sm">Share on X</a>
               <a href={`https://social-plugins.line.me/lineit/share?url=${url}`} target="_blank" rel="noreferrer" className="btn btn-sm">LINE</a>
+              {navigator.share && (
+                <button onClick={() => navigator.share({ url, text })} className="btn btn-sm">{t('share.button')}</button>
+              )}
             </div>
           )}
           <div className="mt-4">

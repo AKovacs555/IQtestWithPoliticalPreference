@@ -25,8 +25,10 @@ from .dp import add_laplace
 from .questions import DEFAULT_QUESTIONS, QUESTION_MAP, get_random_questions
 from .questions import available_sets
 from .irt import update_theta, percentile
-from .scoring import estimate_theta, iq_score, ability_summary
+from .scoring import estimate_theta, iq_score, ability_summary, standard_error
 from .payment import select_processor
+from .analytics import log_event
+from tools.dif_analysis import dif_report
 import json
 
 app = FastAPI()
@@ -274,8 +276,7 @@ def _retry_price(user) -> int:
 
 def _assign_variant(user_id: str, user: dict) -> int:
     if "variant" not in user:
-        h = int(hashlib.sha256(user_id.encode()).hexdigest(), 16)
-        user["variant"] = h % len(PRICE_VARIANTS)
+        user["variant"] = random.randint(0, len(PRICE_VARIANTS) - 1)
     return user["variant"]
 
 
@@ -295,6 +296,7 @@ async def pricing(user_id: str, region: str = "US"):
     )
     processor = select_processor(region)
     variant_idx = _assign_variant(user_id, user)
+    log_event({"event": "pricing_shown", "user_id": user_id, "variant": variant_idx})
     price = PRICE_VARIANTS[variant_idx]
     retry_price = _retry_price(user)
     return {
@@ -321,12 +323,15 @@ async def record_play(action: UserAction):
             "demographics": {},
         },
     )
+    paid = False
     if user.get("plays", 0) >= MAX_FREE_ATTEMPTS:
         if user.get("points", 0) >= RETRY_POINT_COST:
             user["points"] -= RETRY_POINT_COST
+            paid = True
         else:
             raise HTTPException(status_code=402, detail="Payment required")
     user["plays"] = user.get("plays", 0) + 1
+    log_event({"event": "play_record", "user_id": action.user_id, "paid": paid})
     return {"plays": user["plays"], "points": user.get("points", 0)}
 
 
@@ -351,8 +356,7 @@ async def referral(action: UserAction):
 @app.post("/ads/start")
 async def ads_start(action: UserAction):
     user = USERS.setdefault(action.user_id, {"salt": "", "plays": 0, "referrals": 0, "points": 0, "scores": [], "party_log": [], "demographics": {}})
-    # log event
-    EVENTS.append({"event": "ad_start", "user_id": action.user_id, "timestamp": time.time()})
+    log_event({"event": "ad_start", "user_id": action.user_id})
     return {"status": "started"}
 
 
@@ -360,7 +364,7 @@ async def ads_start(action: UserAction):
 async def ads_complete(action: UserAction):
     user = USERS.setdefault(action.user_id, {"salt": "", "plays": 0, "referrals": 0, "points": 0, "scores": [], "party_log": [], "demographics": {}})
     user["points"] = user.get("points", 0) + AD_REWARD_POINTS
-    EVENTS.append({"event": "ad_complete", "user_id": action.user_id, "timestamp": time.time()})
+    log_event({"event": "ad_complete", "user_id": action.user_id})
     return {"points": user["points"]}
 
 
@@ -428,6 +432,7 @@ async def submit_quiz(payload: QuizSubmitRequest):
     iq = iq_score(theta)
     pct = percentile(theta, NORMATIVE_DIST)
     ability = ability_summary(theta)
+    se = standard_error(theta, responses)
 
     share_url = generate_share_image(payload.user_id or "anon", iq, pct)
 
@@ -444,6 +449,7 @@ async def submit_quiz(payload: QuizSubmitRequest):
         "iq": iq,
         "percentile": pct,
         "ability": ability,
+        "se": se,
         "share_url": share_url,
     }
 
@@ -508,6 +514,14 @@ async def adaptive_answer(payload: AdaptiveAnswerRequest):
         iq_val = iq_score(theta)
         pct = percentile(theta, NORMATIVE_DIST)
         ability = ability_summary(theta)
+        se = standard_error(theta, [
+            {
+                "a": QUESTION_MAP[a["id"]]["irt"]["a"],
+                "b": QUESTION_MAP[a["id"]]["irt"]["b"],
+                "correct": a["correct"],
+            }
+            for a in session["answers"]
+        ])
         share_url = generate_share_image(payload.session_id, iq_val, pct)
         del SESSIONS[payload.session_id]
         return {
@@ -515,6 +529,7 @@ async def adaptive_answer(payload: AdaptiveAnswerRequest):
             "score": iq_val,
             "percentile": pct,
             "ability": ability,
+            "se": se,
             "share_url": share_url,
         }
 
@@ -533,6 +548,14 @@ async def adaptive_answer(payload: AdaptiveAnswerRequest):
         iq_val = iq_score(theta)
         pct = percentile(theta, NORMATIVE_DIST)
         ability = ability_summary(theta)
+        se = standard_error(theta, [
+            {
+                "a": QUESTION_MAP[a["id"]]["irt"]["a"],
+                "b": QUESTION_MAP[a["id"]]["irt"]["b"],
+                "correct": a["correct"],
+            }
+            for a in session["answers"]
+        ])
         share_url = generate_share_image(payload.session_id, iq_val, pct)
         del SESSIONS[payload.session_id]
         return {
@@ -540,6 +563,7 @@ async def adaptive_answer(payload: AdaptiveAnswerRequest):
             "score": iq_val,
             "percentile": pct,
             "ability": ability,
+            "se": se,
             "share_url": share_url,
         }
     session["asked"].append(next_q["id"])
@@ -633,7 +657,9 @@ async def points_balance(user_id: str):
 @app.post("/analytics")
 async def analytics(event: dict):
     """Log client-side events to self-hosted analytics."""
-    app.logger.info("Event: %s", event)
+    import logging
+    logging.getLogger(__name__).info("Event: %s", event)
+    log_event(event)
     EVENTS.append(event)
     return {}
 
@@ -696,3 +722,15 @@ async def admin_update_norms(api_key: str):
             scores.append(s.get("iq"))
     update_normative_distribution(scores)
     return {"added": len(scores)}
+
+
+@app.get("/admin/dif-report")
+async def admin_dif_report(api_key: str):
+    """Return DIF report for question bias analysis."""
+    if api_key != os.getenv("ADMIN_API_KEY", ""):
+        raise HTTPException(status_code=403, detail="Invalid API key")
+    path = os.getenv("DIF_DATA_FILE", "data/responses.csv")
+    if not os.path.exists(path):
+        raise HTTPException(status_code=404, detail="No data")
+    report = dif_report(path)
+    return {"dif": report}

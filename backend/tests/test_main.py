@@ -9,3 +9,14 @@ def test_ping():
     r = client.get('/ping')
     assert r.status_code == 200
     assert r.json() == {"message": "pong"}
+
+
+def test_analytics_endpoint():
+    r = client.post('/analytics', json={'event': 'test'})
+    assert r.status_code == 200
+    assert r.json() == {}
+
+
+def test_dif_report_auth():
+    r = client.get('/admin/dif-report?api_key=bad')
+    assert r.status_code == 403
