@@ -27,14 +27,31 @@ from typing import List, Dict, Any
 POOL_PATH = Path(__file__).parent / "data" / "iq_pool"
 
 
-def load_questions() -> List[Dict[str, Any]]:
-    """Load all question files from :data:`POOL_PATH`."""
+def available_sets() -> List[str]:
+    """Return a list of available question set IDs (filenames without extension)."""
+    if not POOL_PATH.exists():
+        return []
+    return [p.stem for p in POOL_PATH.glob("*.json")]
+
+
+def load_questions(set_id: str | None = None) -> List[Dict[str, Any]]:
+    """Load question files from :data:`POOL_PATH`.
+
+    Parameters
+    ----------
+    set_id:
+        Optional set identifier.  If provided, only the file matching
+        ``{set_id}.json`` will be loaded.  Otherwise all files are merged.
+    """
     questions: List[Dict[str, Any]] = []
     if not POOL_PATH.exists():
         return questions
     seen_ids = set()
     next_id = 0
-    for path in sorted(POOL_PATH.glob("*.json")):
+    paths = (
+        [POOL_PATH / f"{set_id}.json"] if set_id else sorted(POOL_PATH.glob("*.json"))
+    )
+    for path in paths:
         with path.open() as f:
             data = json.load(f)
         for item in data:
@@ -56,10 +73,15 @@ DEFAULT_QUESTIONS: List[Dict[str, Any]] = load_questions()
 QUESTION_MAP: Dict[int, Dict[str, Any]] = {q["id"]: q for q in DEFAULT_QUESTIONS}
 
 
-def get_random_questions(n: int) -> List[Dict[str, Any]]:
-    """Return ``n`` random non-repeating questions."""
+def get_random_questions(n: int, set_id: str | None = None) -> List[Dict[str, Any]]:
+    """Return ``n`` random non-repeating questions.
 
-    if n > len(DEFAULT_QUESTIONS):
+    If ``set_id`` is provided, the questions are drawn only from that set.
+    Otherwise the global pool is used.
+    """
+
+    pool = load_questions(set_id) if set_id else DEFAULT_QUESTIONS
+    if n > len(pool):
         raise ValueError("Not enough questions in pool")
-    return random.sample(DEFAULT_QUESTIONS, n)
+    return random.sample(pool, n)
 
