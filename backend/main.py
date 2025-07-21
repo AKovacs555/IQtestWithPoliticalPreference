@@ -11,6 +11,9 @@ from pydantic import BaseModel
 
 from .sms_service import send_otp, SMS_PROVIDER
 from .todo_features import leaderboard_by_party
+from .demographics import collect_demographics
+from .party import update_party_affiliation
+from .dp import add_laplace
 
 from .questions import DEFAULT_QUESTIONS, QUESTION_MAP, get_random_questions
 from .irt import update_theta, percentile
@@ -474,10 +477,7 @@ async def survey_submit(payload: SurveySubmitRequest):
 @app.post("/user/demographics")
 async def user_demographics(info: DemographicInfo):
     """Collect demographic information and store securely."""
-    try:
-        collect_demographics(info.age_band, info.gender, info.income_band, info.user_id)
-    except NotImplementedError:
-        raise HTTPException(status_code=501, detail="Demographic storage not implemented")
+    collect_demographics(info.age_band, info.gender, info.income_band, info.user_id)
     return {"status": "ok"}
 
 
@@ -486,8 +486,8 @@ async def user_party(selection: PartySelection):
     """Record user's supported parties. Allows multiple selections."""
     try:
         update_party_affiliation(selection.user_id, selection.party_ids)
-    except NotImplementedError:
-        raise HTTPException(status_code=501, detail="Party affiliation not implemented")
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     return {"status": "ok"}
 
 
@@ -515,17 +515,42 @@ async def analytics(event: dict):
 @app.get("/leaderboard")
 async def leaderboard():
     """Return party IQ leaderboard with differential privacy noise."""
-    try:
-        data = leaderboard_by_party()
-    except NotImplementedError:
-        raise HTTPException(status_code=501, detail="Leaderboard not implemented")
+    data = leaderboard_by_party()
     return {"leaderboard": data}
 
 
 @app.get("/data/iq")
-async def dp_data_api(api_key: str):
+async def dp_data_api(
+    api_key: str,
+    party_id: int | None = None,
+    age_band: str | None = None,
+    gender: str | None = None,
+    income_band: str | None = None,
+):
     """Return aggregated IQ stats for paying clients with differential privacy."""
+
     if api_key != os.getenv("DATA_API_KEY", ""):
         raise HTTPException(status_code=403, detail="Invalid API key")
-    # TODO: accept query parameters for party or demographic filtering
-    raise HTTPException(status_code=501, detail="Differential privacy API not implemented")
+
+    epsilon = float(os.getenv("DP_EPSILON", "1.0"))
+    scores: List[float] = []
+    for user in USERS.values():
+        demo = user.get("demographics", {})
+        if age_band and demo.get("age_band") != age_band:
+            continue
+        if gender and demo.get("gender") != gender:
+            continue
+        if income_band and demo.get("income_band") != income_band:
+            continue
+        if party_id is not None and party_id not in user.get("party_ids", []):
+            continue
+        for s in user.get("scores", []):
+            scores.append(s.get("iq"))
+
+    if len(scores) < 100:
+        raise HTTPException(status_code=400, detail="Not enough data")
+
+    mean = sum(scores) / len(scores)
+    mean = add_laplace(mean, epsilon, sensitivity=1 / len(scores))
+
+    return {"count": len(scores), "avg_iq": mean}

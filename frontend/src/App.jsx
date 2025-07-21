@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Chart } from 'chart.js/auto';
 import QuestionCanvas from './QuestionCanvas';
 import Settings from './Settings.jsx';
+import DemographicsForm from './DemographicsForm.jsx';
 
 const PageTransition = ({ children }) => (
   <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
@@ -15,7 +16,7 @@ const Home = () => (
   <PageTransition>
     <div className="p-4 text-center space-y-2">
       <h1 className="text-2xl font-bold mb-4">IQ Test</h1>
-      <Link to="/quiz" className="bg-blue-600 text-white px-4 py-2 rounded">Start Quiz</Link>
+      <Link to="/start" className="btn btn-primary">Start Quiz</Link>
       <div>
         <Link to="/survey" className="underline text-sm">Political Survey</Link>
       </div>
@@ -212,6 +213,7 @@ const Result = () => {
   const score = params.get('score');
   const percentile = params.get('percentile');
   const ref = React.useRef();
+  const [avg, setAvg] = React.useState(null);
 
   useEffect(() => {
     const ctx = ref.current.getContext('2d');
@@ -224,12 +226,22 @@ const Result = () => {
       options: { scales: { y: { beginAtZero: true } } }
     });
   }, []);
+
+  useEffect(() => {
+    fetch('/leaderboard')
+      .then(res => res.json())
+      .then(data => {
+        const all = data.leaderboard.map(l => l.avg_iq);
+        if (all.length) setAvg(all.reduce((a,b) => a+b,0)/all.length);
+      });
+  }, []);
   return (
     <PageTransition>
       <div className="p-4 text-center space-y-2">
         <h2 className="text-xl font-bold">Your Results</h2>
         <p>IQ: {Number(score).toFixed(2)}</p>
         <p>Percentile: {Number(percentile).toFixed(1)}%</p>
+        {avg && <p className="text-sm">Overall average IQ: {avg.toFixed(1)}</p>}
         <canvas ref={ref} height="120"></canvas>
         <p className="text-sm text-gray-600">This test is for research and entertainment; results may not reflect a clinically validated IQ.</p>
         <Link to="/" className="underline">Home</Link>
@@ -244,6 +256,7 @@ export default function App() {
     <AnimatePresence mode="wait">
       <Routes location={location} key={location.pathname}>
         <Route path="/" element={<Home />} />
+        <Route path="/start" element={<DemographicsForm />} />
         <Route path="/quiz" element={<Quiz />} />
         <Route path="/survey" element={<Survey />} />
         <Route path="/survey-result" element={<SurveyResult />} />
