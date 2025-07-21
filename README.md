@@ -129,6 +129,38 @@ This repository now serves as a starting point for the revamped freemium quiz pl
 - Business customers can request aggregated data via the `/leaderboard`
   endpoint once differential privacy safeguards are implemented.
 
+## Points System
+
+Users earn points by watching rewarded ads via `/ads/start` and `/ads/complete`.
+The balance is returned from `/points/{user_id}` and `RETRY_POINT_COST` points
+can substitute payment when calling `/play/record`. 1 point is granted per ad
+view by default (`AD_REWARD_POINTS`).
+
+## Question schema
+
+Question sets in `questions/` follow `questions/schema.json`:
+
+```json
+{
+  "id": "set01",
+  "language": "en",
+  "title": "Sample",
+  "questions": [
+    {"id": 0, "question": "?", "options": ["A", "B"], "answer": 1,
+     "irt": {"a": 1.0, "b": 0.0}}
+  ]
+}
+```
+
+Files are validated on startup so new sets can be committed without redeploying.
+
+## Internationalisation
+
+All strings reside under `frontend/translations/` and are loaded by
+`src/i18n.js`. English and Japanese locales are provided. Add new languages by
+creating a JSON file in that folder and updating `i18n.js`. The UI supports RTL
+languages using the `dir` attribute on the root element.
+
 ## Services and Costs
 
 - **SMS verification:** configurable between Twilio and Amazon SNS. Choose the provider with the best local rates.
