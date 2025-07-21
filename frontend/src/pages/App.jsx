@@ -1,8 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
+import Layout from '../components/Layout';
+import ProgressBar from '../components/ProgressBar';
+import Home from './Home';
+import Pricing from './Pricing';
 import { Chart } from 'chart.js/auto';
-import QuestionCanvas from './QuestionCanvas';
+import QuestionCard from '../components/QuestionCard';
 import Settings from './Settings.jsx';
 import DemographicsForm from './DemographicsForm.jsx';
 
@@ -12,20 +16,6 @@ const PageTransition = ({ children }) => (
   </motion.div>
 );
 
-const Home = () => (
-  <PageTransition>
-    <div className="p-4 text-center space-y-2">
-      <h1 className="text-2xl font-bold mb-4">IQ Test</h1>
-      <Link to="/start" className="btn btn-primary">Start Quiz</Link>
-      <div>
-        <Link to="/survey" className="underline text-sm">Political Survey</Link>
-      </div>
-      <div className="text-sm mt-2">
-        <Link to="/settings/testuser" className="underline">View Settings</Link>
-      </div>
-    </div>
-  </PageTransition>
-);
 
 const Quiz = () => {
   const [session, setSession] = React.useState(null);
@@ -93,26 +83,25 @@ const Quiz = () => {
 
   return (
     <PageTransition>
-      <div className="p-4 space-y-4">
-        <div className="h-2 bg-gray-200 rounded">
-          <div
-            className="h-2 bg-blue-600 rounded"
-            style={{ width: `${(count / 20) * 100}%` }}
-          />
+      <Layout>
+        <div className="space-y-4 max-w-lg mx-auto">
+          <ProgressBar value={(count / 20) * 100} />
+          <div className="text-right font-mono">
+            {Math.floor(timeLeft / 60)}:{`${timeLeft % 60}`.padStart(2, '0')}
+          </div>
+          {question && (
+            <QuestionCard
+              question={question.question}
+              options={question.options}
+              onSelect={select}
+              watermark={watermark}
+            />
+          )}
+          {suspicious && (
+            <p className="text-error text-sm">Session flagged for leaving the page.</p>
+          )}
         </div>
-        <div className="text-right">{Math.floor(timeLeft / 60)}:{`${timeLeft % 60}`.padStart(2, '0')}</div>
-        {question && (
-          <QuestionCanvas
-            question={question.question}
-            options={question.options}
-            onSelect={select}
-            watermark={watermark}
-          />
-        )}
-        {suspicious && (
-          <p className="text-red-600 text-sm">Session flagged for leaving the page.</p>
-        )}
-      </div>
+      </Layout>
     </PageTransition>
   );
 };
@@ -155,24 +144,24 @@ const Survey = () => {
   const item = items[index];
   return (
     <PageTransition>
-      <div className="p-4 space-y-4">
-        <div className="h-2 bg-gray-200 rounded">
-          <div className="h-2 bg-green-600 rounded" style={{ width: `${(index / items.length) * 100}%` }} />
-        </div>
-        {item && (
-          <div>
-            <p className="mb-2 font-semibold">{item.statement}</p>
-            <div className="space-y-2">
-              {[1,2,3,4,5].map(v => (
-                <button key={v} onClick={() => next(v)} className="w-full p-2 border rounded">
-                  {v}
-                </button>
-              ))}
+      <Layout>
+        <div className="space-y-4 max-w-lg mx-auto">
+          <ProgressBar value={(index / items.length) * 100} />
+          {item && (
+            <div className="card bg-base-100 shadow-md p-4 space-y-2">
+              <p className="mb-2 font-semibold">{item.statement}</p>
+              <div className="grid grid-cols-5 gap-2">
+                {[1,2,3,4,5].map(v => (
+                  <button key={v} onClick={() => next(v)} className="btn btn-primary">
+                    {v}
+                  </button>
+                ))}
+              </div>
+              {index > 0 && <button onClick={back} className="mt-2 underline text-sm">Back</button>}
             </div>
-            {index > 0 && <button onClick={back} className="mt-2 underline text-sm">Back</button>}
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      </Layout>
     </PageTransition>
   );
 };
@@ -202,12 +191,14 @@ const SurveyResult = () => {
 
   return (
     <PageTransition>
-      <div className="p-4 text-center space-y-2">
-        <h2 className="text-xl font-bold">{cat}</h2>
-        <p>{desc}</p>
-        <canvas id="chart" height="200"></canvas>
-        <Link to="/" className="underline">Home</Link>
-      </div>
+      <Layout>
+        <div className="text-center space-y-2">
+          <h2 className="text-xl font-bold">{cat}</h2>
+          <p>{desc}</p>
+          <canvas id="chart" height="200"></canvas>
+          <Link to="/" className="underline">Home</Link>
+        </div>
+      </Layout>
     </PageTransition>
   );
 };
@@ -257,26 +248,28 @@ const Result = () => {
 
   return (
     <PageTransition>
-      <div className="p-4 text-center space-y-2">
-        <h2 className="text-xl font-bold">Your Results</h2>
-        <p>IQ: {Number(score).toFixed(2)}</p>
-        <p>Percentile: {Number(percentile).toFixed(1)}%</p>
-        <span className="text-xs text-gray-500" title="Scores are for entertainment and may not reflect a clinical IQ">what's this?</span>
-        {avg && <p className="text-sm">Overall average IQ: {avg.toFixed(1)}</p>}
-        <canvas ref={ref} height="120"></canvas>
-        {share && <img src={share} alt="Share card" className="mx-auto rounded" />}
-        {share && (
-          <div className="space-x-2">
-            <a href={`https://twitter.com/intent/tweet?url=${url}&text=${text}`} target="_blank" rel="noreferrer" className="btn btn-sm">Share on X</a>
-            <a href={`https://social-plugins.line.me/lineit/share?url=${url}`} target="_blank" rel="noreferrer" className="btn btn-sm">LINE</a>
+      <Layout>
+        <div className="text-center space-y-2">
+          <h2 className="text-xl font-bold">Your Results</h2>
+          <p>IQ: {Number(score).toFixed(2)}</p>
+          <p>Percentile: {Number(percentile).toFixed(1)}%</p>
+          <span className="text-xs text-gray-500" title="Scores are for entertainment and may not reflect a clinical IQ">what's this?</span>
+          {avg && <p className="text-sm">Overall average IQ: {avg.toFixed(1)}</p>}
+          <canvas ref={ref} height="120"></canvas>
+          {share && <img src={share} alt="Share card" className="mx-auto rounded" />}
+          {share && (
+            <div className="space-x-2">
+              <a href={`https://twitter.com/intent/tweet?url=${url}&text=${text}`} target="_blank" rel="noreferrer" className="btn btn-sm">Share on X</a>
+              <a href={`https://social-plugins.line.me/lineit/share?url=${url}`} target="_blank" rel="noreferrer" className="btn btn-sm">LINE</a>
+            </div>
+          )}
+          <div className="mt-4">
+            <a href="/premium.html" className="btn btn-primary btn-sm">Upgrade to Pro Pass</a>
           </div>
-        )}
-        <div className="mt-4">
-          <a href="/premium.html" className="btn btn-primary btn-sm">Upgrade to Pro Pass</a>
+          <p className="text-sm text-gray-600">This test is for research and entertainment.</p>
+          <Link to="/" className="underline">Home</Link>
         </div>
-        <p className="text-sm text-gray-600">This test is for research and entertainment.</p>
-        <Link to="/" className="underline">Home</Link>
-      </div>
+      </Layout>
     </PageTransition>
   );
 };
@@ -290,6 +283,7 @@ export default function App() {
         <Route path="/start" element={<DemographicsForm />} />
         <Route path="/quiz" element={<Quiz />} />
         <Route path="/survey" element={<Survey />} />
+        <Route path="/pricing" element={<Pricing />} />
         <Route path="/survey-result" element={<SurveyResult />} />
         <Route path="/result" element={<Result />} />
         <Route path="/settings/:userId" element={<Settings />} />
