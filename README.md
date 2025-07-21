@@ -31,6 +31,7 @@ This project provides an IQ quiz and political preference survey using a respons
   - `SUPABASE_URL` – base URL for Supabase (required for share images).
   - `SUPABASE_SHARE_BUCKET` – bucket name for storing generated share images.
   - `ADMIN_API_KEY` – token for admin endpoints such as normative updates.
+  - `VITE_API_BASE` – base URL of the backend API for the React app.
 - OTP endpoints: `/auth/request-otp` and `/auth/verify-otp` support SMS via Twilio or SNS and fallback email codes through Supabase. Identifiers are hashed with per-record salts.
 - Quiz endpoints: `/quiz/start` returns a random set of questions from the `questions/` directory; `/quiz/submit` accepts answers and records a play. Optional query `set_id` selects a specific set file.
 - Adaptive endpoints: `/adaptive/start` begins an adaptive quiz and `/adaptive/answer` returns the next question until the ability estimate stabilizes.
@@ -62,7 +63,8 @@ This project provides an IQ quiz and political preference survey using a respons
   `MobileOnlyWrapper` now simply renders its children.
 - Basic anti-cheat measures disable text selection, draw questions on a canvas
   and apply a watermark. Comments note that screenshots cannot be fully blocked.
- - React components are organised under `src/components` and `src/pages` for clarity.
+- React components are organised under `src/components` and `src/pages` for clarity.
+- A new `Leaderboard` page displays average IQ by party using the `/leaderboard` API.
 
 To deploy on serverless hosting, point Vercel to `frontend` for the React build
 and Render (or another provider) to `backend/main.py`. Provide the environment

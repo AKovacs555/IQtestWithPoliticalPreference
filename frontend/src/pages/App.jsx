@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
+import useShareMeta from '../hooks/useShareMeta';
 import { AnimatePresence, motion } from 'framer-motion';
 import Layout from '../components/Layout';
 import ProgressBar from '../components/ProgressBar';
 import Home from './Home';
 import Pricing from './Pricing';
+import Leaderboard from './Leaderboard';
 import { Chart } from 'chart.js/auto';
 import QuestionCard from '../components/QuestionCard';
 import Settings from './Settings.jsx';
@@ -211,6 +213,8 @@ const Result = () => {
   const ref = React.useRef();
   const [avg, setAvg] = React.useState(null);
 
+  useShareMeta(share);
+
   useEffect(() => {
     const ctx = ref.current.getContext('2d');
     new Chart(ctx, {
@@ -231,17 +235,6 @@ const Result = () => {
         if (all.length) setAvg(all.reduce((a,b) => a+b,0)/all.length);
       });
   }, []);
-  React.useEffect(() => {
-    if (!share) return;
-    const og = document.querySelector('meta[property="og:image"]') || document.createElement('meta');
-    og.setAttribute('property', 'og:image');
-    og.content = share;
-    document.head.appendChild(og);
-    const tw = document.querySelector('meta[name="twitter:image"]') || document.createElement('meta');
-    tw.setAttribute('name', 'twitter:image');
-    tw.content = share;
-    document.head.appendChild(tw);
-  }, [share]);
 
   const url = encodeURIComponent(window.location.href);
   const text = encodeURIComponent(`I scored ${Number(score).toFixed(1)} IQ!`);
@@ -286,6 +279,7 @@ export default function App() {
         <Route path="/pricing" element={<Pricing />} />
         <Route path="/survey-result" element={<SurveyResult />} />
         <Route path="/result" element={<Result />} />
+        <Route path="/leaderboard" element={<Leaderboard />} />
         <Route path="/settings/:userId" element={<Settings />} />
       </Routes>
     </AnimatePresence>
