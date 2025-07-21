@@ -1,6 +1,9 @@
 """Placeholders for upcoming features per design overview."""
 
 from typing import List, Optional
+from datetime import datetime
+
+from . import main
 
 from .dp import add_laplace
 
@@ -19,28 +22,69 @@ def dp_average(values: List[float], epsilon: float, min_count: int = 100) -> Opt
 
 
 def collect_demographics(age_band: str, gender: str, income_band: str, user_id: str) -> None:
-    """Store demographic data securely associated with the user.
+    """Store demographic data in-memory.
 
-    TODO: implement persistence in database with encryption/hashing as needed.
+    In production this should persist to the database with appropriate
+    encryption and hashing. Here we simply store the values on the user
+    record for demonstration purposes.
     """
-    raise NotImplementedError
+    user = main.USERS.setdefault(
+        user_id,
+        {
+            "salt": "",
+            "plays": 0,
+            "referrals": 0,
+            "scores": [],
+            "party_log": [],
+            "demographics": {},
+        },
+    )
+    user["demographics"] = {
+        "age_band": age_band,
+        "gender": gender,
+        "income_band": income_band,
+        "updated": datetime.utcnow().isoformat(),
+    }
 
 
 def update_party_affiliation(user_id: str, party_ids: List[int]) -> None:
-    """Allow user to update selected political party once per month.
-
-    Should record history of previous selections.
-    """
-    raise NotImplementedError
+    """Record supported parties and log change history."""
+    user = main.USERS.setdefault(
+        user_id,
+        {
+            "salt": "",
+            "plays": 0,
+            "referrals": 0,
+            "scores": [],
+            "party_log": [],
+            "demographics": {},
+        },
+    )
+    user.setdefault("party_log", []).append(
+        {"timestamp": datetime.utcnow().isoformat(), "party_ids": party_ids}
+    )
+    user["party_ids"] = party_ids
 
 
 def leaderboard_by_party(epsilon: float = 1.0) -> List[dict]:
-    """Return average IQ by party applying differential privacy.
+    """Return average IQ by party with differential privacy."""
+    buckets = {}
+    for user in main.USERS.values():
+        parties = user.get("party_ids")
+        scores = [s.get("iq") for s in user.get("scores", [])]
+        if not parties or not scores:
+            continue
+        avg_score = sum(scores) / len(scores)
+        for pid in parties:
+            buckets.setdefault(pid, []).append(avg_score)
 
-    Only include buckets with at least 100 users. Laplace noise parameter
-    `epsilon` should be configurable.
-    """
-    raise NotImplementedError
+    results = []
+    for pid, vals in buckets.items():
+        avg = dp_average(vals, epsilon)
+        if avg is None:
+            continue
+        results.append({"party_id": pid, "avg_iq": avg, "n": len(vals)})
+    return results
 
 
 def generate_share_image(user_id: str, iq: float, percentile: float) -> str:

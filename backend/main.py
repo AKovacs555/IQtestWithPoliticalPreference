@@ -164,6 +164,13 @@ class PricingResponse(BaseModel):
     processor: str
 
 
+class UserStats(BaseModel):
+    plays: int
+    referrals: int
+    scores: list
+    party_log: list
+
+
 class UserAction(BaseModel):
     user_id: str
 
@@ -215,7 +222,14 @@ async def verify_otp(data: OTPVerify):
     salt = secrets.token_hex(8)
     hashed = hash_phone(phone_or_email, salt)
     if hashed not in USERS:
-        USERS[hashed] = {"salt": salt, "plays": 0, "referrals": 0}
+        USERS[hashed] = {
+            "salt": salt,
+            "plays": 0,
+            "referrals": 0,
+            "scores": [],
+            "party_log": [],
+            "demographics": {},
+        }
     # TODO: save hashed phone and salt to database with user record
     return {"status": "verified", "id": hashed}
 
@@ -239,7 +253,17 @@ async def pricing(user_id: str, region: str = "US"):
 
 @app.post("/play/record")
 async def record_play(action: UserAction):
-    user = USERS.setdefault(action.user_id, {"salt": "", "plays": 0, "referrals": 0})
+    user = USERS.setdefault(
+        action.user_id,
+        {
+            "salt": "",
+            "plays": 0,
+            "referrals": 0,
+            "scores": [],
+            "party_log": [],
+            "demographics": {},
+        },
+    )
     if user.get("plays", 0) >= MAX_FREE_ATTEMPTS:
         # TODO: verify payment before incrementing when paid retries are implemented
         raise HTTPException(status_code=402, detail="Payment required")
@@ -249,7 +273,17 @@ async def record_play(action: UserAction):
 
 @app.post("/referral")
 async def referral(action: UserAction):
-    user = USERS.setdefault(action.user_id, {"salt": "", "plays": 0, "referrals": 0})
+    user = USERS.setdefault(
+        action.user_id,
+        {
+            "salt": "",
+            "plays": 0,
+            "referrals": 0,
+            "scores": [],
+            "party_log": [],
+            "demographics": {},
+        },
+    )
     user["referrals"] = user.get("referrals", 0) + 1
     return {"referrals": user["referrals"]}
 
@@ -302,7 +336,9 @@ async def submit_quiz(payload: QuizSubmitRequest):
     ability = ability_summary(theta)
 
     if payload.user_id and payload.user_id in USERS:
-        USERS[payload.user_id]["plays"] = USERS[payload.user_id].get("plays", 0) + 1
+        user = USERS[payload.user_id]
+        user["plays"] = user.get("plays", 0) + 1
+        user.setdefault("scores", []).append({"iq": iq, "percentile": pct})
 
     # remove session once quiz is graded
     SESSIONS.pop(payload.session_id, None)
@@ -453,6 +489,20 @@ async def user_party(selection: PartySelection):
     except NotImplementedError:
         raise HTTPException(status_code=501, detail="Party affiliation not implemented")
     return {"status": "ok"}
+
+
+@app.get("/user/stats/{user_id}", response_model=UserStats)
+async def user_stats(user_id: str):
+    """Return play counts and history for a user."""
+    user = USERS.get(user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return {
+        "plays": user.get("plays", 0),
+        "referrals": user.get("referrals", 0),
+        "scores": user.get("scores", []),
+        "party_log": user.get("party_log", []),
+    }
 
 
 @app.post("/analytics")

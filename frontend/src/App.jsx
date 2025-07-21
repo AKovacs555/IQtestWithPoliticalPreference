@@ -3,6 +3,7 @@ import { Routes, Route, Link, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Chart } from 'chart.js/auto';
 import QuestionCanvas from './QuestionCanvas';
+import Settings from './Settings.jsx';
 
 const PageTransition = ({ children }) => (
   <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
@@ -12,11 +13,14 @@ const PageTransition = ({ children }) => (
 
 const Home = () => (
   <PageTransition>
-    <div className="p-4 text-center">
+    <div className="p-4 text-center space-y-2">
       <h1 className="text-2xl font-bold mb-4">IQ Test</h1>
       <Link to="/quiz" className="bg-blue-600 text-white px-4 py-2 rounded">Start Quiz</Link>
-      <div className="mt-4">
+      <div>
         <Link to="/survey" className="underline text-sm">Political Survey</Link>
+      </div>
+      <div className="text-sm mt-2">
+        <Link to="/settings/testuser" className="underline">View Settings</Link>
       </div>
     </div>
   </PageTransition>
@@ -244,6 +248,7 @@ export default function App() {
         <Route path="/survey" element={<Survey />} />
         <Route path="/survey-result" element={<SurveyResult />} />
         <Route path="/result" element={<Result />} />
+        <Route path="/settings/:userId" element={<Settings />} />
       </Routes>
     </AnimatePresence>
   );
