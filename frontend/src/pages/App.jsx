@@ -7,10 +7,12 @@ import ProgressBar from '../components/ProgressBar';
 import Home from './Home';
 import Pricing from './Pricing';
 import Leaderboard from './Leaderboard';
+import SelectSet from './SelectSet';
 import { Chart } from 'chart.js/auto';
 import QuestionCard from '../components/QuestionCard';
 import Settings from './Settings.jsx';
 import DemographicsForm from './DemographicsForm.jsx';
+import confetti from 'canvas-confetti';
 
 const PageTransition = ({ children }) => (
   <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
@@ -20,6 +22,9 @@ const PageTransition = ({ children }) => (
 
 
 const Quiz = () => {
+  const location = useLocation();
+  const params = new URLSearchParams(location.search);
+  const setId = params.get('set');
   const [session, setSession] = React.useState(null);
   const [question, setQuestion] = React.useState(null);
   const [count, setCount] = React.useState(0);
@@ -28,13 +33,14 @@ const Quiz = () => {
   const watermark = React.useMemo(() => `${session?.slice(0,6) || ''}-${Date.now()}`,[session]);
 
   React.useEffect(() => {
-    fetch('/adaptive/start')
+    const url = setId ? `/adaptive/start?set_id=${setId}` : '/adaptive/start';
+    fetch(url)
       .then(res => res.json())
       .then(data => {
         setSession(data.session_id);
         setQuestion(data.question);
       });
-  }, []);
+  }, [setId]);
 
   React.useEffect(() => {
     const t = setInterval(() => setTimeLeft(t => Math.max(t - 1, 0)), 1000);
@@ -213,6 +219,10 @@ const Result = () => {
   const ref = React.useRef();
   const [avg, setAvg] = React.useState(null);
 
+  useEffect(() => {
+    confetti({ particleCount: 150, spread: 70 });
+  }, []);
+
   useShareMeta(share);
 
   useEffect(() => {
@@ -273,6 +283,7 @@ export default function App() {
     <AnimatePresence mode="wait">
       <Routes location={location} key={location.pathname}>
         <Route path="/" element={<Home />} />
+        <Route path="/select-set" element={<SelectSet />} />
         <Route path="/start" element={<DemographicsForm />} />
         <Route path="/quiz" element={<Quiz />} />
         <Route path="/survey" element={<Survey />} />

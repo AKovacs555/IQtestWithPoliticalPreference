@@ -33,7 +33,7 @@ This project provides an IQ quiz and political preference survey using a respons
   - `ADMIN_API_KEY` – token for admin endpoints such as normative updates.
   - `VITE_API_BASE` – base URL of the backend API for the React app.
 - OTP endpoints: `/auth/request-otp` and `/auth/verify-otp` support SMS via Twilio or SNS and fallback email codes through Supabase. Identifiers are hashed with per-record salts.
-- Quiz endpoints: `/quiz/start` returns a random set of questions from the `questions/` directory; `/quiz/submit` accepts answers and records a play. Optional query `set_id` selects a specific set file.
+- Quiz endpoints: `/quiz/start` returns a random set of questions from the `questions/` directory; `/quiz/submit` accepts answers and records a play. Optional query `set_id` selects a specific set file. `/quiz/sets` lists the available set IDs for the frontend.
 - Adaptive endpoints: `/adaptive/start` begins an adaptive quiz and `/adaptive/answer` returns the next question until the ability estimate stabilizes.
 - Pricing endpoints: `/pricing/{id}` shows the dynamic price for a user, `/play/record` registers a completed play and `/referral` adds a referral credit.
 - Demographic and party endpoints: `/user/demographics` records age, gender and income band. `/user/party` stores supported parties and enforces monthly change limits.
@@ -65,6 +65,7 @@ This project provides an IQ quiz and political preference survey using a respons
   and apply a watermark. Comments note that screenshots cannot be fully blocked.
 - React components are organised under `src/components` and `src/pages` for clarity.
 - A new `Leaderboard` page displays average IQ by party using the `/leaderboard` API.
+- Users can toggle between light and dark themes using the button in the navbar.
 
 To deploy on serverless hosting, point Vercel to `frontend` for the React build
 and Render (or another provider) to `backend/main.py`. Provide the environment

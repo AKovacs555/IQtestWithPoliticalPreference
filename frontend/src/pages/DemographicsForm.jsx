@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import Layout from '../components/Layout';
 
 export default function DemographicsForm() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const params = new URLSearchParams(location.search);
+  const setId = params.get('set');
   const [age, setAge] = useState('18-29');
   const [gender, setGender] = useState('other');
   const [income, setIncome] = useState('0-3m');
@@ -14,7 +17,10 @@ export default function DemographicsForm() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ user_id: user, age_band: age, gender, income_band: income })
-    }).then(() => navigate('/quiz'));
+    }).then(() => {
+      const path = setId ? `/quiz?set=${setId}` : '/quiz';
+      navigate(path);
+    });
   };
 
   return (
