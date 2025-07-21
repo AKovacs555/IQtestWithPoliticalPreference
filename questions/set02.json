@@ -1,0 +1,14 @@
+{
+  "id": "set02",
+  "language": "ja",
+  "title": "日本語版サンプルセット",
+  "questions": [
+    {
+      "id": 0,
+      "text": "次の数列を完成させてください: 2, 4, 8, 16, ?",
+      "options": ["18", "24", "32", "48"],
+      "correct_index": 2,
+      "explanation": "2倍ずつ増加します"
+    }
+  ]
+}

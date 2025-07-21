@@ -1,6 +1,6 @@
 # IQtestWithPoliticalPreference
 
-This project provides an IQ quiz and political preference survey using a responsive freemium design. The original Flask code has been moved to `legacy_flask_app.py`. The new stack uses **FastAPI** for the backend and a **React** single‑page application for the frontend. The frontend now uses DaisyUI with a custom theme and works on mobile and desktop devices.
+This project provides an IQ quiz and political preference survey using a responsive freemium design. The original Flask code has been moved to `legacy_flask_app.py`. The new stack uses **FastAPI** for the backend and a **React** single‑page application for the frontend. The UI now uses **Material UI** components with Tailwind utilities and works on mobile and desktop devices.
 
 ## Backend (FastAPI)
 
@@ -32,13 +32,14 @@ This project provides an IQ quiz and political preference survey using a respons
   - `SUPABASE_SHARE_BUCKET` – bucket name for storing generated share images.
   - `ADMIN_API_KEY` – token for admin endpoints such as normative updates.
 - OTP endpoints: `/auth/request-otp` and `/auth/verify-otp` support SMS via Twilio or SNS and fallback email codes through Supabase. Identifiers are hashed with per-record salts.
-- Quiz endpoints: `/quiz/start` returns a random set of questions from `backend/data/iq_pool/`; `/quiz/submit` accepts answers and records a play. Optional query `question_set_id` selects a specific pool file.
+- Quiz endpoints: `/quiz/start` returns a random set of questions from the `questions/` directory; `/quiz/submit` accepts answers and records a play. Optional query `set_id` selects a specific set file.
 - Adaptive endpoints: `/adaptive/start` begins an adaptive quiz and `/adaptive/answer` returns the next question until the ability estimate stabilizes.
 - Pricing endpoints: `/pricing/{id}` shows the dynamic price for a user, `/play/record` registers a completed play and `/referral` adds a referral credit.
 - Demographic and party endpoints: `/user/demographics` records age, gender and income band. `/user/party` stores supported parties and enforces monthly change limits.
 - Aggregated data is available via `/leaderboard` and the authenticated `/data/iq` endpoint which returns differentially private averages.
 - The question bank with psychometric metadata lives in `backend/data/question_bank.json`. Run `tools/generate_questions.py` to create new items with the `o3pro` model. The script filters out content resembling proprietary IQ tests.
-  - Additional sets can be placed in `backend/data/iq_pool/`. Ensure each file is
+ - Individual question sets for the live quiz are stored under `questions/`. Each file follows the schema shown in `questions/set01.json` and can be fetched via `/quiz/start?set_id=set01`.
+  - Additional sets can be placed in the top-level `questions/` directory. Ensure each file is
     manually reviewed before use. The helper `tools/generate_iq_questions.py` can
     create new items in this format. It accepts `--n`, `--start_id` and
     `--outfile` arguments and validates IDs to avoid collisions.
@@ -55,7 +56,7 @@ This project provides an IQ quiz and political preference survey using a respons
 
 ## Frontend (React)
 
- - Located in `frontend/` and built with Vite, React Router, Tailwind CSS with DaisyUI components and framer‑motion.
+ - Located in `frontend/` and built with Vite, React Router, Tailwind CSS and Material UI components with framer‑motion.
 - Install dependencies with `npm install` and start the dev server with `npm run dev`.
 - The UI uses a responsive layout. The previous mobile restriction was removed and
   `MobileOnlyWrapper` now simply renders its children.
@@ -102,3 +103,5 @@ When a quiz is completed the backend creates a branded result image using Pillow
 ## Updating the normative distribution
 
 IQ percentiles rely on `backend/data/normative_distribution.json`. Trigger the `/admin/update-norms` endpoint weekly with `ADMIN_API_KEY` to append recent scores and keep only the latest 5000 values.
+
+Screenshots of the new design can be found under [docs/screenshots](docs/screenshots/).

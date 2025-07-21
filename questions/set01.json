@@ -1,0 +1,21 @@
+{
+  "id": "set01",
+  "language": "en",
+  "title": "Sample English Set",
+  "questions": [
+    {
+      "id": 0,
+      "text": "Which number completes the series: 3, 6, 12, 24, ?",
+      "options": ["30", "36", "40", "48"],
+      "correct_index": 3,
+      "explanation": "Multiply by 2 each time"
+    },
+    {
+      "id": 1,
+      "text": "If some Fribs are Zogs and all Zogs are Pibs, can we say all Fribs are definitely Pibs?",
+      "options": ["Yes", "No", "Only some", "Can't tell"],
+      "correct_index": 0,
+      "explanation": "All Fribs that are Zogs are Pibs"
+    }
+  ]
+}

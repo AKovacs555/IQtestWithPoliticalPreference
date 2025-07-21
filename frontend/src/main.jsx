@@ -2,16 +2,25 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import App from './pages/App';
-import MobileOnlyWrapper from './components/MobileOnlyWrapper';
 import { SessionProvider } from './hooks/useSession';
+import './i18n';
+import { ThemeProvider, createTheme } from '@mui/material/styles';
+import CssBaseline from '@mui/material/CssBaseline';
 import './styles.css';
+
+const theme = createTheme({
+  palette: {
+    mode: 'light',
+  },
+});
 
 createRoot(document.getElementById('root')).render(
   <BrowserRouter>
     <SessionProvider>
-      <MobileOnlyWrapper>
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
         <App />
-      </MobileOnlyWrapper>
+      </ThemeProvider>
     </SessionProvider>
   </BrowserRouter>
 );

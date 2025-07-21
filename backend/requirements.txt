@@ -8,3 +8,4 @@ twilio
 SQLAlchemy
 boto3
 pillow
+pytest
