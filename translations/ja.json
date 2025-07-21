@@ -1,0 +1,15 @@
+{
+  "home": "ホーム",
+  "quiz": "クイズ",
+  "summary": "概要",
+  "premium": "プレミアム",
+  "profile": "プロフィール",
+  "login": "ログイン",
+  "logout": "ログアウト",
+  "register": "登録",
+  "settings": "設定",
+  "take_quiz": "クイズを始める",
+  "upgrade": "プレミアムにアップグレード",
+  "verified": "認証済み",
+  "referral_link": "あなたの紹介リンク"
+}
