@@ -61,7 +61,9 @@ with open(_dist_path) as f:
 # Load political survey items
 _survey_path = os.path.join(os.path.dirname(__file__), "data", "political_survey.json")
 with open(_survey_path) as f:
-    POLITICAL_SURVEY = json.load(f)
+    _survey_data = json.load(f)
+    POLITICAL_SURVEY = _survey_data.get("questions", [])
+    PARTIES = _survey_data.get("parties", [])
 
 
 class OTPRequest(BaseModel):
@@ -119,8 +121,13 @@ class SurveyItem(BaseModel):
     statement: str
 
 
+class PartyItem(BaseModel):
+    id: int
+    name: str
+
 class SurveyStartResponse(BaseModel):
     items: List[SurveyItem]
+    parties: List[PartyItem]
 
 
 class SurveyAnswer(BaseModel):
@@ -130,6 +137,18 @@ class SurveyAnswer(BaseModel):
 
 class SurveySubmitRequest(BaseModel):
     answers: List[SurveyAnswer]
+
+
+class PartySelection(BaseModel):
+    user_id: str
+    party_ids: List[int]
+
+
+class DemographicInfo(BaseModel):
+    user_id: str
+    age_band: str
+    gender: str
+    income_band: str
 
 
 class SurveyResult(BaseModel):
@@ -374,7 +393,8 @@ async def adaptive_answer(payload: AdaptiveAnswerRequest):
 @app.get("/survey/start", response_model=SurveyStartResponse)
 async def survey_start():
     items = [SurveyItem(id=i["id"], statement=i["statement"]) for i in POLITICAL_SURVEY]
-    return {"items": items}
+    parties = [PartyItem(id=p["id"], name=p["name"]) for p in PARTIES]
+    return {"items": items, "parties": parties}
 
 
 @app.post("/survey/submit", response_model=SurveyResult)
@@ -415,6 +435,26 @@ async def survey_submit(payload: SurveySubmitRequest):
     }
 
 
+@app.post("/user/demographics")
+async def user_demographics(info: DemographicInfo):
+    """Collect demographic information and store securely."""
+    try:
+        collect_demographics(info.age_band, info.gender, info.income_band, info.user_id)
+    except NotImplementedError:
+        raise HTTPException(status_code=501, detail="Demographic storage not implemented")
+    return {"status": "ok"}
+
+
+@app.post("/user/party")
+async def user_party(selection: PartySelection):
+    """Record user's supported parties. Allows multiple selections."""
+    try:
+        update_party_affiliation(selection.user_id, selection.party_ids)
+    except NotImplementedError:
+        raise HTTPException(status_code=501, detail="Party affiliation not implemented")
+    return {"status": "ok"}
+
+
 @app.post("/analytics")
 async def analytics(event: dict):
     """Log client-side events to self-hosted analytics."""
@@ -430,3 +470,12 @@ async def leaderboard():
     except NotImplementedError:
         raise HTTPException(status_code=501, detail="Leaderboard not implemented")
     return {"leaderboard": data}
+
+
+@app.get("/data/iq")
+async def dp_data_api(api_key: str):
+    """Return aggregated IQ stats for paying clients with differential privacy."""
+    if api_key != os.getenv("DATA_API_KEY", ""):
+        raise HTTPException(status_code=403, detail="Invalid API key")
+    # TODO: accept query parameters for party or demographic filtering
+    raise HTTPException(status_code=501, detail="Differential privacy API not implemented")

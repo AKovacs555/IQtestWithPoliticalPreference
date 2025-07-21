@@ -51,6 +51,7 @@ const Quiz = () => {
       if (hideTime && Date.now() - hideTime > 3000) setSuspicious(true);
       hideTime = null;
     };
+    // Flag the attempt if the user switches tabs or apps for too long.
     document.addEventListener('visibilitychange', () => {
       if (document.hidden) onHide(); else onShow();
     });

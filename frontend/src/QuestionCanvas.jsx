@@ -1,5 +1,8 @@
 import React from 'react';
 
+// Rendering questions on a canvas discourages copy/paste and basic DOM scraping.
+// It does not stop operating-system screenshots but adds a lightweight hurdle.
+
 export default function QuestionCanvas({ question, options, onSelect, watermark }) {
   const ref = React.useRef(null);
 
