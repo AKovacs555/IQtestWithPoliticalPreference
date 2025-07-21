@@ -45,6 +45,16 @@ Supabase、Stripe、AWS SNS、Google AdMob のアカウントを作成し、そ�
 - [Stripe ドキュメント](https://stripe.com/docs)
 - [AWS SNS ドキュメント](https://docs.aws.amazon.com/sns)
 - [Google AdMob ドキュメント](https://developers.google.com/admob)
+
+### 広告設定
+
+1. AdMob コンソールでアプリを登録し、報酬付き動画広告ユニットを作成します。
+2. 取得した **アプリ ID** と **広告ユニット ID (Android/iOS)** を `.env` の
+   `ADMOB_APP_ID`, `AD_UNIT_ID_ANDROID`, `AD_UNIT_ID_IOS` に設定します。
+3. 同じ値を Vercel または Render の環境変数にも追加してください。
+
+AWS SNS を利用する場合は IAM コンソールでアクセスキーを発行し、
+`AWS_ACCESS_KEY_ID` と `AWS_SECRET_ACCESS_KEY` を設定します。
 - OTP endpoints: `/auth/request-otp` and `/auth/verify-otp` support SMS via Twilio or SNS and fallback email codes through Supabase. Identifiers are hashed with per-record salts.
 - Quiz endpoints: `/quiz/start` returns a random set of questions from the `questions/` directory; `/quiz/submit` accepts answers and records a play. Optional query `set_id` selects a specific set file. `/quiz/sets` lists the available set IDs for the frontend.
 - Adaptive endpoints: `/adaptive/start` begins an adaptive quiz and `/adaptive/answer` returns the next question until the ability estimate stabilizes.
@@ -68,6 +78,8 @@ Supabase、Stripe、AWS SNS、Google AdMob のアカウントを作成し、そ�
   OPENAI_API_KEY=your-key python tools/generate_iq_questions.py -n 50 -o new_items.json
   ```
   After reviewing `new_items.json`, move it into `backend/data/iq_pool/`.
+  追加した JSON ファイルを `questions/` ディレクトリに置き、GitHub にコミットすると
+  次回起動時に自動で読み込まれます。再デプロイは不要です。
 
 ## Frontend (React)
 
