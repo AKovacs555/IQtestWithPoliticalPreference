@@ -21,14 +21,16 @@ This project provides an IQ quiz and political preference survey using a mobile�
   - `STRIPE_API_KEY` – Stripe secret key for payments.
   - `PHONE_SALT` – salt for hashing phone or email identifiers.
   - `MAX_FREE_ATTEMPTS` – number of free quiz attempts allowed before payment is required (default `1`).
+  - `DATA_API_KEY` – authentication token for the paid differential‑privacy API.
 - OTP endpoints: `/auth/request-otp` and `/auth/verify-otp` support SMS via Twilio or SNS and fallback email codes through Supabase. Identifiers are hashed with per-record salts.
 - Quiz endpoints: `/quiz/start` returns a random set of questions from `backend/data/iq_pool/`; `/quiz/submit` accepts answers and records a play. Optional query `question_set_id` selects a specific pool file.
 - Adaptive endpoints: `/adaptive/start` begins an adaptive quiz and `/adaptive/answer` returns the next question until the ability estimate stabilizes.
 - Pricing endpoints: `/pricing/{id}` shows the dynamic price for a user, `/play/record` registers a completed play and `/referral` adds a referral credit.
 - The question bank with psychometric metadata lives in `backend/data/question_bank.json`. Run `tools/generate_questions.py` to create new items with the `o3pro` model. The script filters out content resembling proprietary IQ tests.
-- Additional sets can be placed in `backend/data/iq_pool/`. Ensure each file is
-  manually reviewed before use. The helper `tools/generate_iq_questions.py` can
-  create new items in this format.
+  - Additional sets can be placed in `backend/data/iq_pool/`. Ensure each file is
+    manually reviewed before use. The helper `tools/generate_iq_questions.py` can
+    create new items in this format. It accepts `--n`, `--start_id` and
+    `--outfile` arguments and validates IDs to avoid collisions.
   To regenerate questions:
   ```bash
   OPENAI_API_KEY=your-key python tools/generate_questions.py -n 60
