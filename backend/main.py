@@ -10,7 +10,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from .sms_service import send_otp, SMS_PROVIDER
-from .todo_features import leaderboard_by_party
+from .todo_features import (
+    leaderboard_by_party,
+    generate_share_image,
+    update_normative_distribution,
+    dp_average,
+)
 from .demographics import collect_demographics
 from .party import update_party_affiliation
 from .dp import add_laplace
@@ -127,6 +132,7 @@ class SurveyItem(BaseModel):
 class PartyItem(BaseModel):
     id: int
     name: str
+
 
 class SurveyStartResponse(BaseModel):
     items: List[SurveyItem]
@@ -327,16 +333,20 @@ async def submit_quiz(payload: QuizSubmitRequest):
         if not q or item.id not in question_ids:
             continue
         correct = item.answer == q["answer"]
-        responses.append({
-            "a": q["irt"]["a"],
-            "b": q["irt"]["b"],
-            "correct": correct,
-        })
+        responses.append(
+            {
+                "a": q["irt"]["a"],
+                "b": q["irt"]["b"],
+                "correct": correct,
+            }
+        )
 
     theta = estimate_theta(responses)
     iq = iq_score(theta)
     pct = percentile(theta, NORMATIVE_DIST)
     ability = ability_summary(theta)
+
+    share_url = generate_share_image(payload.user_id or "anon", iq, pct)
 
     if payload.user_id and payload.user_id in USERS:
         user = USERS[payload.user_id]
@@ -346,7 +356,13 @@ async def submit_quiz(payload: QuizSubmitRequest):
     # remove session once quiz is graded
     SESSIONS.pop(payload.session_id, None)
 
-    return {"theta": theta, "iq": iq, "percentile": pct, "ability": ability}
+    return {
+        "theta": theta,
+        "iq": iq,
+        "percentile": pct,
+        "ability": ability,
+        "share_url": share_url,
+    }
 
 
 def _select_question(theta: float, asked: List[int], pool: List[int]):
@@ -396,35 +412,53 @@ async def adaptive_answer(payload: AdaptiveAnswerRequest):
     if len(session["answers"]) >= 20 or (
         len(session["answers"]) >= 5 and abs(session["theta"] - old_theta) < 0.05
     ):
-        theta = estimate_theta([
-            {
-                "a": QUESTION_MAP[a["id"]]["irt"]["a"],
-                "b": QUESTION_MAP[a["id"]]["irt"]["b"],
-                "correct": a["correct"],
-            }
-            for a in session["answers"]
-        ])
+        theta = estimate_theta(
+            [
+                {
+                    "a": QUESTION_MAP[a["id"]]["irt"]["a"],
+                    "b": QUESTION_MAP[a["id"]]["irt"]["b"],
+                    "correct": a["correct"],
+                }
+                for a in session["answers"]
+            ]
+        )
         iq_val = iq_score(theta)
         pct = percentile(theta, NORMATIVE_DIST)
         ability = ability_summary(theta)
+        share_url = generate_share_image(payload.session_id, iq_val, pct)
         del SESSIONS[payload.session_id]
-        return {"finished": True, "score": iq_val, "percentile": pct, "ability": ability}
+        return {
+            "finished": True,
+            "score": iq_val,
+            "percentile": pct,
+            "ability": ability,
+            "share_url": share_url,
+        }
 
     next_q = _select_question(session["theta"], session["asked"], session["pool"])
     if next_q is None:
-        theta = estimate_theta([
-            {
-                "a": QUESTION_MAP[a["id"]]["irt"]["a"],
-                "b": QUESTION_MAP[a["id"]]["irt"]["b"],
-                "correct": a["correct"],
-            }
-            for a in session["answers"]
-        ])
+        theta = estimate_theta(
+            [
+                {
+                    "a": QUESTION_MAP[a["id"]]["irt"]["a"],
+                    "b": QUESTION_MAP[a["id"]]["irt"]["b"],
+                    "correct": a["correct"],
+                }
+                for a in session["answers"]
+            ]
+        )
         iq_val = iq_score(theta)
         pct = percentile(theta, NORMATIVE_DIST)
         ability = ability_summary(theta)
+        share_url = generate_share_image(payload.session_id, iq_val, pct)
         del SESSIONS[payload.session_id]
-        return {"finished": True, "score": iq_val, "percentile": pct, "ability": ability}
+        return {
+            "finished": True,
+            "score": iq_val,
+            "percentile": pct,
+            "ability": ability,
+            "share_url": share_url,
+        }
     session["asked"].append(next_q["id"])
     return {"finished": False, "next_question": _to_model(next_q)}
 
@@ -515,7 +549,8 @@ async def analytics(event: dict):
 @app.get("/leaderboard")
 async def leaderboard():
     """Return party IQ leaderboard with differential privacy noise."""
-    data = leaderboard_by_party()
+    epsilon = float(os.getenv("DP_EPSILON", "1.0"))
+    data = leaderboard_by_party(epsilon)
     return {"leaderboard": data}
 
 
@@ -550,7 +585,22 @@ async def dp_data_api(
     if len(scores) < 100:
         raise HTTPException(status_code=400, detail="Not enough data")
 
-    mean = sum(scores) / len(scores)
-    mean = add_laplace(mean, epsilon, sensitivity=1 / len(scores))
+    mean = dp_average(scores, epsilon, min_count=100)
+    if mean is None:
+        raise HTTPException(status_code=400, detail="Not enough data")
 
     return {"count": len(scores), "avg_iq": mean}
+
+
+@app.post("/admin/update-norms")
+async def admin_update_norms(api_key: str):
+    """Update normative distribution from stored user scores."""
+    if api_key != os.getenv("ADMIN_API_KEY", ""):
+        raise HTTPException(status_code=403, detail="Invalid API key")
+
+    scores: List[float] = []
+    for user in USERS.values():
+        for s in user.get("scores", []):
+            scores.append(s.get("iq"))
+    update_normative_distribution(scores)
+    return {"added": len(scores)}

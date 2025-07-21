@@ -24,6 +24,9 @@ This project provides an IQ quiz and political preference survey using a mobile�
   - `MAX_FREE_ATTEMPTS` – number of free quiz attempts allowed before payment is required (default `1`).
   - `DP_EPSILON` – epsilon used when adding Laplace noise to aggregated data.
   - `DATA_API_KEY` – authentication token for the paid differential‑privacy API.
+  - `SUPABASE_URL` – base URL for Supabase (required for share images).
+  - `SUPABASE_SHARE_BUCKET` – bucket name for storing generated share images.
+  - `ADMIN_API_KEY` – token for admin endpoints such as normative updates.
 - OTP endpoints: `/auth/request-otp` and `/auth/verify-otp` support SMS via Twilio or SNS and fallback email codes through Supabase. Identifiers are hashed with per-record salts.
 - Quiz endpoints: `/quiz/start` returns a random set of questions from `backend/data/iq_pool/`; `/quiz/submit` accepts answers and records a play. Optional query `question_set_id` selects a specific pool file.
 - Adaptive endpoints: `/adaptive/start` begins an adaptive quiz and `/adaptive/answer` returns the next question until the ability estimate stabilizes.
@@ -82,3 +85,11 @@ This repository now serves as a starting point for the revamped freemium quiz pl
 - **Serverless hosting:** deploy FastAPI on platforms such as Vercel or Cloudflare Workers. Supabase provides the managed Postgres database and authentication layer.
 - **Payments:** Stripe is used by default but the `/pricing` API enables switching to local processors like PayPay or Line Pay with minimal code changes.
 - **Analytics:** the `/analytics` endpoint logs anonymous events to a self-hosted solution, avoiding third-party trackers.
+
+## Share image generation
+
+When a quiz is completed the backend creates a branded result image using Pillow. The image is uploaded to the Supabase bucket defined by `SUPABASE_SHARE_BUCKET` and the public URL is returned alongside the score. The frontend sets Open Graph and Twitter meta tags with this URL so that shared links display the personalised card.
+
+## Updating the normative distribution
+
+IQ percentiles rely on `backend/data/normative_distribution.json`. Trigger the `/admin/update-norms` endpoint weekly with `ADMIN_API_KEY` to append recent scores and keep only the latest 5000 values.

@@ -1,11 +1,21 @@
-"""Placeholders for upcoming features per design overview."""
+"""Additional features used by the FastAPI backend."""
 
+import io
+import json
+import os
+import time
 from typing import List, Optional
+
+from PIL import Image, ImageDraw, ImageFont
+from supabase import create_client
+
 from . import main
 from .dp import add_laplace
 
 
-def dp_average(values: List[float], epsilon: float, min_count: int = 100) -> Optional[float]:
+def dp_average(
+    values: List[float], epsilon: float, min_count: int = 100
+) -> Optional[float]:
     """Return the differentially private average of ``values``.
 
     If ``values`` has fewer than ``min_count`` elements the function returns
@@ -16,8 +26,6 @@ def dp_average(values: List[float], epsilon: float, min_count: int = 100) -> Opt
         return None
     mean = sum(values) / len(values)
     return add_laplace(mean, epsilon, sensitivity=1 / len(values))
-
-
 
 
 def leaderboard_by_party(epsilon: float = 1.0) -> List[dict]:
@@ -38,24 +46,96 @@ def leaderboard_by_party(epsilon: float = 1.0) -> List[dict]:
 
     results = []
     for pid, vals in buckets.items():
-        avg = dp_average(vals, epsilon, min_count=100)
-        if avg is None:
+        if not vals:
             continue
-        results.append({"party_id": pid, "avg_iq": avg, "n": len(vals)})
+        true_mean = sum(vals) / len(vals)
+        noisy = dp_average(vals, epsilon, min_count=100)
+        if noisy is None:
+            continue
+        results.append(
+            {
+                "party_id": pid,
+                "avg_iq": noisy,
+                "n": len(vals),
+                "noise": noisy - true_mean,
+            }
+        )
 
-    return results
+    return sorted(results, key=lambda r: r["avg_iq"], reverse=True)
 
 
 def generate_share_image(user_id: str, iq: float, percentile: float) -> str:
     """Return a URL to a generated result image for social sharing.
 
-    TODO: create an image with OpenGraph/Twitter metadata and upload to storage.
+    The image is created with :mod:`Pillow` and uploaded to Supabase
+    storage if the credentials are configured.  When running locally
+    without Supabase, the file is written to ``static/share/`` and the
+    relative URL is returned.
     """
-    raise NotImplementedError
+
+    width, height = 1200, 630
+    img = Image.new("RGB", (width, height), "#f9fafb")
+    draw = ImageDraw.Draw(img)
+
+    title_font = ImageFont.load_default()
+    small_font = ImageFont.load_default()
+
+    draw.text((40, 40), "Your IQ Score", font=title_font, fill="#111827")
+    draw.text((40, 120), f"IQ {iq:.1f}", font=title_font, fill="#2563eb")
+    draw.text((40, 200), f"Top {percentile:.1f}%", font=title_font, fill="#16a34a")
+    draw.text(
+        (40, 280),
+        "Take the test and compare with your party!",
+        font=small_font,
+        fill="#6b7280",
+    )
+
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    buf.seek(0)
+
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_API_KEY")
+    bucket = os.getenv("SUPABASE_SHARE_BUCKET", "share")
+    filename = f"{user_id}_{int(time.time())}.png"
+
+    if supabase_url and supabase_key:
+        supa = create_client(supabase_url, supabase_key)
+        supa.storage.from_(bucket).upload(
+            filename, buf.getvalue(), {"content-type": "image/png"}
+        )
+        return supa.storage.from_(bucket).get_public_url(filename)
+
+    # fallback to local static path
+    out_dir = os.path.join(os.path.dirname(__file__), "..", "static", "share")
+    os.makedirs(out_dir, exist_ok=True)
+    out_path = os.path.join(out_dir, filename)
+    with open(out_path, "wb") as f:
+        f.write(buf.getvalue())
+    return f"/static/share/{filename}"
 
 
 def update_normative_distribution(new_scores: List[float]) -> None:
-    """Recompute normative distribution with incoming scores."""
-    # TODO: load existing distribution, merge with ``new_scores`` and store back
-    #       to ``backend/data/normative_distribution.json``
-    raise NotImplementedError
+    """Recompute normative distribution with incoming scores.
+
+    The existing distribution is loaded from ``data/normative_distribution.json``.
+    ``new_scores`` are appended and the list is truncated to keep only the most
+    recent 5000 values.  This simple rolling window prevents small sample
+    skew while remaining lightweight for the demo application.
+    """
+
+    path = os.path.join(
+        os.path.dirname(__file__), "data", "normative_distribution.json"
+    )
+    try:
+        with open(path) as f:
+            dist = json.load(f)
+    except FileNotFoundError:
+        dist = []
+
+    dist.extend(new_scores)
+    if len(dist) > 5000:
+        dist = dist[-5000:]
+
+    with open(path, "w") as f:
+        json.dump(dist, f)

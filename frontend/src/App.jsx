@@ -78,7 +78,11 @@ const Quiz = () => {
       .then(res => res.json())
       .then(data => {
         if (data.finished) {
-          const params = new URLSearchParams({ score: data.score, percentile: data.percentile });
+          const params = new URLSearchParams({
+            score: data.score,
+            percentile: data.percentile,
+            share: data.share_url,
+          });
           window.location.href = '/result?' + params.toString();
         } else {
           setQuestion(data.next_question);
@@ -212,6 +216,7 @@ const Result = () => {
   const params = new URLSearchParams(window.location.search);
   const score = params.get('score');
   const percentile = params.get('percentile');
+  const share = params.get('share');
   const ref = React.useRef();
   const [avg, setAvg] = React.useState(null);
 
@@ -235,15 +240,37 @@ const Result = () => {
         if (all.length) setAvg(all.reduce((a,b) => a+b,0)/all.length);
       });
   }, []);
+  React.useEffect(() => {
+    if (!share) return;
+    const og = document.querySelector('meta[property="og:image"]') || document.createElement('meta');
+    og.setAttribute('property', 'og:image');
+    og.content = share;
+    document.head.appendChild(og);
+    const tw = document.querySelector('meta[name="twitter:image"]') || document.createElement('meta');
+    tw.setAttribute('name', 'twitter:image');
+    tw.content = share;
+    document.head.appendChild(tw);
+  }, [share]);
+
+  const url = encodeURIComponent(window.location.href);
+  const text = encodeURIComponent(`I scored ${Number(score).toFixed(1)} IQ!`);
+
   return (
     <PageTransition>
       <div className="p-4 text-center space-y-2">
         <h2 className="text-xl font-bold">Your Results</h2>
         <p>IQ: {Number(score).toFixed(2)}</p>
         <p>Percentile: {Number(percentile).toFixed(1)}%</p>
+        <span className="text-xs text-gray-500" title="Scores are for entertainment and may not reflect a clinical IQ">what's this?</span>
         {avg && <p className="text-sm">Overall average IQ: {avg.toFixed(1)}</p>}
         <canvas ref={ref} height="120"></canvas>
-        <p className="text-sm text-gray-600">This test is for research and entertainment; results may not reflect a clinically validated IQ.</p>
+        {share && (
+          <div className="space-x-2">
+            <a href={`https://twitter.com/intent/tweet?url=${url}&text=${text}`} target="_blank" rel="noreferrer" className="btn btn-sm">Share on X</a>
+            <a href={`https://social-plugins.line.me/lineit/share?url=${url}`} target="_blank" rel="noreferrer" className="btn btn-sm">LINE</a>
+          </div>
+        )}
+        <p className="text-sm text-gray-600">This test is for research and entertainment.</p>
         <Link to="/" className="underline">Home</Link>
       </div>
     </PageTransition>
