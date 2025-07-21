@@ -302,6 +302,13 @@ async def ping():
     return {"message": "pong"}
 
 
+@app.get("/share-image/{user_id}")
+async def share_image(user_id: str, iq: float, percentile: float):
+    """Generate and return a shareable result image URL."""
+    url = generate_share_image(user_id, iq, percentile)
+    return {"url": url}
+
+
 @app.get("/quiz/start", response_model=QuizStartResponse)
 async def start_quiz(question_set_id: str | None = None):
     """Begin a fixed-form quiz.
