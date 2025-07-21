@@ -22,6 +22,8 @@ This project provides an IQ quiz and political preference survey using a mobile�
   - `STRIPE_PUBLISHABLE_KEY` – Stripe public key for the client.
   - `PHONE_SALT` – salt for hashing phone or email identifiers.
   - `MAX_FREE_ATTEMPTS` – number of free quiz attempts allowed before payment is required (default `1`).
+  - `RETRY_PRICE_TIERS` – comma separated yen prices for paid retries.
+  - `PRO_PRICE_MONTHLY` – monthly cost of the optional subscription.
   - `DP_EPSILON` – epsilon used when adding Laplace noise to aggregated data.
   - `DATA_API_KEY` – authentication token for the paid differential‑privacy API.
   - `SUPABASE_URL` – base URL for Supabase (required for share images).
