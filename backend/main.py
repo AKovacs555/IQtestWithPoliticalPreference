@@ -9,16 +9,12 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-SMS_PROVIDER = os.getenv("SMS_PROVIDER", "twilio")
-if SMS_PROVIDER == "twilio":
-    from twilio.rest import Client as TwilioClient
-elif SMS_PROVIDER == "sns":
-    import boto3
-else:
-    raise RuntimeError("Unsupported SMS provider")
+from .sms_service import send_otp, SMS_PROVIDER
 
 from .questions import DEFAULT_QUESTIONS
 from .irt import update_theta, percentile
+from .scoring import estimate_theta, iq_score, ability_summary
+from .payment import select_processor
 import json
 
 app = FastAPI()
@@ -33,17 +29,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# SMS provider setup
-if SMS_PROVIDER == "twilio":
-    TWILIO_ACCOUNT_SID = os.environ.get("TWILIO_ACCOUNT_SID", "")
-    TWILIO_AUTH_TOKEN = os.environ.get("TWILIO_AUTH_TOKEN", "")
-    TWILIO_VERIFY_SID = os.environ.get("TWILIO_VERIFY_SERVICE_SID", "")
-    sms_client = TwilioClient(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
-elif SMS_PROVIDER == "sns":
-    AWS_REGION = os.environ.get("AWS_REGION", "us-east-1")
-    sms_client = boto3.client("sns", region_name=AWS_REGION)
-else:
-    sms_client = None
+# SMS provider handled by sms_service module
 
 # Database placeholder (Supabase)
 DATABASE_URL = os.environ.get("DATABASE_URL", "")
@@ -64,6 +50,11 @@ _dist_path = os.path.join(
 )
 with open(_dist_path) as f:
     NORMATIVE_DIST = json.load(f)
+
+# Load political survey items
+_survey_path = os.path.join(os.path.dirname(__file__), "data", "political_survey.json")
+with open(_survey_path) as f:
+    POLITICAL_SURVEY = json.load(f)
 
 
 class OTPRequest(BaseModel):
@@ -114,9 +105,35 @@ class AdaptiveAnswerResponse(BaseModel):
     percentile: Optional[float] = None
 
 
+class SurveyItem(BaseModel):
+    id: int
+    statement: str
+
+
+class SurveyStartResponse(BaseModel):
+    items: List[SurveyItem]
+
+
+class SurveyAnswer(BaseModel):
+    id: int
+    value: int
+
+
+class SurveySubmitRequest(BaseModel):
+    answers: List[SurveyAnswer]
+
+
+class SurveyResult(BaseModel):
+    left_right: float
+    libertarian_authoritarian: float
+    category: str
+    description: str
+
+
 class PricingResponse(BaseModel):
     price: int
     plays: int
+    processor: str
 
 
 class UserAction(BaseModel):
@@ -134,14 +151,9 @@ OTP_CODES = {}
 
 @app.post("/auth/request-otp")
 async def request_otp(data: OTPRequest):
-    if data.phone and SMS_PROVIDER == "twilio":
-        verification = sms_client.verify.v2.services(
-            TWILIO_VERIFY_SID
-        ).verifications.create(to=data.phone, channel="sms")
-        return {"status": verification.status}
-    if data.phone and SMS_PROVIDER == "sns":
+    if data.phone:
         code = str(random.randint(100000, 999999))
-        sms_client.publish(PhoneNumber=data.phone, Message=f"Your code is {code}")
+        send_otp(data.phone, code)
         OTP_CODES[data.phone] = code
         return {"status": "sent"}
     if data.email:
@@ -155,13 +167,7 @@ async def request_otp(data: OTPRequest):
 
 @app.post("/auth/verify-otp")
 async def verify_otp(data: OTPVerify):
-    if data.phone and SMS_PROVIDER == "twilio":
-        check = sms_client.verify.v2.services(
-            TWILIO_VERIFY_SID
-        ).verification_checks.create(to=data.phone, code=data.code)
-        if check.status != "approved":
-            raise HTTPException(status_code=400, detail="Invalid code")
-    elif data.phone and SMS_PROVIDER == "sns":
+    if data.phone:
         if OTP_CODES.get(data.phone) != data.code:
             raise HTTPException(status_code=400, detail="Invalid code")
         OTP_CODES.pop(data.phone, None)
@@ -193,12 +199,14 @@ def _current_price(user) -> int:
 
 
 @app.get("/pricing/{user_id}", response_model=PricingResponse)
-async def pricing(user_id: str):
+async def pricing(user_id: str, region: str = "US"):
     user = USERS.get(user_id)
     if not user:
-        return {"price": PRICES[0], "plays": 0}
+        processor = select_processor(region)
+        return {"price": PRICES[0], "plays": 0, "processor": processor}
     price = _current_price(user)
-    return {"price": price, "plays": user.get("plays", 0)}
+    processor = select_processor(region)
+    return {"price": price, "plays": user.get("plays", 0), "processor": processor}
 
 
 @app.post("/play/record")
@@ -234,17 +242,29 @@ async def start_quiz():
 async def submit_quiz(payload: QuizSubmitRequest):
     if len(payload.answers) != 20:
         raise HTTPException(status_code=400, detail="Expected 20 answers")
-    score = 0
+
+    responses = []
     for item in payload.answers:
         try:
-            correct = DEFAULT_QUESTIONS[item.id]["answer"]
+            q = DEFAULT_QUESTIONS[item.id]
         except IndexError:
             continue
-        if item.answer == correct:
-            score += 1
+        correct = item.answer == q["answer"]
+        responses.append({
+            "a": q["irt"]["a"],
+            "b": q["irt"]["b"],
+            "correct": correct,
+        })
+
+    theta = estimate_theta(responses)
+    iq = iq_score(theta)
+    pct = percentile(theta, NORMATIVE_DIST)
+    ability = ability_summary(theta)
+
     if payload.user_id and payload.user_id in USERS:
         USERS[payload.user_id]["plays"] = USERS[payload.user_id].get("plays", 0) + 1
-    return {"score": score}
+
+    return {"theta": theta, "iq": iq, "percentile": pct, "ability": ability}
 
 
 def _select_question(theta: float, asked: List[int]):
@@ -284,16 +304,81 @@ async def adaptive_answer(payload: AdaptiveAnswerRequest):
     if len(session["answers"]) >= 20 or (
         len(session["answers"]) >= 5 and abs(session["theta"] - old_theta) < 0.05
     ):
-        score = session["theta"]
-        pct = percentile(score, NORMATIVE_DIST)
+        theta = estimate_theta([
+            {"a": DEFAULT_QUESTIONS[a["id"]]["irt"]["a"],
+             "b": DEFAULT_QUESTIONS[a["id"]]["irt"]["b"],
+             "correct": a["correct"]}
+            for a in session["answers"]
+        ])
+        iq_val = iq_score(theta)
+        pct = percentile(theta, NORMATIVE_DIST)
+        ability = ability_summary(theta)
         del SESSIONS[payload.session_id]
-        return {"finished": True, "score": score, "percentile": pct}
+        return {"finished": True, "score": iq_val, "percentile": pct, "ability": ability}
 
     next_q = _select_question(session["theta"], session["asked"])
     if next_q is None:
-        score = session["theta"]
-        pct = percentile(score, NORMATIVE_DIST)
+        theta = estimate_theta([
+            {"a": DEFAULT_QUESTIONS[a["id"]]["irt"]["a"],
+             "b": DEFAULT_QUESTIONS[a["id"]]["irt"]["b"],
+             "correct": a["correct"]}
+            for a in session["answers"]
+        ])
+        iq_val = iq_score(theta)
+        pct = percentile(theta, NORMATIVE_DIST)
+        ability = ability_summary(theta)
         del SESSIONS[payload.session_id]
-        return {"finished": True, "score": score, "percentile": pct}
+        return {"finished": True, "score": iq_val, "percentile": pct, "ability": ability}
     session["asked"].append(next_q["id"])
     return {"finished": False, "next_question": _to_model(next_q)}
+
+
+@app.get("/survey/start", response_model=SurveyStartResponse)
+async def survey_start():
+    items = [SurveyItem(id=i["id"], statement=i["statement"]) for i in POLITICAL_SURVEY]
+    return {"items": items}
+
+
+@app.post("/survey/submit", response_model=SurveyResult)
+async def survey_submit(payload: SurveySubmitRequest):
+    lr_score = 0.0
+    auth_score = 0.0
+    for ans in payload.answers:
+        try:
+            item = POLITICAL_SURVEY[ans.id]
+        except IndexError:
+            continue
+        weight = ans.value - 3  # center Likert 1-5 at 0
+        lr_score += weight * item.get("lr", 0)
+        auth_score += weight * item.get("auth", 0)
+
+    # Normalize by number of items
+    n = len(POLITICAL_SURVEY)
+    lr_score /= n
+    auth_score /= n
+
+    if lr_score > 0.3:
+        category = "Conservative"
+    elif lr_score < -0.3:
+        category = "Progressive"
+    else:
+        category = "Centrist"
+
+    description = (
+        f"Your economic views lean {'right' if lr_score > 0 else 'left'} and you are "
+        f"{'authoritarian' if auth_score > 0 else 'libertarian'} leaning."
+    )
+
+    return {
+        "left_right": lr_score,
+        "libertarian_authoritarian": auth_score,
+        "category": category,
+        "description": description,
+    }
+
+
+@app.post("/analytics")
+async def analytics(event: dict):
+    """Log client-side events to self-hosted analytics."""
+    app.logger.info("Event: %s", event)
+    return {}

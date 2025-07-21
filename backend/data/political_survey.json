@@ -1,0 +1,14 @@
+[
+  {"id": 0, "statement": "Government should redistribute wealth from the rich to the poor.", "lr": -1, "auth": -1},
+  {"id": 1, "statement": "Markets should be free from government intervention.", "lr": 1, "auth": -1},
+  {"id": 2, "statement": "Traditional values should be preserved even if it restricts some freedoms.", "lr": 1, "auth": 1},
+  {"id": 3, "statement": "Personal privacy is more important than national security.", "lr": -1, "auth": -1},
+  {"id": 4, "statement": "The state should have the power to censor extremist views.", "lr": 0, "auth": 1},
+  {"id": 5, "statement": "Strong environmental regulations are worth the economic cost.", "lr": -1, "auth": 0},
+  {"id": 6, "statement": "Immigration should be restricted to protect local jobs.", "lr": 1, "auth": 1},
+  {"id": 7, "statement": "Welfare makes people dependent on the government.", "lr": 1, "auth": 0},
+  {"id": 8, "statement": "Religion should play a role in public policy.", "lr": 1, "auth": 1},
+  {"id": 9, "statement": "Military action in foreign countries rarely solves problems.", "lr": -1, "auth": -1},
+  {"id": 10, "statement": "Drug use should be decriminalized.", "lr": -1, "auth": -1},
+  {"id": 11, "statement": "Large corporations should be regulated to protect consumers.", "lr": -1, "auth": 0}
+]

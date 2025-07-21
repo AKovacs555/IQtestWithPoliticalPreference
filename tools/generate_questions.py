@@ -15,10 +15,14 @@ openai.api_key = os.getenv("OPENAI_API_KEY")
 
 PROMPT = (
     "Using open psychometric theory such as Spearman's g and common formats "
-    "like Raven's matrices, generate {n} original IQ test questions. Each "
-    "question should be JSON with the fields: 'question', 'options' (four "
-    "strings), 'answer' (index 0-3), 'difficulty' (1-5), and 'rationale'. "
-    "Do not copy or paraphrase items from proprietary tests."
+    "like Raven's matrices, generate {n} original IQ test questions. Create "
+    "a diverse mixture of item types including pattern recognition, logical "
+    "reasoning and spatial reasoning. Return each question as JSON with the "
+    "fields: 'question', 'options' (four strings), 'answer' (index 0-3), "
+    "'difficulty' (1-5), 'rationale', and an 'irt' object containing "
+    "discrimination 'a' and difficulty 'b'. Optionally tag questions with a "
+    "'category' such as 'General IQ' or 'Spatial IQ'. Do not copy or "
+    "paraphrase items from proprietary tests."
 )
 
 PROPRIETARY_KEYWORDS = [
@@ -29,7 +33,7 @@ PROPRIETARY_KEYWORDS = [
 ]
 
 
-def generate(n: int = 50):
+def generate(n: int = 60):
     resp = openai.ChatCompletion.create(
         model=MODEL,
         messages=[{"role": "user", "content": PROMPT.format(n=n)}],
@@ -53,7 +57,7 @@ def main():
     import argparse
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("-n", type=int, default=50)
+    parser.add_argument("-n", type=int, default=60)
     parser.add_argument("-o", "--output", default="backend/data/question_bank.json")
     args = parser.parse_args()
     items = generate(args.n)
