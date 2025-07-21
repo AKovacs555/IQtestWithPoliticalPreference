@@ -46,6 +46,10 @@ Supabase、Stripe、AWS SNS、Google AdMob のアカウントを作成し、そ�
 - [AWS SNS ドキュメント](https://docs.aws.amazon.com/sns)
 - [Google AdMob ドキュメント](https://developers.google.com/admob)
 
+- Supabase: Settings > API で URL と service role キーをコピー
+- Stripe: ダッシュボードの 開発者 > API キー から取得
+- Google AdMob: アプリ ID と広告ユニット ID を作成してコピー
+- AWS SNS: IAM ユーザーのアクセスキーを使用
 ### 広告設定
 
 1. AdMob コンソールでアプリを登録し、報酬付き動画広告ユニットを作成します。
@@ -120,6 +124,7 @@ This repository now serves as a starting point for the revamped freemium quiz pl
   multiple plays per month and early access to new question sets.
 - Each account has a **referral code**. When someone signs up with that code
   both parties receive a free retry credit (`/referral`).
+- Rewarded ads via `/ads/start` and `/ads/complete` grant `AD_REWARD_POINTS`. Check `/points/{id}` for the balance and spend `RETRY_POINT_COST` points when calling `/play/record`.
 - Promotional codes can be configured via the admin API to offer temporary discounts.
 - Business customers can request aggregated data via the `/leaderboard`
   endpoint once differential privacy safeguards are implemented.
