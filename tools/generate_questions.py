@@ -51,6 +51,7 @@ def filter_proprietary(items):
 
 def main():
     import argparse
+
     parser = argparse.ArgumentParser()
     parser.add_argument("-n", type=int, default=50)
     parser.add_argument("-o", "--output", default="backend/data/question_bank.json")

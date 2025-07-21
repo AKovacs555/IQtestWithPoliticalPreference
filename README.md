@@ -19,13 +19,22 @@ This project provides an IQ quiz and political preference survey using a mobile�
   - `STRIPE_API_KEY` – Stripe secret key for payments.
   - `PHONE_SALT` – salt for hashing phone or email identifiers.
   - OTP endpoints: `/auth/request-otp` and `/auth/verify-otp` support SMS via Twilio or SNS and fallback email codes through Supabase. Identifiers are hashed with per-record salts.
-- Quiz endpoints: `/quiz/start` returns 20 questions; `/quiz/submit` accepts answers and returns a score.
+- Quiz endpoints: `/quiz/start` returns 20 questions; `/quiz/submit` accepts answers and records a play.
 - Adaptive endpoints: `/adaptive/start` begins an adaptive quiz and `/adaptive/answer` returns the next question until the ability estimate stabilizes.
-  - The question bank with psychometric metadata lives in `backend/data/question_bank.json`. Run `tools/generate_questions.py` to create new items with the `o3pro` model. The script filters out content resembling proprietary IQ tests.
+- Pricing endpoints: `/pricing/{id}` shows the dynamic price for a user, `/play/record` registers a completed play and `/referral` adds a referral credit.
+- The question bank with psychometric metadata lives in `backend/data/question_bank.json`. Run `tools/generate_questions.py` to create new items with the `o3pro` model. The script filters out content resembling proprietary IQ tests.
 
 ## Frontend (React)
 
 - Located in `frontend/` and built with Vite, React Router, Tailwind CSS and framer‑motion.
 - Install dependencies with `npm install` and start the dev server with `npm run dev`.
 
-This repository now serves as a starting point for the revamped freemium quiz platform.
+This repository now serves as a starting point for the revamped freemium quiz platform. Terms of Service and a Privacy Policy are provided under `templates/` and personal identifiers are hashed with per-record salts. Aggregated statistics apply differential privacy noise for research use only.
+
+## Services and Costs
+
+- **SMS verification:** configurable between Twilio and Amazon SNS. Choose the provider with the best local rates.
+- **Email OTP:** provided free via Supabase auth as a fallback for users without SMS.
+- **Serverless hosting:** deploy FastAPI on platforms such as Vercel or Cloudflare Workers. Supabase provides the managed Postgres database and authentication layer.
+- **Payments:** Stripe is used by default but the `/pricing` API enables switching to local processors like PayPay or Line Pay with minimal code changes.
+- **Analytics:** use self-hosted or free solutions (e.g. Plausible) to avoid recurring fees.
