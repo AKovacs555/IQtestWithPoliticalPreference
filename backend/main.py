@@ -56,8 +56,17 @@ MAX_FREE_ATTEMPTS = int(os.getenv("MAX_FREE_ATTEMPTS", "1"))
 # {hashed_id: {"salt": str, "plays": int, "referrals": int}}
 USERS = {}
 
-# Dynamic pricing tiers: first play free then increasing prices
-PRICES = [0, 480, 720, 980]
+# Dynamic pricing tiers loaded from RETRY_PRICE_TIERS
+def _load_price_tiers() -> list[int]:
+    tiers = os.getenv("RETRY_PRICE_TIERS", "480,720,980")
+    try:
+        values = [int(t.strip()) for t in tiers.split(",") if t.strip()]
+    except ValueError:
+        values = [480, 720, 980]
+    return [0] + values
+
+PRICES = _load_price_tiers()
+PRO_PRICE_MONTHLY = int(os.getenv("PRO_PRICE_MONTHLY", "980"))
 
 # Load normative distribution for percentile scores
 _dist_path = os.path.join(
@@ -171,6 +180,7 @@ class PricingResponse(BaseModel):
     price: int
     plays: int
     processor: str
+    pro_price: int
 
 
 class UserStats(BaseModel):
@@ -246,18 +256,31 @@ async def verify_otp(data: OTPVerify):
 def _current_price(user) -> int:
     plays_paid = max(user.get("plays", 0) - user.get("referrals", 0), 0)
     idx = plays_paid if plays_paid < len(PRICES) else len(PRICES) - 1
+    user["price_variant"] = idx
     return PRICES[idx]
 
 
 @app.get("/pricing/{user_id}", response_model=PricingResponse)
 async def pricing(user_id: str, region: str = "US"):
-    user = USERS.get(user_id)
-    if not user:
-        processor = select_processor(region)
-        return {"price": PRICES[0], "plays": 0, "processor": processor}
-    price = _current_price(user)
+    user = USERS.setdefault(
+        user_id,
+        {
+            "salt": "",
+            "plays": 0,
+            "referrals": 0,
+            "scores": [],
+            "party_log": [],
+            "demographics": {},
+        },
+    )
     processor = select_processor(region)
-    return {"price": price, "plays": user.get("plays", 0), "processor": processor}
+    price = _current_price(user)
+    return {
+        "price": price,
+        "plays": user.get("plays", 0),
+        "processor": processor,
+        "pro_price": PRO_PRICE_MONTHLY,
+    }
 
 
 @app.post("/play/record")
