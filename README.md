@@ -18,7 +18,7 @@ This project provides an IQ quiz and political preference survey using a mobile�
   - When using SNS: `AWS_REGION` and AWS credentials configured in the environment.
   - `PAYPAY_API_KEY` or `LINEPAY_API_KEY` – enable local payment gateways in Japan.
   - The backend logs an estimated cost for each OTP sent based on the selected SMS provider.
-  - `STRIPE_API_KEY` – Stripe secret key for payments.
+  - `STRIPE_SECRET_KEY` – Stripe secret key for payments.
   - `STRIPE_PUBLISHABLE_KEY` – Stripe public key for the client.
   - `PHONE_SALT` – salt for hashing phone or email identifiers.
   - `MAX_FREE_ATTEMPTS` – number of free quiz attempts allowed before payment is required (default `1`).
