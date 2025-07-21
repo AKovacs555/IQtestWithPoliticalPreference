@@ -1,0 +1,20 @@
+[
+  {
+    "id": 100,
+    "question": "Which shape completes the pattern square, triangle, circle, ?",
+    "options": ["triangle", "square", "circle", "hexagon"],
+    "answer": 3,
+    "difficulty": 2,
+    "domain": "spatial",
+    "irt": {"a": 1.1, "b": -0.3}
+  },
+  {
+    "id": 101,
+    "question": "What comes next in the sequence: A, C, F, J, ?",
+    "options": ["M", "N", "O", "P"],
+    "answer": 0,
+    "difficulty": 3,
+    "domain": "verbal",
+    "irt": {"a": 1.2, "b": 0.1}
+  }
+]
