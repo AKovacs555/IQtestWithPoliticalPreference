@@ -1,0 +1,23 @@
+{
+  "home": "Home",
+  "quiz": "Quiz",
+  "summary": "Summary",
+  "premium": "Premium",
+  "profile": "Profile",
+  "login": "Login",
+  "logout": "Logout",
+  "register": "Register",
+  "settings": "Settings",
+  "take_quiz": "Take the Quiz",
+  "upgrade": "Upgrade to premium for a longer quiz",
+  "verified": "Verified",
+  "referral_link": "Your referral link",
+  "landing.title": "Test your IQ and political preferences",
+  "landing.startButton": "Start Free Test",
+  "quiz.progress": "Question {{current}} of {{total}}",
+  "quiz.submit": "Submit",
+  "pricing.title": "Unlock your full potential",
+  "pricing.free": "One free attempt",
+  "pricing.retry": "Paid retries",
+  "pricing.subscribe": "Pro Pass Subscription"
+}

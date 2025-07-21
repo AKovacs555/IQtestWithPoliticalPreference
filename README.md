@@ -32,6 +32,7 @@ This project provides an IQ quiz and political preference survey using a respons
   - `SUPABASE_SHARE_BUCKET` – bucket name for storing generated share images.
   - `ADMIN_API_KEY` – token for admin endpoints such as normative updates.
   - `VITE_API_BASE` – base URL of the backend API for the React app.
+  - `VITE_STRIPE_PUBLISHABLE_KEY` – public Stripe key used by the frontend.
 - OTP endpoints: `/auth/request-otp` and `/auth/verify-otp` support SMS via Twilio or SNS and fallback email codes through Supabase. Identifiers are hashed with per-record salts.
 - Quiz endpoints: `/quiz/start` returns a random set of questions from the `questions/` directory; `/quiz/submit` accepts answers and records a play. Optional query `set_id` selects a specific set file. `/quiz/sets` lists the available set IDs for the frontend.
 - Adaptive endpoints: `/adaptive/start` begins an adaptive quiz and `/adaptive/answer` returns the next question until the ability estimate stabilizes.
@@ -40,7 +41,8 @@ This project provides an IQ quiz and political preference survey using a respons
 - Aggregated data is available via `/leaderboard` and the authenticated `/data/iq` endpoint which returns differentially private averages.
 - The question bank with psychometric metadata lives in `backend/data/question_bank.json`. Run `tools/generate_questions.py` to create new items with the `o3pro` model. The script filters out content resembling proprietary IQ tests.
  - Individual question sets for the live quiz are stored under `questions/`. Each file follows the schema shown in `questions/set01.json` and can be fetched via `/quiz/start?set_id=set01`.
-  - Additional sets can be placed in the top-level `questions/` directory. Ensure each file is
+ - The backend reads these JSON files at runtime so new sets can be added via GitHub without redeploying the API.
+  - Additional sets can simply be placed in the top-level `questions/` directory. Ensure each file is
     manually reviewed before use. The helper `tools/generate_iq_questions.py` can
     create new items in this format. It accepts `--n`, `--start_id` and
     `--outfile` arguments and validates IDs to avoid collisions.
@@ -66,6 +68,9 @@ This project provides an IQ quiz and political preference survey using a respons
 - React components are organised under `src/components` and `src/pages` for clarity.
 - A new `Leaderboard` page displays average IQ by party using the `/leaderboard` API.
 - Users can toggle between light and dark themes using the button in the navbar.
+- Translations live under `frontend/translations/` and are loaded via `src/i18n.js`.
+  Vite's config enables JSON imports so new languages can be added without code changes.
+- The landing page uses framer-motion for parallax scrolling and animated calls to action, while quiz pages feature progress bars and confetti on completion.
 
 To deploy on serverless hosting, point Vercel to `frontend` for the React build
 and Render (or another provider) to `backend/main.py`. Provide the environment
@@ -88,6 +93,7 @@ This repository now serves as a starting point for the revamped freemium quiz pl
   multiple plays per month and early access to new question sets.
 - Each account has a **referral code**. When someone signs up with that code
   both parties receive a free retry credit (`/referral`).
+- Promotional codes can be configured via the admin API to offer temporary discounts.
 - Business customers can request aggregated data via the `/leaderboard`
   endpoint once differential privacy safeguards are implemented.
 
@@ -97,6 +103,7 @@ This repository now serves as a starting point for the revamped freemium quiz pl
 - **Email OTP:** provided free via Supabase auth as a fallback for users without SMS.
 - **Serverless hosting:** deploy FastAPI on platforms such as Vercel or Cloudflare Workers. Supabase provides the managed Postgres database and authentication layer.
 - **Payments:** Stripe is used by default but the `/pricing` API enables switching to local processors like PayPay or Line Pay with minimal code changes.
+  Checkout sessions and webhooks update user entitlements automatically.
 - **Analytics:** the `/analytics` endpoint logs anonymous events to a self-hosted solution, avoiding third-party trackers.
 
 ## Share image generation
