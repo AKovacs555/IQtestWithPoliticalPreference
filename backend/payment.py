@@ -1,6 +1,9 @@
 import os
 
-STRIPE_API_KEY = os.getenv("STRIPE_API_KEY", "")
+# Stripe secret key used for server-side API calls.
+# The older name ``STRIPE_API_KEY`` is still honoured for backwards
+# compatibility but ``STRIPE_SECRET_KEY`` is preferred.
+STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY") or os.getenv("STRIPE_API_KEY", "")
 PAYPAY_API_KEY = os.getenv("PAYPAY_API_KEY", "")
 LINEPAY_API_KEY = os.getenv("LINEPAY_API_KEY", "")
 
