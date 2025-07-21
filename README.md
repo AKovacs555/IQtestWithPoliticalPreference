@@ -6,6 +6,7 @@ This project provides an IQ quiz and political preference survey using a mobile�
 
 - Located in `backend/`.
 - Install dependencies with `pip install -r backend/requirements.txt`.
+  This includes `pillow` for generating share images.
 - Run locally using:
   ```bash
   uvicorn backend.main:app --reload
@@ -25,6 +26,7 @@ This project provides an IQ quiz and political preference survey using a mobile�
   - `RETRY_PRICE_TIERS` – comma separated yen prices for paid retries.
   - `PRO_PRICE_MONTHLY` – monthly cost of the optional subscription.
   - `DP_EPSILON` – epsilon used when adding Laplace noise to aggregated data.
+  - `DP_MIN_COUNT` – minimum records required before an aggregate is reported.
   - `DATA_API_KEY` – authentication token for the paid differential‑privacy API.
   - `SUPABASE_URL` – base URL for Supabase (required for share images).
   - `SUPABASE_SHARE_BUCKET` – bucket name for storing generated share images.
@@ -65,6 +67,11 @@ To deploy on serverless hosting, point Vercel to `frontend` for the React build
 and Render (or another provider) to `backend/main.py`. Provide the environment
 variables below to both platforms. After pushing to GitHub, redeployments will
 occur automatically.
+
+On Render create a **Web Service** from this repository and copy the variables
+from `.env.example` into the dashboard. On Vercel configure the same values
+under *Project Settings → Environment Variables*. Both services will pick up
+changes on each commit and redeploy automatically.
 
 This repository now serves as a starting point for the revamped freemium quiz platform. Terms of Service and a Privacy Policy are provided under `templates/` and personal identifiers are hashed with per-record salts. Aggregated statistics apply differential privacy noise for research use only.
 

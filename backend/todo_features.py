@@ -6,15 +6,20 @@ import os
 import time
 from typing import List, Optional
 
-from PIL import Image, ImageDraw, ImageFont
-from supabase import create_client
+MIN_BUCKET_SIZE = int(os.getenv("DP_MIN_COUNT", "100"))
+
+try:
+    from PIL import Image, ImageDraw, ImageFont
+except Exception:  # Pillow not installed
+    Image = ImageDraw = ImageFont = None
+
 
 from . import main
 from .dp import add_laplace
 
 
 def dp_average(
-    values: List[float], epsilon: float, min_count: int = 100
+    values: List[float], epsilon: float, min_count: int = MIN_BUCKET_SIZE
 ) -> Optional[float]:
     """Return the differentially private average of ``values``.
 
@@ -49,7 +54,7 @@ def leaderboard_by_party(epsilon: float = 1.0) -> List[dict]:
         if not vals:
             continue
         true_mean = sum(vals) / len(vals)
-        noisy = dp_average(vals, epsilon, min_count=100)
+        noisy = dp_average(vals, epsilon, min_count=MIN_BUCKET_SIZE)
         if noisy is None:
             continue
         results.append(
@@ -72,6 +77,10 @@ def generate_share_image(user_id: str, iq: float, percentile: float) -> str:
     without Supabase, the file is written to ``static/share/`` and the
     relative URL is returned.
     """
+
+    if Image is None:
+        # Pillow not installed; unable to generate image
+        return ""
 
     width, height = 1200, 630
     img = Image.new("RGB", (width, height), "#f9fafb")
@@ -100,11 +109,20 @@ def generate_share_image(user_id: str, iq: float, percentile: float) -> str:
     filename = f"{user_id}_{int(time.time())}.png"
 
     if supabase_url and supabase_key:
-        supa = create_client(supabase_url, supabase_key)
-        supa.storage.from_(bucket).upload(
-            filename, buf.getvalue(), {"content-type": "image/png"}
-        )
-        return supa.storage.from_(bucket).get_public_url(filename)
+        try:
+            from supabase import create_client
+        except Exception:
+            create_client = None
+
+        if create_client:
+            try:
+                supa = create_client(supabase_url, supabase_key)
+                supa.storage.from_(bucket).upload(
+                    filename, buf.getvalue(), {"content-type": "image/png"}
+                )
+                return supa.storage.from_(bucket).get_public_url(filename)
+            except Exception:
+                pass
 
     # fallback to local static path
     out_dir = os.path.join(os.path.dirname(__file__), "..", "static", "share")
@@ -124,13 +142,16 @@ def update_normative_distribution(new_scores: List[float]) -> None:
     skew while remaining lightweight for the demo application.
     """
 
+    if not new_scores:
+        return
+
     path = os.path.join(
         os.path.dirname(__file__), "data", "normative_distribution.json"
     )
     try:
         with open(path) as f:
             dist = json.load(f)
-    except FileNotFoundError:
+    except (FileNotFoundError, json.JSONDecodeError):
         dist = []
 
     dist.extend(new_scores)
