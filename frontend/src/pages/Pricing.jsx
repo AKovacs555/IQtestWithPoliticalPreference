@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import Layout from '../components/Layout';
 import { useTranslation } from 'react-i18next';
+import AdProgress from '../components/AdProgress';
 
 const userId = 'demo';
 
@@ -8,6 +9,22 @@ export default function Pricing() {
   const { t } = useTranslation();
   const [price, setPrice] = useState(0);
   const [proPrice, setProPrice] = useState(0);
+  const [progress, setProgress] = useState(0);
+
+  const watchAd = () => {
+    setProgress(0);
+    fetch('/ads/start', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ user_id: userId }) });
+    const id = setInterval(() => {
+      setProgress(p => {
+        if (p >= 100) {
+          clearInterval(id);
+          fetch('/ads/complete', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ user_id: userId }) });
+          return 100;
+        }
+        return p + 10;
+      });
+    }, 300);
+  };
 
   useEffect(() => {
     fetch(`/pricing/${userId}`)
@@ -38,6 +55,10 @@ export default function Pricing() {
             <p className="mb-4">{proPrice} JPY / mo</p>
             <button className="btn btn-primary">Subscribe</button>
           </div>
+        </div>
+        <div className="text-center space-y-2">
+          <button onClick={watchAd} className="btn btn-accent">Watch Ad</button>
+          {progress > 0 && progress < 100 && <AdProgress progress={progress} />}
         </div>
       </div>
     </Layout>

@@ -38,3 +38,12 @@ def ability_summary(theta: float) -> str:
     return "above average"
 
 
+def standard_error(theta: float, responses: List[dict]) -> float | None:
+    """Return standard error of theta estimate."""
+    info = 0.0
+    for r in responses:
+        p = prob_correct(theta, r["a"], r["b"])
+        info += (r["a"] ** 2) * p * (1 - p)
+    return (1 / math.sqrt(info)) if info > 0 else None
+
+
