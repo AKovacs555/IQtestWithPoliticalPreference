@@ -6,7 +6,7 @@ application this would persist to Supabase with hashed identifiers.
 from __future__ import annotations
 
 from datetime import datetime
-from backend import main
+import main
 
 
 def collect_demographics(
