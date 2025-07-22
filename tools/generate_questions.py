@@ -1,74 +1,121 @@
-"""Utility to generate IQ questions via the o3pro model.
+"""Import question JSON files into the question bank.
 
-This script prompts an external generative model to produce
-IQ test items using established psychometric theory. Each
-item includes a rationale and difficulty estimate so that
-reviewers can validate content before it enters the question
-bank."""
+This helper merges manually created question files into
+``backend/data/question_bank.json``.  Each input file should contain
+either a JSON array of question objects or an object with a ``questions``
+array.  ``text`` and ``correct_index`` keys are converted to ``question``
+and ``answer`` for compatibility with the backend schema.  If an ``irt``
+object is missing, ``{"a": 1.0, "b": 0.0}`` is used.
 
-import os
+Run::
+
+    python tools/generate_questions.py --import_dir=generated_questions
+
+The script validates each question against ``questions/schema.json``,
+assigns sequential IDs and prints a summary of how many items were
+imported per difficulty level based on the ``irt.b`` parameter.
+"""
+
+from __future__ import annotations
+
 import json
-import openai
+from collections import defaultdict
+from pathlib import Path
+from typing import Dict, List
 
-MODEL = os.getenv("O3PRO_MODEL", "o3pro")
-openai.api_key = os.getenv("OPENAI_API_KEY")
-
-PROMPT = (
-    "Using open psychometric theory such as Spearman's g and common formats "
-    "like Raven's matrices, generate {n} original IQ test questions. Create "
-    "a diverse mixture of item types including pattern recognition, logical "
-    "reasoning and spatial reasoning. Return each question as JSON with the "
-    "fields: 'question', 'options' (four strings), 'answer' (index 0-3), "
-    "'difficulty' (1-5), 'rationale', and an 'irt' object containing "
-    "discrimination 'a' and difficulty 'b'. Optionally tag questions with a "
-    "'category' such as 'General IQ' or 'Spatial IQ'. Do not copy or "
-    "paraphrase items from proprietary tests."
-)
-
-PROPRIETARY_KEYWORDS = [
-    "wechsler",
-    "wais",
-    "wisc",
-    "raven",
-]
+from jsonschema import validate, ValidationError
 
 
-def generate(n: int = 60):
-    resp = openai.ChatCompletion.create(
-        model=MODEL,
-        messages=[{"role": "user", "content": PROMPT.format(n=n)}],
-    )
-    text = resp.choices[0].message.content
-    items = json.loads(text)
-    return items
+BANK_PATH = Path("backend/data/question_bank.json")
+SCHEMA_PATH = Path("questions/schema.json")
 
 
-def filter_proprietary(items):
-    filtered = []
-    for it in items:
-        content = json.dumps(it).lower()
-        if any(k in content for k in PROPRIETARY_KEYWORDS):
+def _load_item_schema() -> Dict:
+    with SCHEMA_PATH.open() as f:
+        schema = json.load(f)
+    return schema["properties"]["questions"]["items"]
+
+
+def _load_bank() -> List[Dict]:
+    if BANK_PATH.exists():
+        with BANK_PATH.open() as f:
+            return json.load(f)
+    return []
+
+
+def _save_bank(items: List[Dict]) -> None:
+    BANK_PATH.write_text(json.dumps(items, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def _difficulty_from_b(b: float) -> str:
+    if b <= -0.35:
+        return "easy"
+    if b >= 0.35:
+        return "hard"
+    return "medium"
+
+
+def import_dir(path: Path) -> None:
+    schema = _load_item_schema()
+    bank = _load_bank()
+    next_id = max((q["id"] for q in bank), default=-1) + 1
+    counts = defaultdict(int)
+
+    for json_file in sorted(path.glob("*.json")):
+        try:
+            data = json.loads(json_file.read_text(encoding="utf-8"))
+        except Exception as e:
+            print(f"Skipping {json_file.name}: {e}")
             continue
-        filtered.append(it)
-    return filtered
+
+        items = data.get("questions") if isinstance(data, dict) else data
+        if not isinstance(items, list):
+            print(f"Skipping {json_file.name}: not a list of questions")
+            continue
+
+        for item in items:
+            if "text" in item and "question" not in item:
+                item["question"] = item.pop("text")
+            if "correct_index" in item and "answer" not in item:
+                item["answer"] = item.pop("correct_index")
+
+            item.setdefault("irt", {"a": 1.0, "b": 0.0})
+            item["irt"].setdefault("a", 1.0)
+            item["irt"].setdefault("b", 0.0)
+
+            item["id"] = next_id
+            next_id += 1
+
+            try:
+                validate(item, schema)
+            except ValidationError as e:
+                print(f"Validation error in {json_file.name}: {e.message}")
+                continue
+
+            bank.append(item)
+            counts[_difficulty_from_b(item["irt"]["b"])] += 1
+
+    _save_bank(bank)
+
+    total = sum(counts.values())
+    print(f"Imported {total} questions into {BANK_PATH}")
+    for diff, c in counts.items():
+        print(f"  {diff}: {c}")
 
 
-def main():
+def main() -> None:
     import argparse
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-n", type=int, default=60)
-    parser.add_argument("-o", "--output", default="backend/data/question_bank.json")
-    args = parser.parse_args()
-    items = generate(args.n)
-    items = filter_proprietary(items)
-    # ensure sequential ids and include difficulty metadata
-    for i, item in enumerate(items):
-        item["id"] = i
-    with open(args.output, "w") as f:
-        json.dump(items, f, indent=2)
-    print(f"Saved {len(items)} filtered items to {args.output}")
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--import_dir", type=str, help="directory of JSON files to import")
+    args = ap.parse_args()
+
+    if args.import_dir:
+        import_dir(Path(args.import_dir))
+    else:
+        ap.error("--import_dir is required")
 
 
 if __name__ == "__main__":
     main()
+

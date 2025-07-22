@@ -69,27 +69,38 @@ AWS SNS を利用する場合は IAM コンソールでアクセスキーを発�
 - Pricing endpoints: `/pricing/{id}` shows the dynamic price for a user, `/play/record` registers a completed play and `/referral` adds a referral credit.
 - Demographic and party endpoints: `/user/demographics` records age, gender and income band. `/user/party` stores supported parties and enforces monthly change limits.
 - Aggregated data is available via `/leaderboard` and the authenticated `/data/iq` endpoint which returns differentially private averages.
-- The question bank with psychometric metadata lives in `backend/data/question_bank.json`. Run `tools/generate_questions.py` to create new items with the `o3pro` model. The script filters out content resembling proprietary IQ tests.
+- The question bank with psychometric metadata lives in `backend/data/question_bank.json`. Use `tools/generate_questions.py --import_dir=generated_questions` to merge question files you created with ChatGPT.
  - Individual question sets for the live quiz are stored under `questions/`. Each file must conform to `questions/schema.json` and can be fetched via `/quiz/start?set_id=set01`.
 - The backend reads these JSON files at runtime so new sets can be added via GitHub without redeploying the API.
   - Additional sets can simply be placed in the top-level `questions/` directory. Each file is validated against `schema.json` on startup so redeploy is unnecessary. Ensure all items are
     manually reviewed before use. The helper `tools/generate_iq_questions.py` can
     create new items in this format. It accepts `--n`, `--start_id` and
     `--outfile` arguments and validates IDs to avoid collisions.
-  To regenerate questions:
+  Prepare question files under `generated_questions/` and run:
   ```bash
-  OPENAI_API_KEY=your-key python tools/generate_questions.py -n 60
+  python tools/generate_questions.py --import_dir=generated_questions
   ```
-  The JSON output is saved to `backend/data/question_bank.json` with sequential `id` values.
-  To create a new pool file with the updated generator or your own prompt:
-  ```bash
-  OPENAI_API_KEY=your-key python tools/generate_iq_questions.py -n 50 -o new_items.json
-  ```
-  After reviewing `new_items.json`, move it into `backend/data/iq_pool/`.
-  After reviewing a new question file, place it in the top level `questions/`
-  directory and commit it to GitHub.  The API loads all `*.json` files from this
-  folder at startup so redeploying is unnecessary.  Make sure each file follows
-  `questions/schema.json` and validate IDs to avoid collisions.
+  Each imported file must contain a JSON array of objects with `text`, `options`,
+  `correct_index` and an `irt` object. IDs are assigned automatically and the
+  script reports how many easy, medium and hard questions were added.
+
+### Creating questions with ChatGPT
+
+Copy the following prompt into ChatGPT to generate a set of items:
+
+```
+Please create 10 'easy' IQ test questions that assess verbal, numerical, and spatial reasoning.
+Each question should include:
+  - text: the question statement (in Japanese)
+  - options: four answer options (A, B, C, D)
+  - correct_index: the zero-based index (0–3) of the correct answer
+Do not reuse copyrighted content or known test items.
+Return the questions as a JSON array.
+```
+
+Save the output to `generated_questions/easy_01.json` and add provisional IRT
+parameters. Use `{"a": 1.0, "b": -0.7}` for easy, `{"a": 1.0, "b": 0.0}` for
+medium and `{"a": 1.0, "b": 0.7}` for hard questions.
 
 ## Frontend (React)
 
