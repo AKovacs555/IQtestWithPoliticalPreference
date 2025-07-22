@@ -6,6 +6,12 @@ import random
 import time
 from typing import List, Optional
 
+import sys
+import os
+
+# Add the repository root (parent directory of backend) to the Python path
+sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
+
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
