@@ -7,6 +7,9 @@ This project provides an IQ quiz and political preference survey using a respons
 - Located in `backend/`.
 - Install dependencies with `pip install -r backend/requirements.txt`.
   This includes `pillow` for generating share images.
+- When the working directory is `frontend/` (e.g. serverless build steps),
+  a `frontend/backend` symlink points back to the root backend folder so the
+  same command still works.
 - Run locally using:
   ```bash
   uvicorn backend.main:app --reload
