@@ -49,6 +49,7 @@ export default function Settings() {
               <li key={i}>{p.timestamp}: {p.party_ids.join(', ')}</li>
             ))}
           </ul>
+          <Link to="/party" className="underline text-sm">Update Party Preference</Link>
         </div>
           <Link to="/" className="underline">Home</Link>
         </div>

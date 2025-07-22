@@ -11,5 +11,12 @@
   "take_quiz": "Take the Quiz",
   "upgrade": "Upgrade to premium for a longer quiz",
   "verified": "Verified",
-  "referral_link": "Your referral link"
+  "referral_link": "Your referral link",
+  "occupation.student": "Student",
+  "occupation.employee": "Company Employee",
+  "occupation.public": "Public Servant",
+  "occupation.freelance": "Self-Employed/Freelancer",
+  "occupation.unemployed": "Unemployed",
+  "occupation.other": "Other",
+  "party.select": "Select Your Party"
 }

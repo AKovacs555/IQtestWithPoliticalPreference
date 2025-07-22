@@ -9,7 +9,9 @@ from datetime import datetime
 from . import main
 
 
-def collect_demographics(age_band: str, gender: str, income_band: str, user_id: str) -> None:
+def collect_demographics(
+    age_band: str, gender: str, income_band: str, occupation: str, user_id: str
+) -> None:
     """Store demographic details for ``user_id``.
 
     The data are saved on the in-memory user record referenced by the
@@ -32,5 +34,6 @@ def collect_demographics(age_band: str, gender: str, income_band: str, user_id: 
         "age_band": age_band,
         "gender": gender,
         "income_band": income_band,
+        "occupation": occupation,
         "updated": datetime.utcnow().isoformat(),
     }

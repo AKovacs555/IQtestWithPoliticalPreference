@@ -11,5 +11,12 @@
   "take_quiz": "クイズを始める",
   "upgrade": "プレミアムにアップグレード",
   "verified": "認証済み",
-  "referral_link": "あなたの紹介リンク"
+  "referral_link": "あなたの紹介リンク",
+  "occupation.student": "学生",
+  "occupation.employee": "会社員",
+  "occupation.public": "公務員",
+  "occupation.freelance": "自営業/フリーランス",
+  "occupation.unemployed": "無職",
+  "occupation.other": "その他",
+  "party.select": "支持政党を選択"
 }
