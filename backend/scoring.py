@@ -1,7 +1,7 @@
 import math
 from typing import List
 
-from backend.irt import prob_correct, percentile
+from irt import prob_correct, percentile
 
 # Two-parameter logistic IRT ability estimation
 

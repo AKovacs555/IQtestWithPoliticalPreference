@@ -10,24 +10,29 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-from backend.sms_service import send_otp, SMS_PROVIDER
-from backend.todo_features import (
+from sms_service import send_otp, SMS_PROVIDER
+from todo_features import (
     leaderboard_by_party,
     generate_share_image,
     update_normative_distribution,
     dp_average,
     MIN_BUCKET_SIZE,
 )
-from backend.demographics import collect_demographics
-from backend.party import update_party_affiliation
-from backend.dp import add_laplace
+from demographics import collect_demographics
+from party import update_party_affiliation
+from dp import add_laplace
 
-from backend.questions import DEFAULT_QUESTIONS, QUESTION_MAP, get_random_questions
-from backend.questions import available_sets
-from backend.irt import update_theta, percentile
-from backend.scoring import estimate_theta, iq_score, ability_summary, standard_error
-from backend.payment import select_processor
-from backend.analytics import log_event
+from questions import DEFAULT_QUESTIONS, QUESTION_MAP, get_random_questions
+from questions import available_sets
+from irt import update_theta, percentile
+from scoring import (
+    estimate_theta,
+    iq_score,
+    ability_summary,
+    standard_error,
+)
+from payment import select_processor
+from analytics import log_event
 from tools.dif_analysis import dif_report
 import json
 
