@@ -14,8 +14,8 @@ except Exception:  # Pillow not installed
     Image = ImageDraw = ImageFont = None
 
 
-from . import main
-from .dp import add_laplace
+from backend import main
+from backend.dp import add_laplace
 
 
 def dp_average(
