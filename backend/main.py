@@ -179,6 +179,7 @@ class DemographicInfo(BaseModel):
     age_band: str
     gender: str
     income_band: str
+    occupation: str
 
 
 class SurveyResult(BaseModel):
@@ -618,7 +619,9 @@ async def survey_submit(payload: SurveySubmitRequest):
 @app.post("/user/demographics")
 async def user_demographics(info: DemographicInfo):
     """Collect demographic information and store securely."""
-    collect_demographics(info.age_band, info.gender, info.income_band, info.user_id)
+    collect_demographics(
+        info.age_band, info.gender, info.income_band, info.occupation, info.user_id
+    )
     return {"status": "ok"}
 
 

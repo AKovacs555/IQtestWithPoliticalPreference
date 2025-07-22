@@ -10,13 +10,20 @@ export default function DemographicsForm() {
   const [age, setAge] = useState('18-29');
   const [gender, setGender] = useState('other');
   const [income, setIncome] = useState('0-3m');
+  const [occupation, setOccupation] = useState('student');
 
   const save = () => {
     const user = localStorage.getItem('user_id') || 'testuser';
     fetch('/user/demographics', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ user_id: user, age_band: age, gender, income_band: income })
+      body: JSON.stringify({
+        user_id: user,
+        age_band: age,
+        gender,
+        income_band: income,
+        occupation,
+      })
     }).then(() => {
       const path = setId ? `/quiz?set=${setId}` : '/quiz';
       navigate(path);
@@ -51,6 +58,17 @@ export default function DemographicsForm() {
           <option value="3-6m">3-6m JPY</option>
           <option value="6-10m">6-10m JPY</option>
           <option value="10m+">10m+ JPY</option>
+        </select>
+      </div>
+      <div className="form-control">
+        <label className="label">Occupation</label>
+        <select className="select select-bordered" value={occupation} onChange={e => setOccupation(e.target.value)}>
+          <option value="student">Student</option>
+          <option value="employee">Company Employee</option>
+          <option value="public">Public Servant</option>
+          <option value="freelance">Self-Employed/Freelancer</option>
+          <option value="unemployed">Unemployed</option>
+          <option value="other">Other</option>
         </select>
       </div>
       <button className="btn btn-primary w-full" onClick={save}>Start Quiz</button>

@@ -86,10 +86,10 @@ AWS SNS を利用する場合は IAM コンソールでアクセスキーを発�
   OPENAI_API_KEY=your-key python tools/generate_iq_questions.py -n 50 -o new_items.json
   ```
   After reviewing `new_items.json`, move it into `backend/data/iq_pool/`.
-  追加した JSON ファイルを `questions/` ディレクトリに置き、GitHub にコミットすると
-  次回起動時に自動で読み込まれます。再デプロイは不要です。
-  新しいファイルを追加する際は `questions/schema.json` に従って必ずバリデーション
-  してください。
+  After reviewing a new question file, place it in the top level `questions/`
+  directory and commit it to GitHub.  The API loads all `*.json` files from this
+  folder at startup so redeploying is unnecessary.  Make sure each file follows
+  `questions/schema.json` and validate IDs to avoid collisions.
 
 ## Frontend (React)
 

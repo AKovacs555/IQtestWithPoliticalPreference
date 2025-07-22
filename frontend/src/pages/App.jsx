@@ -9,6 +9,7 @@ import Home from './Home';
 import Pricing from './Pricing';
 import Leaderboard from './Leaderboard';
 import SelectSet from './SelectSet';
+import PartySelect from './PartySelect';
 import { Chart } from 'chart.js/auto';
 import QuestionCard from '../components/QuestionCard';
 import Settings from './Settings.jsx';
@@ -225,6 +226,7 @@ const Result = () => {
   const share = params.get('share');
   const ref = React.useRef();
   const [avg, setAvg] = React.useState(null);
+  const [partyName, setPartyName] = React.useState('');
   const { t } = useTranslation();
 
   useEffect(() => {
@@ -254,8 +256,25 @@ const Result = () => {
       });
   }, []);
 
+  useEffect(() => {
+    const uid = localStorage.getItem('user_id') || 'testuser';
+    Promise.all([
+      fetch('/survey/start').then(r => r.json()),
+      fetch(`/user/stats/${uid}`).then(r => r.ok ? r.json() : { party_log: [] })
+    ]).then(([p, s]) => {
+      const latest = s.party_log && s.party_log.length ? s.party_log[s.party_log.length-1].party_ids[0] : null;
+      if (latest != null) {
+        const map = {};
+        p.parties.forEach(pt => { map[pt.id] = pt.name; });
+        setPartyName(map[latest] || '');
+      }
+    });
+  }, []);
+
   const url = encodeURIComponent(window.location.href);
-  const text = encodeURIComponent(`I scored ${Number(score).toFixed(1)} IQ!`);
+  const text = encodeURIComponent(
+    `I scored ${Number(score).toFixed(1)} IQ! ${partyName ? 'Supporter of ' + partyName : ''}`
+  );
 
   return (
     <PageTransition>
@@ -267,7 +286,7 @@ const Result = () => {
           <span className="text-xs text-gray-500" title="Scores are for entertainment and may not reflect a clinical IQ">what's this?</span>
           {avg && <p className="text-sm">Overall average IQ: {avg.toFixed(1)}</p>}
           <canvas ref={ref} height="120"></canvas>
-          {share && <img src={share} alt="Share card" className="mx-auto rounded" />}
+          {share && <img src={share} alt="IQ share card" className="mx-auto rounded" />}
           {share && (
             <div className="space-x-2">
               <a href={`https://twitter.com/intent/tweet?url=${url}&text=${text}`} target="_blank" rel="noreferrer" className="btn btn-sm">Share on X</a>
@@ -303,6 +322,7 @@ export default function App() {
         <Route path="/result" element={<Result />} />
         <Route path="/leaderboard" element={<Leaderboard />} />
         <Route path="/settings/:userId" element={<Settings />} />
+        <Route path="/party" element={<PartySelect />} />
       </Routes>
     </AnimatePresence>
   );
