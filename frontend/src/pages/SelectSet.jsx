@@ -2,10 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Layout from '../components/Layout';
 
+const API_BASE = import.meta.env.VITE_API_BASE || "";
+
 export default function SelectSet() {
   const [sets, setSets] = useState([]);
   useEffect(() => {
-    fetch('/quiz/sets')
+    fetch(`${API_BASE}/quiz/sets`)
       .then(res => res.json())
       .then(data => setSets(data.sets || []));
   }, []);

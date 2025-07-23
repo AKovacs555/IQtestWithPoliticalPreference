@@ -16,6 +16,8 @@ import Settings from './Settings.jsx';
 import DemographicsForm from './DemographicsForm.jsx';
 import confetti from 'canvas-confetti';
 
+const API_BASE = import.meta.env.VITE_API_BASE || "";
+
 const PageTransition = ({ children }) => (
   <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
     {children}
@@ -28,20 +30,22 @@ const Quiz = () => {
   const params = new URLSearchParams(location.search);
   const setId = params.get('set');
   const [session, setSession] = React.useState(null);
-  const [question, setQuestion] = React.useState(null);
-  const [count, setCount] = React.useState(0);
+  const [questions, setQuestions] = React.useState([]);
+  const [answers, setAnswers] = React.useState([]);
+  const [current, setCurrent] = React.useState(0);
   const [timeLeft, setTimeLeft] = React.useState(360);
   const [suspicious, setSuspicious] = React.useState(false);
   const { t } = useTranslation();
   const watermark = React.useMemo(() => `${session?.slice(0,6) || ''}-${Date.now()}`,[session]);
 
   React.useEffect(() => {
-    const url = setId ? `/adaptive/start?set_id=${setId}` : '/adaptive/start';
+    const url = setId ? `${API_BASE}/quiz/start?set_id=${setId}` : `${API_BASE}/quiz/start`;
     fetch(url)
       .then(res => res.json())
       .then(data => {
         setSession(data.session_id);
-        setQuestion(data.question);
+        setQuestions(data.questions);
+        setCurrent(0);
       });
   }, [setId]);
 
@@ -71,25 +75,33 @@ const Quiz = () => {
   }, []);
 
   const select = (i) => {
-    fetch('/adaptive/answer', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ session_id: session, answer: i })
-    })
-      .then(res => res.json())
-      .then(data => {
-        if (data.finished) {
+    const a = [...answers];
+    a[current] = i;
+    setAnswers(a);
+    if (current + 1 < questions.length) {
+      setCurrent(c => c + 1);
+    } else {
+      fetch(`${API_BASE}/quiz/submit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          session_id: session,
+          answers: a.map((ans, idx) => ({
+            id: questions[idx].id,
+            answer: ans
+          }))
+        })
+      })
+        .then(res => res.json())
+        .then(data => {
           const params = new URLSearchParams({
-            score: data.score,
+            score: data.iq,
             percentile: data.percentile,
-            share: data.share_url,
+            share: data.share_url
           });
           window.location.href = '/result?' + params.toString();
-        } else {
-          setQuestion(data.next_question);
-          setCount(c => c + 1);
-        }
-      });
+        });
+    }
   };
 
   return (
@@ -98,17 +110,17 @@ const Quiz = () => {
         <div className="space-y-4 max-w-lg mx-auto">
           <div className="flex justify-between items-center">
             <span className="text-sm font-mono">
-              {t('quiz.progress', { current: count + 1, total: 20 })}
+              {t('quiz.progress', { current: current + 1, total: questions.length })}
             </span>
             <div className="text-right font-mono">
               {Math.floor(timeLeft / 60)}:{`${timeLeft % 60}`.padStart(2, '0')}
             </div>
           </div>
-          <ProgressBar value={(count / 20) * 100} />
-          {question && (
+          <ProgressBar value={(current / questions.length) * 100} />
+          {questions[current] && (
             <QuestionCard
-              question={question.question}
-              options={question.options}
+              question={questions[current].question}
+              options={questions[current].options}
               onSelect={select}
               watermark={watermark}
             />
@@ -128,7 +140,7 @@ const Survey = () => {
   const [answers, setAnswers] = useState([]);
 
   useEffect(() => {
-    fetch('/survey/start').then(res => res.json()).then(data => setItems(data.items));
+    fetch(`${API_BASE}/survey/start`).then(res => res.json()).then(data => setItems(data.items));
   }, []);
 
   const back = () => setIndex(i => Math.max(i - 1, 0));
@@ -139,7 +151,7 @@ const Survey = () => {
     if (index + 1 < items.length) {
       setIndex(index + 1);
     } else {
-      fetch('/survey/submit', {
+      fetch(`${API_BASE}/survey/submit`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ answers: a })
@@ -248,7 +260,7 @@ const Result = () => {
   }, []);
 
   useEffect(() => {
-    fetch('/leaderboard')
+    fetch(`${API_BASE}/leaderboard`)
       .then(res => res.json())
       .then(data => {
         const all = data.leaderboard.map(l => l.avg_iq);
@@ -259,8 +271,8 @@ const Result = () => {
   useEffect(() => {
     const uid = localStorage.getItem('user_id') || 'testuser';
     Promise.all([
-      fetch('/survey/start').then(r => r.json()),
-      fetch(`/user/stats/${uid}`).then(r => r.ok ? r.json() : { party_log: [] })
+      fetch(`${API_BASE}/survey/start`).then(r => r.json()),
+      fetch(`${API_BASE}/user/stats/${uid}`).then(r => r.ok ? r.json() : { party_log: [] })
     ]).then(([p, s]) => {
       const latest = s.party_log && s.party_log.length ? s.party_log[s.party_log.length-1].party_ids[0] : null;
       if (latest != null) {

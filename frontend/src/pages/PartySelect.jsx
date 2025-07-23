@@ -2,13 +2,15 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 
+const API_BASE = import.meta.env.VITE_API_BASE || "";
+
 export default function PartySelect() {
   const [parties, setParties] = useState([]);
   const [selected, setSelected] = useState([]);
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetch('/survey/start')
+    fetch(`${API_BASE}/survey/start`)
       .then(res => res.json())
       .then(data => setParties(data.parties || []));
   }, []);
@@ -26,7 +28,7 @@ export default function PartySelect() {
 
   const save = () => {
     const user = localStorage.getItem('user_id') || 'testuser';
-    fetch('/user/party', {
+    fetch(`${API_BASE}/user/party`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ user_id: user, party_ids: selected })

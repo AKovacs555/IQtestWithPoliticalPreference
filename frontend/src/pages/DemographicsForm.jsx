@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Layout from '../components/Layout';
 
+const API_BASE = import.meta.env.VITE_API_BASE || "";
+
 export default function DemographicsForm() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -14,7 +16,7 @@ export default function DemographicsForm() {
 
   const save = () => {
     const user = localStorage.getItem('user_id') || 'testuser';
-    fetch('/user/demographics', {
+    fetch(`${API_BASE}/user/demographics`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
