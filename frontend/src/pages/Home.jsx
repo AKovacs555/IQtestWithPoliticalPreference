@@ -16,7 +16,7 @@ export default function Home() {
         <motion.h1 style={{ y: y2 }} className="text-5xl font-extrabold relative z-10">
           {t('landing.title')}
         </motion.h1>
-        <p className="max-w-xl mx-auto relative z-10">Take our quick adaptive test and see how you compare.</p>
+        <p className="max-w-xl mx-auto relative z-10">Take our quick IQ test and see how you compare.</p>
         <div className="space-x-2 relative z-10">
           <Link to="/select-set" className="btn btn-primary">{t('landing.startButton')}</Link>
           <Link to="/pricing" className="btn btn-secondary">Pricing</Link>
