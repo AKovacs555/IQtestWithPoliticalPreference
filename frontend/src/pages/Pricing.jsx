@@ -3,6 +3,8 @@ import Layout from '../components/Layout';
 import { useTranslation } from 'react-i18next';
 import AdProgress from '../components/AdProgress';
 
+const API_BASE = import.meta.env.VITE_API_BASE || "";
+
 const userId = 'demo';
 
 export default function Pricing() {
@@ -13,12 +15,12 @@ export default function Pricing() {
 
   const watchAd = () => {
     setProgress(0);
-    fetch('/ads/start', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ user_id: userId }) });
+    fetch(`${API_BASE}/ads/start`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ user_id: userId }) });
     const id = setInterval(() => {
       setProgress(p => {
         if (p >= 100) {
           clearInterval(id);
-          fetch('/ads/complete', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ user_id: userId }) });
+          fetch(`${API_BASE}/ads/complete`, { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ user_id: userId }) });
           return 100;
         }
         return p + 10;
@@ -27,7 +29,7 @@ export default function Pricing() {
   };
 
   useEffect(() => {
-    fetch(`/pricing/${userId}`)
+    fetch(`${API_BASE}/pricing/${userId}`)
       .then(res => res.json())
       .then(data => {
         setPrice(data.price);

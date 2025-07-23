@@ -3,13 +3,15 @@ import { Link, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import Layout from '../components/Layout';
 
+const API_BASE = import.meta.env.VITE_API_BASE || "";
+
 export default function Settings() {
   const { userId } = useParams();
   const [stats, setStats] = useState(null);
 
   useEffect(() => {
     if (!userId) return;
-    fetch(`/user/stats/${userId}`)
+    fetch(`${API_BASE}/user/stats/${userId}`)
       .then(res => res.json())
       .then(setStats);
   }, [userId]);

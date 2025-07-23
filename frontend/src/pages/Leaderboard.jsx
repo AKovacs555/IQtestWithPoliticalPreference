@@ -2,16 +2,18 @@ import React, { useEffect, useState, useRef } from 'react';
 import Layout from '../components/Layout';
 import { Chart } from 'chart.js/auto';
 
+const API_BASE = import.meta.env.VITE_API_BASE || "";
+
 export default function Leaderboard() {
   const [data, setData] = useState([]);
   const [partyNames, setPartyNames] = useState({});
   const chartRef = useRef();
 
   useEffect(() => {
-    fetch('/leaderboard')
+    fetch(`${API_BASE}/leaderboard`)
       .then(res => res.json())
       .then(res => setData(res.leaderboard || []));
-    fetch('/survey/start')
+    fetch(`${API_BASE}/survey/start`)
       .then(res => res.json())
       .then(res => {
         const map = {};
