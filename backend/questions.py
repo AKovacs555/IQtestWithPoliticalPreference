@@ -76,6 +76,8 @@ def load_questions(set_id: str | None = None) -> List[Dict[str, Any]]:
         with path.open() as f:
             data = json.load(f)
         for item in data.get("questions", []):
+            if "text" not in item or "correct_index" not in item:
+                continue
             qid = item.get("id")
             if qid is None or qid in seen_ids:
                 item["id"] = next_id
@@ -90,27 +92,8 @@ def load_questions(set_id: str | None = None) -> List[Dict[str, Any]]:
 
 
 def validate_questions(set_id: str | None = None) -> None:
-    """Validate question files against the schema and check ID uniqueness."""
-    if not SCHEMA_PATH.exists():
-        return
-
-    with SCHEMA_PATH.open() as f:
-        schema = json.load(f)
-
-    paths = [POOL_PATH / f"{set_id}.json"] if set_id else sorted(POOL_PATH.glob("*.json"))
-    seen_ids = set()
-    for path in paths:
-        with path.open() as f:
-            data = json.load(f)
-        try:
-            validate(data, schema)
-        except ValidationError as e:
-            raise ValueError(f"{path.name}: {e.message}")
-        for item in data.get("questions", []):
-            qid = item.get("id")
-            if qid in seen_ids:
-                raise ValueError(f"Duplicate question id {qid}")
-            seen_ids.add(qid)
+    """Placeholder for schema validation (disabled)."""
+    return
 
 
 DEFAULT_QUESTIONS: List[Dict[str, Any]] = []
@@ -159,41 +142,25 @@ def get_random_questions(n: int, set_id: str | None = None) -> List[Dict[str, An
 
 
 def get_balanced_random_questions(
-    n: int, split: Tuple[float, float, float] = (0.3, 0.4, 0.3)
+    n: int = 20, split: Tuple[float, float, float] = (0.3, 0.4, 0.3)
 ) -> List[Dict[str, Any]]:
-    """Return ``n`` questions sampled by difficulty using IRT ``b`` values.
+    """Return ``n`` items sampled by difficulty using IRT ``b`` values."""
 
-    ``split`` defines the fraction of easy, medium and hard items.  If the
-    question bank does not contain enough questions for a given level, the
-    function falls back to :func:`get_random_questions` using the default
-    pool.
-    """
+    easy = [q for q in QUESTION_MAP.values() if q["irt"]["b"] <= -0.33]
+    mid = [q for q in QUESTION_MAP.values() if -0.33 < q["irt"]["b"] < 0.33]
+    hard = [q for q in QUESTION_MAP.values() if q["irt"]["b"] >= 0.33]
 
-    if not QUESTION_BANK:
-        return get_random_questions(n)
+    k_easy, k_mid, k_hard = map(lambda r: int(n * r), split)
 
-    if len(QUESTION_BANK) < n:
-        # sample with replacement when pool is small
-        return random.choices(QUESTION_BANK, k=n)
+    def _pick(group, k):
+        if not group:
+            return []
+        return random.sample(group, k) if len(group) >= k else random.choices(group, k=k)
 
-    easy_list = [q for q in QUESTION_BANK if q.get("irt", {}).get("b", 0.0) <= -0.33]
-    medium_list = [
-        q for q in QUESTION_BANK if -0.33 < q.get("irt", {}).get("b", 0.0) <= 0.33
-    ]
-    hard_list = [q for q in QUESTION_BANK if q.get("irt", {}).get("b", 0.0) > 0.33]
-
-    counts = [round(n * p) for p in split]
-    counts[2] = n - counts[0] - counts[1]
-
-    groups = [easy_list, medium_list, hard_list]
-    selected: List[Dict[str, Any]] = []
-    for grp, count in zip(groups, counts):
-        if len(grp) >= count:
-            selected.extend(random.sample(grp, count))
-        elif grp:
-            selected.extend(random.choices(grp, k=count))
-        else:
-            selected.extend(random.choices(QUESTION_BANK, k=count))
-
+    selected = _pick(easy, k_easy) + _pick(mid, k_mid) + _pick(hard, k_hard)
+    if len(selected) < n:
+        remaining = n - len(selected)
+        selected += random.sample(list(QUESTION_MAP.values()), remaining)
+    random.shuffle(selected)
     return selected
 

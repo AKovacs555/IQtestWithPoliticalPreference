@@ -34,7 +34,7 @@ def _load_item_schema() -> Dict:
     """Return the item schema from :data:`SCHEMA_PATH`."""
     with SCHEMA_PATH.open(encoding="utf-8") as f:
         schema = json.load(f)
-    return schema["properties"]["questions"]["items"]
+    return schema
 
 
 def _load_bank() -> List[Dict]:
@@ -94,7 +94,7 @@ def import_dir(path: Path) -> None:
             item["irt"].setdefault("a", 1.0)
             if "b" not in item["irt"]:
                 diff = item.get("difficulty", "medium")
-                default_b = {"easy": -1.0, "hard": 1.0}.get(diff, 0.0)
+                default_b = {"easy": -0.7, "hard": 0.7}.get(diff, 0.0)
                 item["irt"]["b"] = default_b
 
             qid = item.get("id")
