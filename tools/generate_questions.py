@@ -84,7 +84,19 @@ def import_dir(path: Path) -> None:
             continue
 
         for item in items:
-            # convert legacy keys
+            # validate using legacy keys
+            validate_data = item.copy()
+            if "question" in validate_data and "text" not in validate_data:
+                validate_data["text"] = validate_data["question"]
+            if "answer" in validate_data and "correct_index" not in validate_data:
+                validate_data["correct_index"] = validate_data["answer"]
+            try:
+                validate(validate_data, schema)
+            except ValidationError as e:
+                print(f"Validation error in {json_file.name}: {e.message}")
+                continue
+
+            # convert legacy keys after validation
             if "text" in item and "question" not in item:
                 item["question"] = item.pop("text")
             if "correct_index" in item and "answer" not in item:
@@ -106,12 +118,6 @@ def import_dir(path: Path) -> None:
                 seen_ids.add(qid)
 
             item.pop("needs_image", None)
-
-            try:
-                validate(item, schema)
-            except ValidationError as e:
-                print(f"Validation error in {json_file.name}: {e.message}")
-                continue
 
             bank.append(item)
             counts[_difficulty_label(item)] += 1
