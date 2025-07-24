@@ -16,6 +16,9 @@ export default function Navbar() {
         <Link to="/leaderboard" className="btn btn-ghost btn-sm">Leaderboard</Link>
         <Link to="/pricing" className="btn btn-ghost btn-sm">Pricing</Link>
         <Link to="/select-set" className="btn btn-primary btn-sm">Take Quiz</Link>
+        {import.meta.env.DEV && (
+          <Link to="/admin/upload" className="btn btn-ghost btn-sm">Admin</Link>
+        )}
       </div>
     </div>
   );
