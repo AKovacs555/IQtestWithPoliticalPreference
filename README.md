@@ -1,6 +1,6 @@
 # IQtestWithPoliticalPreference
 
-This project provides an IQ quiz and political preference survey using a responsive freemium design. Legacy Flask templates now live under `archive/` while the active codebase runs on **FastAPI** with a **React** front end. The UI uses **Material UI** components with Tailwind utilities and works on mobile and desktop devices.
+This project provides an IQ quiz and political preference survey using a responsive freemium design. Older Flask implementations are stored in the `archive/` directory for reference while the active codebase runs on **FastAPI** with a **React** front end. The UI uses **Material UI** components with Tailwind utilities and works on mobile and desktop devices.
 
 ## Backend (FastAPI)
 
@@ -39,9 +39,12 @@ This project provides an IQ quiz and political preference survey using a respons
   - `RETRY_POINT_COST` – points required for an extra attempt.
   - `VITE_API_BASE` – base URL of the backend API for the React app.
     This should point to the Render deployment, e.g.
-    `https://iqtestandpoliticalpreference.onrender.com`. Be sure to redeploy
+    `https://iqandpoliticalpreference.onrender.com`. Be sure to redeploy
     the frontend after changing environment variables.
   - `VITE_STRIPE_PUBLISHABLE_KEY` – public Stripe key used by the frontend.
+
+When running the project locally, copy `.env.example` to `.env` and fill in the
+required keys before starting the backend or frontend.
 
 ## 環境設定
 
@@ -67,7 +70,7 @@ Supabase、Stripe、AWS SNS、Google AdMob のアカウントを作成し、そ�
 AWS SNS を利用する場合は IAM コンソールでアクセスキーを発行し、
 `AWS_ACCESS_KEY_ID` と `AWS_SECRET_ACCESS_KEY` を設定します。
 - OTP endpoints: `/auth/request-otp` and `/auth/verify-otp` support SMS via Twilio or SNS and fallback email codes through Supabase. Identifiers are hashed with per-record salts.
-- Quiz endpoints: `/quiz/start` returns a random set of questions from the `questions/` directory; `/quiz/submit` accepts answers and records a play. Optional query `set_id` selects a specific set file. `/quiz/sets` lists the available set IDs for the frontend.
+- Quiz endpoints: `/quiz/sets` returns the list of available set IDs. `/quiz/start?set_id=<id>` begins a quiz and provides a session ID along with the questions for that set. `/quiz/submit` accepts all answers at once and returns the score, percentile and share URL. `/adaptive/start` and `/adaptive/answer` remain for legacy clients but are no longer used by the default frontend.
 - Pricing endpoints: `/pricing/{id}` shows the dynamic price for a user, `/play/record` registers a completed play and `/referral` adds a referral credit.
 - Demographic and party endpoints: `/user/demographics` records age, gender and income band. `/user/party` stores supported parties and enforces monthly change limits.
 - Aggregated data is available via `/leaderboard` and the authenticated `/data/iq` endpoint which returns differentially private averages.
@@ -113,21 +116,29 @@ medium and `{"a": 1.0, "b": 0.7}` for hard questions.
 - Basic anti-cheat measures disable text selection, draw questions on a canvas
   and apply a watermark. Comments note that screenshots cannot be fully blocked.
 - React components are organised under `src/components` and `src/pages` for clarity.
+- The `Quiz` component now stores answers locally and submits them all at once via `/quiz/submit`.
 - A new `Leaderboard` page displays average IQ by party using the `/leaderboard` API.
 - Users can toggle between light and dark themes using the button in the navbar.
 - Translations live under `frontend/translations/` and are loaded via `src/i18n.js`.
   Vite's config enables JSON imports so new languages can be added without code changes.
 - The landing page uses framer-motion for parallax scrolling and animated calls to action, while quiz pages feature progress bars and confetti on completion.
 
-To deploy on serverless hosting, point Vercel to `frontend` for the React build
-and Render (or another provider) to `backend/main.py`. Provide the environment
-variables below to both platforms. After pushing to GitHub, redeployments will
-occur automatically.
+To get started quickly, deploy the backend and frontend separately.
 
-On Render create a **Web Service** from this repository and copy the variables
-from `.env.example` into the dashboard. On Vercel configure the same values
-under *Project Settings → Environment Variables*. Both services will pick up
-changes on each commit and redeploy automatically.
+### Deploying the backend on Render
+
+1. Create a **Web Service** from this GitHub repository.
+2. Set the root directory to the project root.
+3. Use `pip install -r backend/requirements.txt` as the build command.
+4. Use `uvicorn backend.main:app --host 0.0.0.0 --port 10000` as the start command.
+5. Add the environment variables listed above in the Render dashboard.
+
+### Deploying the frontend on Vercel
+
+1. Create a Vercel project and point it at the `frontend/` directory.
+2. Define `VITE_API_BASE`, `VITE_STRIPE_PUBLISHABLE_KEY` and any Supabase keys under *Project Settings → Environment Variables*.
+3. Use `npm install` followed by `npm run build` for the build steps.
+4. Any change to the variables requires a redeploy from Vercel’s dashboard.
 
 This repository now serves as a starting point for the revamped freemium quiz platform. Terms of Service and a Privacy Policy are provided under `templates/` and personal identifiers are hashed with per-record salts. Aggregated statistics apply differential privacy noise for research use only.
 
@@ -144,6 +155,9 @@ This repository now serves as a starting point for the revamped freemium quiz pl
 - Promotional codes can be configured via the admin API to offer temporary discounts.
 - Business customers can request aggregated data via the `/leaderboard`
   endpoint once differential privacy safeguards are implemented.
+  Prices and retry tiers are controlled via `MAX_FREE_ATTEMPTS`,
+  `RETRY_PRICE_TIERS` and `PRO_PRICE_MONTHLY` environment variables.  Aggregated
+  insights are also available from the authenticated `/data/iq` endpoint.
 
 ## Points System
 
@@ -154,21 +168,20 @@ view by default (`AD_REWARD_POINTS`).
 
 ## Question schema
 
-Question sets in `questions/` follow `questions/schema.json`:
+Question sets in `questions/` follow `questions/schema.json` and contain the following fields:
 
-```json
-{
-  "id": "set01",
-  "language": "en",
-  "title": "Sample",
-  "questions": [
-    {"id": 0, "question": "?", "options": ["A", "B"], "answer": 1,
-     "irt": {"a": 1.0, "b": 0.0}}
-  ]
-}
-```
+- `id` (string): unique identifier for the set.
+- `language` (string): ISO code such as `en` or `ja`.
+- `title` (string): human‑readable title for the set.
+- `questions` (array): list of objects with:
+  * `id` (integer) – unique within the set (optional for automatic numbering).
+  * `question` (string) – the question text.
+  * `options` (array of strings) – four answer choices.
+  * `answer` (integer) – zero‑based index (0–3) of the correct answer.
+  * `irt` (object) – psychometric parameters `{ "a": 1.0, "b": 0.0 }` by default.
 
-Files are validated on startup so new sets can be committed without redeploying.
+Older files using `text` and `correct_index` are still supported by the backend, but new files should adopt `question` and `answer`.
+Files are validated against `questions/schema.json` at startup so new sets can be committed without redeploying the API.
 
 ## Internationalisation
 
