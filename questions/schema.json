@@ -11,7 +11,14 @@
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["text", "options", "correct_index", "category", "difficulty", "irt"],
+        "required": [
+          "text",
+          "options",
+          "correct_index",
+          "category",
+          "difficulty",
+          "irt"
+        ],
         "properties": {
           "id": {"type": "integer", "description": "unique question id"},
           "text": {"type": "string", "description": "question text"},
@@ -21,17 +28,23 @@
             "minItems": 2
           },
           "correct_index": {"type": "integer", "description": "index of the correct option"},
-          "category": {"type": "string", "description": "domain of the item"},
-          "difficulty": {"type": "string", "description": "difficulty label"},
+          "category": {
+            "enum": ["語彙", "数理", "空間", "論理"],
+            "description": "domain of the item"
+          },
+          "difficulty": {
+            "enum": ["easy", "medium", "hard"],
+            "description": "difficulty label"
+          },
           "needs_image": {"type": "boolean"},
           "image": {"type": "string"},
           "irt": {
             "type": "object",
-            "required": ["a", "b"],
             "properties": {
               "a": {"type": "number"},
               "b": {"type": "number"}
-            }
+            },
+            "required": ["a", "b"]
           }
         }
       }
