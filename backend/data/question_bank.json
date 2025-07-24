@@ -12,7 +12,7 @@
     "difficulty": 2,
     "rationale": "Powers of two; 16 * 2 = 32",
     "irt": {
-      "a": 1.0,
+      "a": 2.0,
       "b": -1.0
     }
   },
@@ -29,8 +29,8 @@
     "difficulty": 3,
     "rationale": "Simple syllogism",
     "irt": {
-      "a": 1.1,
-      "b": -0.5
+      "a": 2.0,
+      "b": 0.0
     }
   },
   {
@@ -46,7 +46,7 @@
     "difficulty": 1,
     "rationale": "Definition of a square",
     "irt": {
-      "a": 0.9,
+      "a": 2.0,
       "b": -2.0
     }
   },
@@ -63,7 +63,7 @@
     "difficulty": 2,
     "rationale": "Letters increase by 2",
     "irt": {
-      "a": 1.0,
+      "a": 2.0,
       "b": -1.0
     }
   },
@@ -80,7 +80,7 @@
     "difficulty": 1,
     "rationale": "-2 is less than 0",
     "irt": {
-      "a": 0.8,
+      "a": 2.0,
       "b": -2.5
     }
   },
@@ -97,8 +97,8 @@
     "difficulty": 2,
     "rationale": "Car is not an animal",
     "irt": {
-      "a": 1.0,
-      "b": -0.8
+      "a": 2.0,
+      "b": 0.0
     }
   },
   {
@@ -114,7 +114,7 @@
     "difficulty": 1,
     "rationale": "15 / 3 = 5",
     "irt": {
-      "a": 0.9,
+      "a": 2.0,
       "b": -2.0
     }
   },
@@ -131,7 +131,7 @@
     "difficulty": 3,
     "rationale": "Anagram of PACIFIC",
     "irt": {
-      "a": 1.2,
+      "a": 2.0,
       "b": 0.2
     }
   },
@@ -148,8 +148,8 @@
     "difficulty": 2,
     "rationale": "Half of 10 is 5",
     "irt": {
-      "a": 1.0,
-      "b": -0.5
+      "a": 2.0,
+      "b": 0.0
     }
   },
   {
@@ -165,7 +165,7 @@
     "difficulty": 2,
     "rationale": "Dolphin is a mammal",
     "irt": {
-      "a": 0.9,
+      "a": 2.0,
       "b": -1.0
     }
   },
@@ -181,7 +181,7 @@
     "answer": 0,
     "difficulty": 3,
     "irt": {
-      "a": 1.0,
+      "a": 2.0,
       "b": 1.0
     }
   },
@@ -197,7 +197,7 @@
     "answer": 0,
     "difficulty": 3,
     "irt": {
-      "a": 1.0,
+      "a": 2.0,
       "b": 1.0
     }
   },
@@ -213,7 +213,7 @@
     "answer": 0,
     "difficulty": 3,
     "irt": {
-      "a": 1.0,
+      "a": 2.0,
       "b": 1.0
     }
   },
@@ -229,7 +229,7 @@
     "answer": 0,
     "difficulty": 3,
     "irt": {
-      "a": 1.0,
+      "a": 2.0,
       "b": 1.0
     }
   },
@@ -245,7 +245,7 @@
     "answer": 0,
     "difficulty": 3,
     "irt": {
-      "a": 1.0,
+      "a": 2.0,
       "b": 1.0
     }
   },
@@ -261,7 +261,7 @@
     "answer": 0,
     "difficulty": 3,
     "irt": {
-      "a": 1.0,
+      "a": 2.0,
       "b": 1.0
     }
   },
@@ -277,8 +277,8 @@
     "answer": 0,
     "difficulty": 3,
     "irt": {
-      "a": 1.0,
-      "b": 1.0
+      "a": 2.0,
+      "b": 0.2
     }
   },
   {
@@ -293,8 +293,8 @@
     "answer": 0,
     "difficulty": 3,
     "irt": {
-      "a": 1.0,
-      "b": 1.0
+      "a": 2.0,
+      "b": 0.2
     }
   },
   {
@@ -309,8 +309,8 @@
     "answer": 0,
     "difficulty": 3,
     "irt": {
-      "a": 1.0,
-      "b": 1.0
+      "a": 2.0,
+      "b": 0.2
     }
   },
   {
@@ -325,8 +325,8 @@
     "answer": 0,
     "difficulty": 3,
     "irt": {
-      "a": 1.0,
-      "b": 1.0
+      "a": 2.0,
+      "b": 0.2
     }
   }
 ]

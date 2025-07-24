@@ -25,3 +25,4 @@ def test_adaptive_progress():
     avg_b = sum(a['b'] for a in answers) / len(answers)
     assert theta > 0
     assert len(answers) <= 15
+    assert avg_b > 0.3

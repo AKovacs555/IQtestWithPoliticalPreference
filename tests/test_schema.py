@@ -1,18 +1,8 @@
 import json
-from pathlib import Path
-from jsonschema import validate
+import jsonschema
 
-SCHEMA_PATH = Path('questions/schema.json')
 
 def test_sample_schema():
-    with SCHEMA_PATH.open() as f:
-        schema = json.load(f)
-    sample = {
-        'text': 'Sample?',
-        'options': ['a', 'b', 'c', 'd'],
-        'correct_index': 0,
-        'category': '論理',
-        'difficulty': 'easy',
-        'irt': {'a': 1.0, 'b': 0.0}
-    }
-    validate(sample, schema)
+    schema = json.load(open('questions/schema.json'))
+    sample = json.load(open('generated_questions/sample.json'))
+    jsonschema.validate(sample, schema)

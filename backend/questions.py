@@ -119,12 +119,8 @@ QUESTION_MAP.update({q["id"]: q for q in QUESTION_BANK})
 __all__ = [
     "available_sets",
     "load_questions",
-    "validate_questions",
-    "get_random_questions",
-    "get_balanced_random_questions",
-    "DEFAULT_QUESTIONS",
     "QUESTION_MAP",
-    "QUESTION_BANK",
+    "get_balanced_random_questions",
 ]
 
 
@@ -150,17 +146,18 @@ def get_balanced_random_questions(
     mid = [q for q in QUESTION_MAP.values() if -0.33 < q["irt"]["b"] < 0.33]
     hard = [q for q in QUESTION_MAP.values() if q["irt"]["b"] >= 0.33]
 
-    k_easy, k_mid, k_hard = map(lambda r: int(n * r), split)
+    k_e, k_m, k_h = map(lambda r: int(round(n * r)), split)
 
     def _pick(group, k):
-        if not group:
-            return []
-        return random.sample(group, k) if len(group) >= k else random.choices(group, k=k)
+        if len(group) >= k:
+            return random.sample(group, k)
+        return list(group)
 
-    selected = _pick(easy, k_easy) + _pick(mid, k_mid) + _pick(hard, k_hard)
+    selected = _pick(easy, k_e) + _pick(mid, k_m) + _pick(hard, k_h)
+    used_ids = {q["id"] for q in selected}
     if len(selected) < n:
-        remaining = n - len(selected)
-        selected += random.sample(list(QUESTION_MAP.values()), remaining)
+        remaining_pool = [q for q in QUESTION_MAP.values() if q["id"] not in used_ids]
+        selected += random.sample(remaining_pool, n - len(selected))
     random.shuffle(selected)
     return selected
 

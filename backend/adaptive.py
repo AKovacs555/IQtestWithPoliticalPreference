@@ -16,6 +16,10 @@ def select_next_question(
     unused = [q for q in pool if q["id"] not in answered_ids]
     if not unused:
         return None
+
+    harder = [q for q in unused if q["irt"]["b"] >= theta]
+    if harder:
+        return min(harder, key=lambda q: q["irt"]["b"] - theta)
     return min(unused, key=lambda q: abs(q["irt"]["b"] - theta))
 
 
