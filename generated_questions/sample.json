@@ -1,0 +1,8 @@
+{
+  "text": "Sample question?",
+  "options": ["A", "B", "C", "D"],
+  "correct_index": 1,
+  "category": "論理",
+  "difficulty": "easy",
+  "irt": {"a": 1.0, "b": 0.0}
+}
