@@ -15,8 +15,9 @@ sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 from fastapi import FastAPI, HTTPException, Header
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from jsonschema import validate, ValidationError
 from pathlib import Path
+import tempfile
+from tools.generate_questions import import_dir
 
 from sms_service import send_otp, SMS_PROVIDER
 from todo_features import (
@@ -736,34 +737,10 @@ async def upload_questions(
     if x_admin_api_key != os.getenv("ADMIN_API_KEY", ""):
         raise HTTPException(status_code=401, detail="Unauthorized")
 
-    schema_path = Path(__file__).resolve().parents[1] / "questions" / "schema.json"
-    schema = json.loads(schema_path.read_text())
-
-    bank_path = Path(__file__).resolve().parent / "data" / "question_bank.json"
-    bank = json.loads(bank_path.read_text()) if bank_path.exists() else []
-    next_id = max([q.get("id", -1) for q in bank] or [-1]) + 1
-
-    for item in payload.questions:
-        validate_data = item.copy()
-        if "question" in validate_data and "text" not in validate_data:
-            validate_data["text"] = validate_data["question"]
-        if "answer" in validate_data and "correct_index" not in validate_data:
-            validate_data["correct_index"] = validate_data["answer"]
-        try:
-            validate(validate_data, schema)
-        except ValidationError as e:
-            raise HTTPException(status_code=422, detail=f"Validation error: {e.message}")
-
-        if "text" in item and "question" not in item:
-            item["question"] = item.pop("text")
-        if "correct_index" in item and "answer" not in item:
-            item["answer"] = item.pop("correct_index")
-        item.setdefault("irt", {"a": 1.0, "b": 0.0})
-        if "id" not in item:
-            item["id"] = next_id
-            next_id += 1
-        item.pop("needs_image", None)
-        bank.append(item)
-
-    bank_path.write_text(json.dumps(bank, ensure_ascii=False, indent=2))
+    with tempfile.TemporaryDirectory() as tmpdir:
+        upload_path = Path(tmpdir) / "upload.json"
+        upload_path.write_text(
+            json.dumps(payload.questions, ensure_ascii=False), encoding="utf-8"
+        )
+        import_dir(Path(tmpdir))
     return {"status": "success", "count": len(payload.questions)}

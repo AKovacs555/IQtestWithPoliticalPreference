@@ -3,15 +3,28 @@ import Layout from '../components/Layout';
 
 export default function AdminUpload() {
   const [jsonText, setJsonText] = useState('');
-  const [apiKey, setApiKey] = useState('');
+  const [apiKey, setApiKey] = useState(import.meta.env.VITE_ADMIN_KEY || '');
   const [status, setStatus] = useState('');
+  const [jsonValid, setJsonValid] = useState(true);
 
   const handleFile = (e) => {
     const file = e.target.files[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = (ev) => setJsonText(ev.target.result);
+    reader.onload = (ev) => {
+      handleJsonChange(ev.target.result);
+    };
     reader.readAsText(file);
+  };
+
+  const handleJsonChange = (val) => {
+    setJsonText(val);
+    try {
+      JSON.parse(val || '[]');
+      setJsonValid(true);
+    } catch {
+      setJsonValid(false);
+    }
   };
 
   const submit = async () => {
@@ -44,7 +57,7 @@ export default function AdminUpload() {
         <textarea
           className="textarea textarea-bordered w-full h-40"
           value={jsonText}
-          onChange={(e) => setJsonText(e.target.value)}
+          onChange={(e) => handleJsonChange(e.target.value)}
         />
         <input type="file" accept="application/json" onChange={handleFile} className="file-input file-input-bordered w-full" />
         <input
@@ -54,7 +67,12 @@ export default function AdminUpload() {
           value={apiKey}
           onChange={(e) => setApiKey(e.target.value)}
         />
-        <button className="btn btn-primary" onClick={submit}>Upload</button>
+        <button className="btn btn-primary" onClick={submit} disabled={!jsonValid}>
+          Upload
+        </button>
+        {!jsonValid && (
+          <p className="text-red-500">Invalid JSON</p>
+        )}
         {status && <p>{status}</p>}
       </div>
     </Layout>
