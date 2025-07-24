@@ -15,8 +15,7 @@ import QuestionCard from '../components/QuestionCard';
 import Settings from './Settings.jsx';
 import DemographicsForm from './DemographicsForm.jsx';
 import confetti from 'canvas-confetti';
-
-const API_BASE = import.meta.env.VITE_API_BASE || "";
+import { getQuizStart, submitQuiz, getSurvey, submitSurvey } from '../api';
 
 const PageTransition = ({ children }) => (
   <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
@@ -35,18 +34,25 @@ const Quiz = () => {
   const [current, setCurrent] = React.useState(0);
   const [timeLeft, setTimeLeft] = React.useState(360);
   const [suspicious, setSuspicious] = React.useState(false);
+  const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState(null);
   const { t } = useTranslation();
   const watermark = React.useMemo(() => `${session?.slice(0,6) || ''}-${Date.now()}`,[session]);
 
   React.useEffect(() => {
-    const url = setId ? `${API_BASE}/quiz/start?set_id=${setId}` : `${API_BASE}/quiz/start`;
-    fetch(url)
-      .then(res => res.json())
-      .then(data => {
+    async function load() {
+      try {
+        const data = await getQuizStart(setId);
         setSession(data.session_id);
         setQuestions(data.questions);
         setCurrent(0);
-      });
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    }
+    load();
   }, [setId]);
 
   React.useEffect(() => {
@@ -74,33 +80,27 @@ const Quiz = () => {
     };
   }, []);
 
-  const select = (i) => {
+  const select = async (i) => {
     const a = [...answers];
     a[current] = i;
     setAnswers(a);
     if (current + 1 < questions.length) {
       setCurrent(c => c + 1);
     } else {
-      fetch(`${API_BASE}/quiz/submit`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          session_id: session,
-          answers: a.map((ans, idx) => ({
-            id: questions[idx].id,
-            answer: ans
-          }))
-        })
-      })
-        .then(res => res.json())
-        .then(data => {
-          const params = new URLSearchParams({
-            score: data.iq,
-            percentile: data.percentile,
-            share: data.share_url
-          });
-          window.location.href = '/result?' + params.toString();
+      try {
+        const data = await submitQuiz(
+          session,
+          a.map((ans, idx) => ({ id: questions[idx].id, answer: ans }))
+        );
+        const params = new URLSearchParams({
+          score: data.iq,
+          percentile: data.percentile,
+          share: data.share_url,
         });
+        window.location.href = '/result?' + params.toString();
+      } catch (err) {
+        setError(err.message);
+      }
     }
   };
 
@@ -108,22 +108,28 @@ const Quiz = () => {
     <PageTransition>
       <Layout>
         <div className="space-y-4 max-w-lg mx-auto">
-          <div className="flex justify-between items-center">
-            <span className="text-sm font-mono">
-              {t('quiz.progress', { current: current + 1, total: questions.length })}
-            </span>
-            <div className="text-right font-mono">
-              {Math.floor(timeLeft / 60)}:{`${timeLeft % 60}`.padStart(2, '0')}
-            </div>
-          </div>
-          <ProgressBar value={(current / questions.length) * 100} />
-          {questions[current] && (
-            <QuestionCard
-              question={questions[current].question}
-              options={questions[current].options}
-              onSelect={select}
-              watermark={watermark}
-            />
+          {loading && <p>Loading...</p>}
+          {error && <p className="text-error">{error}</p>}
+          {!loading && !error && (
+            <>
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-mono">
+                  {t('quiz.progress', { current: current + 1, total: questions.length })}
+                </span>
+                <div className="text-right font-mono">
+                  {Math.floor(timeLeft / 60)}:{`${timeLeft % 60}`.padStart(2, '0')}
+                </div>
+              </div>
+              <ProgressBar value={(current / questions.length) * 100} />
+              {questions[current] && (
+                <QuestionCard
+                  question={questions[current].question}
+                  options={questions[current].options}
+                  onSelect={select}
+                  watermark={watermark}
+                />
+              )}
+            </>
           )}
           {suspicious && (
             <p className="text-error text-sm">Session flagged for leaving the page.</p>
@@ -138,34 +144,43 @@ const Survey = () => {
   const [items, setItems] = useState([]);
   const [index, setIndex] = useState(0);
   const [answers, setAnswers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    fetch(`${API_BASE}/survey/start`).then(res => res.json()).then(data => setItems(data.items));
+    async function load() {
+      try {
+        const data = await getSurvey();
+        setItems(data.items);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    }
+    load();
   }, []);
 
   const back = () => setIndex(i => Math.max(i - 1, 0));
-  const next = (v) => {
+  const next = async (v) => {
     const a = [...answers];
     a[index] = { id: items[index].id, value: v };
     setAnswers(a);
     if (index + 1 < items.length) {
       setIndex(index + 1);
     } else {
-      fetch(`${API_BASE}/survey/submit`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ answers: a })
-      })
-        .then(res => res.json())
-        .then(data => {
-          const params = new URLSearchParams({
-            lr: data.left_right,
-            auth: data.libertarian_authoritarian,
-            cat: data.category,
-            desc: data.description
-          });
-          window.location.href = '/survey-result?' + params.toString();
+      try {
+        const data = await submitSurvey(a);
+        const params = new URLSearchParams({
+          lr: data.left_right,
+          auth: data.libertarian_authoritarian,
+          cat: data.category,
+          desc: data.description,
         });
+        window.location.href = '/survey-result?' + params.toString();
+      } catch (err) {
+        setError(err.message);
+      }
     }
   };
 
@@ -174,8 +189,9 @@ const Survey = () => {
     <PageTransition>
       <Layout>
         <div className="space-y-4 max-w-lg mx-auto">
-          <ProgressBar value={(index / items.length) * 100} />
-          {item && (
+          {loading && <p>Loading...</p>}
+          {error && <p className="text-error">{error}</p>}
+          {!loading && item && (
             <div className="card bg-base-100 shadow-md p-4 space-y-2">
               <p className="mb-2 font-semibold">{item.statement}</p>
               <div className="grid grid-cols-5 gap-2">
@@ -188,6 +204,7 @@ const Survey = () => {
               {index > 0 && <button onClick={back} className="mt-2 underline text-sm">Back</button>}
             </div>
           )}
+          {!loading && <ProgressBar value={(index / items.length) * 100} />}
         </div>
       </Layout>
     </PageTransition>
