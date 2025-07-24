@@ -28,13 +28,14 @@ stable identifiers.
 import json
 import random
 from pathlib import Path
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Tuple
 from jsonschema import validate, ValidationError
 
 # Question sets are stored under the repository level ``questions`` directory
 # so that new sets can be added without modifying the code base.
 POOL_PATH = Path(__file__).resolve().parents[1] / "questions"
 SCHEMA_PATH = POOL_PATH / "schema.json"
+BANK_PATH = Path(__file__).resolve().parent / "data" / "question_bank.json"
 
 
 def available_sets() -> List[str]:
@@ -119,8 +120,29 @@ try:
 except Exception as e:
     print(f"Question validation failed: {e}")
 
+# Load full question bank for balanced sampling
+def _load_bank() -> List[Dict[str, Any]]:
+    if not BANK_PATH.exists():
+        return []
+    with BANK_PATH.open() as f:
+        return json.load(f)
+
+QUESTION_BANK: List[Dict[str, Any]] = _load_bank()
+
 # Convenient lookup table by ID
 QUESTION_MAP: Dict[int, Dict[str, Any]] = {q["id"]: q for q in DEFAULT_QUESTIONS}
+QUESTION_MAP.update({q["id"]: q for q in QUESTION_BANK})
+
+__all__ = [
+    "available_sets",
+    "load_questions",
+    "validate_questions",
+    "get_random_questions",
+    "get_balanced_random_questions",
+    "DEFAULT_QUESTIONS",
+    "QUESTION_MAP",
+    "QUESTION_BANK",
+]
 
 
 def get_random_questions(n: int, set_id: str | None = None) -> List[Dict[str, Any]]:
@@ -134,4 +156,42 @@ def get_random_questions(n: int, set_id: str | None = None) -> List[Dict[str, An
     if n > len(pool):
         raise ValueError("Not enough questions in pool")
     return random.sample(pool, n)
+
+
+def get_balanced_random_questions(
+    n: int, split: Tuple[float, float, float] = (0.3, 0.4, 0.3)
+) -> List[Dict[str, Any]]:
+    """Return ``n`` questions sampled by difficulty.
+
+    ``split`` defines the fraction of easy, medium and hard items. The
+    function tolerates small deviations when the pool does not contain
+    enough questions of a given difficulty.
+    """
+
+    if not QUESTION_BANK:
+        raise ValueError("Question bank is empty")
+
+    groups = {1: [], 2: [], 3: []}
+    for q in QUESTION_BANK:
+        groups.setdefault(q.get("difficulty", 2), []).append(q)
+
+    counts = [round(n * p) for p in split]
+    # ensure total matches n
+    counts[2] = n - counts[0] - counts[1]
+
+    selected: List[Dict[str, Any]] = []
+    for diff_level, count in zip([1, 2, 3], counts):
+        pool = groups.get(diff_level, [])
+        take = min(count, len(pool))
+        if take:
+            selected.extend(random.sample(pool, take))
+
+    # fill any shortfall with remaining items
+    if len(selected) < n:
+        remaining = [q for q in QUESTION_BANK if q not in selected]
+        if len(remaining) < n - len(selected):
+            raise ValueError("Not enough questions in bank")
+        selected.extend(random.sample(remaining, n - len(selected)))
+
+    return selected
 

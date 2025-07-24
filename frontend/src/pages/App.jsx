@@ -123,8 +123,7 @@ const Quiz = () => {
               <ProgressBar value={(current / questions.length) * 100} />
               {questions[current] && (
                 <QuestionCard
-                  question={questions[current].question}
-                  options={questions[current].options}
+                  question={questions[current]}
                   onSelect={select}
                   watermark={watermark}
                 />

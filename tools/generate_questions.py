@@ -13,7 +13,7 @@ Run::
 
 The script validates each question against ``questions/schema.json``,
 assigns sequential IDs and prints a summary of how many items were
-imported per difficulty level based on the ``irt.b`` parameter.
+imported per difficulty level.
 """
 
 from __future__ import annotations
@@ -47,7 +47,12 @@ def _save_bank(items: List[Dict]) -> None:
     BANK_PATH.write_text(json.dumps(items, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
-def _difficulty_from_b(b: float) -> str:
+def _difficulty_label(item: Dict) -> str:
+    diff = item.get("difficulty")
+    if isinstance(diff, str):
+        return diff
+    # fall back to IRT b parameter if difficulty label missing
+    b = item.get("irt", {}).get("b", 0.0)
     if b <= -0.35:
         return "easy"
     if b >= 0.35:
@@ -61,6 +66,7 @@ def import_dir(path: Path) -> None:
     next_id = max((q["id"] for q in bank), default=-1) + 1
     counts = defaultdict(int)
 
+    seen_ids = {q["id"] for q in bank}
     for json_file in sorted(path.glob("*.json")):
         try:
             data = json.loads(json_file.read_text(encoding="utf-8"))
@@ -83,8 +89,15 @@ def import_dir(path: Path) -> None:
             item["irt"].setdefault("a", 1.0)
             item["irt"].setdefault("b", 0.0)
 
-            item["id"] = next_id
-            next_id += 1
+            qid = item.get("id")
+            if qid is None or qid in seen_ids:
+                item["id"] = next_id
+                next_id += 1
+            else:
+                item["id"] = qid
+                seen_ids.add(qid)
+
+            item.pop("needs_image", None)
 
             try:
                 validate(item, schema)
@@ -93,7 +106,7 @@ def import_dir(path: Path) -> None:
                 continue
 
             bank.append(item)
-            counts[_difficulty_from_b(item["irt"]["b"])] += 1
+            counts[_difficulty_label(item)] += 1
 
     _save_bank(bank)
 
