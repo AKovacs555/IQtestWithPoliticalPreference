@@ -28,8 +28,13 @@ from demographics import collect_demographics
 from party import update_party_affiliation
 from dp import add_laplace
 
-from questions import DEFAULT_QUESTIONS, QUESTION_MAP, get_random_questions
-from questions import available_sets
+from questions import (
+    DEFAULT_QUESTIONS,
+    QUESTION_MAP,
+    get_random_questions,
+    available_sets,
+)
+from adaptive import select_next_question, should_stop
 from irt import update_theta, percentile
 from scoring import (
     estimate_theta,
@@ -466,13 +471,6 @@ async def submit_quiz(payload: QuizSubmitRequest):
     }
 
 
-def _select_question(theta: float, asked: List[int], pool: List[int]):
-    remaining = [QUESTION_MAP[qid] for qid in pool if qid not in asked]
-    if not remaining:
-        return None
-    return min(remaining, key=lambda q: abs(q["irt"]["b"] - theta))
-
-
 def _to_model(q) -> QuizQuestion:
     return QuizQuestion(id=q["id"], question=q["question"], options=q["options"])
 
@@ -484,7 +482,7 @@ async def adaptive_start(set_id: str | None = None):
     session_id = secrets.token_hex(8)
     questions = get_random_questions(NUM_QUESTIONS, set_id)
     pool_ids = [q["id"] for q in questions]
-    question = _select_question(theta, [], pool_ids)
+    question = select_next_question(theta, [], pool_ids)
     SESSIONS[session_id] = {
         "theta": theta,
         "asked": [question["id"]],
@@ -510,9 +508,7 @@ async def adaptive_answer(payload: AdaptiveAnswerRequest):
     )
     session["answers"].append({"id": qid, "answer": payload.answer, "correct": correct})
 
-    if len(session["answers"]) >= 20 or (
-        len(session["answers"]) >= 5 and abs(session["theta"] - old_theta) < 0.05
-    ):
+    if should_stop(session["theta"], session["answers"]):
         theta = estimate_theta(
             [
                 {
@@ -545,7 +541,7 @@ async def adaptive_answer(payload: AdaptiveAnswerRequest):
             "share_url": share_url,
         }
 
-    next_q = _select_question(session["theta"], session["asked"], session["pool"])
+    next_q = select_next_question(session["theta"], session["asked"], session["pool"])
     if next_q is None:
         theta = estimate_theta(
             [

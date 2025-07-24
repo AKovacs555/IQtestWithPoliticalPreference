@@ -6,16 +6,22 @@ SMS_PROVIDER = os.getenv("SMS_PROVIDER", "twilio")
 TWILIO_VERIFY_SID = ""
 
 if SMS_PROVIDER == "twilio":
-    from twilio.rest import Client as TwilioClient
+    try:
+        from twilio.rest import Client as TwilioClient
+    except Exception:  # pragma: no cover - optional dependency
+        TwilioClient = None
     TWILIO_ACCOUNT_SID = os.environ.get("TWILIO_ACCOUNT_SID", "")
     TWILIO_AUTH_TOKEN = os.environ.get("TWILIO_AUTH_TOKEN", "")
     TWILIO_VERIFY_SID = os.environ.get("TWILIO_VERIFY_SERVICE_SID", "")
-    sms_client = TwilioClient(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
+    sms_client = TwilioClient(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN) if TwilioClient else None
     COST_PER_SMS = 0.0075
 elif SMS_PROVIDER == "sns":
-    import boto3
+    try:
+        import boto3
+    except Exception:  # pragma: no cover - optional dependency
+        boto3 = None
     AWS_REGION = os.environ.get("AWS_REGION", "us-east-1")
-    sms_client = boto3.client("sns", region_name=AWS_REGION)
+    sms_client = boto3.client("sns", region_name=AWS_REGION) if boto3 else None
     COST_PER_SMS = 0.00645
 else:
     sms_client = None

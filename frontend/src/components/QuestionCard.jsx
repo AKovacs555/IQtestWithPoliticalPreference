@@ -1,11 +1,15 @@
 import React from 'react';
 import QuestionCanvas from './QuestionCanvas';
 
-export default function QuestionCard({ question, options, onSelect, watermark }) {
+export default function QuestionCard({ question, onSelect, watermark }) {
+  const { question: text, options, image } = question;
   return (
     <div className="card bg-base-100 shadow-md p-4 space-y-4">
+      {image && (
+        <img src={image} alt="" className="w-full max-h-80 object-contain" />
+      )}
       <QuestionCanvas
-        question={question}
+        question={text}
         options={options}
         onSelect={onSelect}
         watermark={watermark}

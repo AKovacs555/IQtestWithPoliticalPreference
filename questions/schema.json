@@ -11,23 +11,26 @@
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["id", "question", "options", "answer", "irt"],
+        "required": ["text", "options", "correct_index", "category", "difficulty", "irt"],
         "properties": {
           "id": {"type": "integer", "description": "unique question id"},
-          "question": {"type": "string", "description": "question text"},
+          "text": {"type": "string", "description": "question text"},
           "options": {
             "type": "array",
             "items": {"type": "string"},
             "minItems": 2
           },
-          "answer": {"type": "integer", "description": "index of the correct option"},
-          "explanation": {"type": "string", "description": "optional explanation"},
+          "correct_index": {"type": "integer", "description": "index of the correct option"},
+          "category": {"type": "string", "description": "domain of the item"},
+          "difficulty": {"type": "string", "description": "difficulty label"},
+          "needs_image": {"type": "boolean"},
+          "image": {"type": "string"},
           "irt": {
             "type": "object",
             "required": ["a", "b"],
             "properties": {
-              "a": {"type": "number", "description": "discrimination"},
-              "b": {"type": "number", "description": "difficulty"}
+              "a": {"type": "number"},
+              "b": {"type": "number"}
             }
           }
         }
