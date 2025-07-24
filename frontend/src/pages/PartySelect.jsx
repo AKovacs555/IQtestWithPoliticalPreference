@@ -1,18 +1,36 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
-
-const API_BASE = import.meta.env.VITE_API_BASE || "";
+import { getParties, submitPartySelection } from '../api';
+import { v4 as uuidv4 } from 'uuid';
 
 export default function PartySelect() {
   const [parties, setParties] = useState([]);
   const [selected, setSelected] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const navigate = useNavigate();
+  const [userId] = useState(() => {
+    let id = localStorage.getItem('user_id');
+    if (!id) {
+      id = uuidv4();
+      localStorage.setItem('user_id', id);
+    }
+    return id;
+  });
 
   useEffect(() => {
-    fetch(`${API_BASE}/survey/start`)
-      .then(res => res.json())
-      .then(data => setParties(data.parties || []));
+    async function load() {
+      try {
+        const list = await getParties();
+        setParties(list);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    }
+    load();
   }, []);
 
   const toggle = (id) => {
@@ -26,37 +44,36 @@ export default function PartySelect() {
     });
   };
 
-  const save = () => {
-    const user = localStorage.getItem('user_id') || 'testuser';
-    fetch(`${API_BASE}/user/party`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ user_id: user, party_ids: selected })
-    })
-      .then(res => {
-        if (!res.ok) return res.json().then(d => Promise.reject(d.detail));
-      })
-      .then(() => navigate('/'))
-      .catch(err => alert(err));
+  const save = async () => {
+    try {
+      await submitPartySelection(userId, selected);
+      navigate('/');
+    } catch (err) {
+      alert(err.message);
+    }
   };
 
   return (
     <Layout>
       <div className="p-4 space-y-4 max-w-md mx-auto">
         <h2 className="text-xl font-bold text-center">Select Party</h2>
-        <div className="space-y-2">
-          {parties.map(p => (
-            <label key={p.id} className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                checked={selected.includes(p.id)}
-                onChange={() => toggle(p.id)}
-                className="checkbox"
-              />
-              <span>{p.name}</span>
-            </label>
-          ))}
-        </div>
+        {loading && <p>Loading...</p>}
+        {error && <p className="text-error">{error}</p>}
+        {!loading && (
+          <div className="space-y-2">
+            {parties.map(p => (
+              <label key={p.id} className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  checked={selected.includes(p.id)}
+                  onChange={() => toggle(p.id)}
+                  className="checkbox"
+                />
+                <span>{p.name}</span>
+              </label>
+            ))}
+          </div>
+        )}
         <button onClick={save} className="btn btn-primary w-full">Save</button>
       </div>
     </Layout>

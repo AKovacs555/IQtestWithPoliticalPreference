@@ -1,6 +1,6 @@
 # IQtestWithPoliticalPreference
 
-This project provides an IQ quiz and political preference survey using a responsive freemium design. The original Flask code has been moved to `legacy_flask_app.py`. The new stack uses **FastAPI** for the backend and a **React** single‑page application for the frontend. The UI now uses **Material UI** components with Tailwind utilities and works on mobile and desktop devices.
+This project provides an IQ quiz and political preference survey using a responsive freemium design. Legacy Flask templates now live under `archive/` while the active codebase runs on **FastAPI** with a **React** front end. The UI uses **Material UI** components with Tailwind utilities and works on mobile and desktop devices.
 
 ## Backend (FastAPI)
 
@@ -38,6 +38,9 @@ This project provides an IQ quiz and political preference survey using a respons
   - `AD_REWARD_POINTS` – points awarded per ad view.
   - `RETRY_POINT_COST` – points required for an extra attempt.
   - `VITE_API_BASE` – base URL of the backend API for the React app.
+    This should point to the Render deployment, e.g.
+    `https://iqtestandpoliticalpreference.onrender.com`. Be sure to redeploy
+    the frontend after changing environment variables.
   - `VITE_STRIPE_PUBLISHABLE_KEY` – public Stripe key used by the frontend.
 
 ## 環境設定

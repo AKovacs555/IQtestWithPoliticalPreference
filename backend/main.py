@@ -591,13 +591,14 @@ async def survey_start():
 
 @app.post("/survey/submit", response_model=SurveyResult)
 async def survey_submit(payload: SurveySubmitRequest):
+    if not payload.answers:
+        raise HTTPException(status_code=400, detail="No answers provided")
     lr_score = 0.0
     auth_score = 0.0
     for ans in payload.answers:
-        try:
-            item = POLITICAL_SURVEY[ans.id]
-        except IndexError:
-            continue
+        if ans.id >= len(POLITICAL_SURVEY) or ans.id < 0:
+            raise HTTPException(status_code=400, detail=f"Invalid question id {ans.id}")
+        item = POLITICAL_SURVEY[ans.id]
         weight = ans.value - 3  # center Likert 1-5 at 0
         lr_score += weight * item.get("lr", 0)
         auth_score += weight * item.get("auth", 0)
@@ -639,6 +640,8 @@ async def user_demographics(info: DemographicInfo):
 @app.post("/user/party")
 async def user_party(selection: PartySelection):
     """Record user's supported parties. Allows multiple selections."""
+    if not selection.party_ids:
+        raise HTTPException(status_code=400, detail="No party selected")
     try:
         update_party_affiliation(selection.user_id, selection.party_ids)
     except ValueError as e:

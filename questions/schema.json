@@ -1,32 +1,33 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",
+  "description": "Schema for an IQ test question set",
   "required": ["id", "language", "title", "questions"],
   "properties": {
-    "id": {"type": "string"},
-    "language": {"type": "string"},
-    "title": {"type": "string"},
+    "id": {"type": "string", "description": "set identifier"},
+    "language": {"type": "string", "description": "ISO language code"},
+    "title": {"type": "string", "description": "display title"},
     "questions": {
       "type": "array",
       "items": {
         "type": "object",
         "required": ["id", "question", "options", "answer", "irt"],
         "properties": {
-          "id": {"type": "integer"},
-          "question": {"type": "string"},
+          "id": {"type": "integer", "description": "unique question id"},
+          "question": {"type": "string", "description": "question text"},
           "options": {
             "type": "array",
             "items": {"type": "string"},
             "minItems": 2
           },
-          "answer": {"type": "integer"},
-          "explanation": {"type": "string"},
+          "answer": {"type": "integer", "description": "index of the correct option"},
+          "explanation": {"type": "string", "description": "optional explanation"},
           "irt": {
             "type": "object",
             "required": ["a", "b"],
             "properties": {
-              "a": {"type": "number"},
-              "b": {"type": "number"}
+              "a": {"type": "number", "description": "discrimination"},
+              "b": {"type": "number", "description": "difficulty"}
             }
           }
         }
