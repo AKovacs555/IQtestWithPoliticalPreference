@@ -13,6 +13,8 @@ import os
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
 from fastapi import FastAPI, HTTPException, Header
+import io
+import contextlib
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from pathlib import Path
@@ -731,16 +733,38 @@ async def admin_dif_report(api_key: str):
 
 
 @app.post("/admin/upload-questions")
-async def upload_questions(
-    payload: QuestionUpload, x_admin_api_key: str = Header(...)
-):
+async def admin_upload_questions(payload: QuestionUpload, x_admin_api_key: str = Header(...)):
+    """Import a list of questions using the CLI helper."""
     if x_admin_api_key != os.getenv("ADMIN_API_KEY", ""):
-        raise HTTPException(status_code=401, detail="Unauthorized")
+        raise HTTPException(status_code=401, detail="Invalid API key")
+
+    if not isinstance(payload.questions, list):
+        raise HTTPException(status_code=400, detail="Field 'questions' must be a list of objects")
 
     with tempfile.TemporaryDirectory() as tmpdir:
-        upload_path = Path(tmpdir) / "upload.json"
-        upload_path.write_text(
-            json.dumps(payload.questions, ensure_ascii=False), encoding="utf-8"
-        )
-        import_dir(Path(tmpdir))
-    return {"status": "success", "count": len(payload.questions)}
+        tmp_path = Path(tmpdir) / "upload.json"
+        tmp_path.write_text(json.dumps(payload.questions, ensure_ascii=False), encoding="utf-8")
+
+        f = io.StringIO()
+        with contextlib.redirect_stdout(f):
+            try:
+                import_dir(Path(tmpdir))
+            except Exception as e:
+                raise HTTPException(status_code=422, detail=str(e))
+        log = f.getvalue().strip()
+
+    return {"status": "success", "log": log}
+
+
+@app.get("/admin/question-bank-info")
+async def admin_question_bank_info(x_admin_api_key: str = Header(...)):
+    """Return metadata about the current question bank."""
+    if x_admin_api_key != os.getenv("ADMIN_API_KEY", ""):
+        raise HTTPException(status_code=401, detail="Invalid API key")
+    bank_path = Path(__file__).resolve().parent / "data" / "question_bank.json"
+    try:
+        with bank_path.open() as f:
+            data = json.load(f)
+        return {"count": len(data)}
+    except FileNotFoundError:
+        return {"count": 0}

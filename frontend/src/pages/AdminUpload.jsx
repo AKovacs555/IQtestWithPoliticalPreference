@@ -5,6 +5,7 @@ export default function AdminUpload() {
   const [jsonText, setJsonText] = useState('');
   const [apiKey, setApiKey] = useState(import.meta.env.VITE_ADMIN_KEY || '');
   const [status, setStatus] = useState('');
+  const [bankInfo, setBankInfo] = useState(null);
   const [jsonValid, setJsonValid] = useState(true);
 
   const handleFile = (e) => {
@@ -28,9 +29,18 @@ export default function AdminUpload() {
   };
 
   const submit = async () => {
+    let parsed;
     try {
-      const data = JSON.parse(jsonText || '[]');
-      const questions = Array.isArray(data) ? data : data.questions;
+      parsed = JSON.parse(jsonText || '[]');
+      setJsonValid(true);
+    } catch {
+      setJsonValid(false);
+      setStatus('Invalid JSON');
+      return;
+    }
+
+    const questions = Array.isArray(parsed) ? parsed : parsed.questions;
+    try {
       const res = await fetch(`${import.meta.env.VITE_API_BASE}/admin/upload-questions`, {
         method: 'POST',
         headers: {
@@ -39,15 +49,27 @@ export default function AdminUpload() {
         },
         body: JSON.stringify({ questions }),
       });
+      const data = await res.json();
       if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.detail || res.statusText);
+        throw new Error(data.detail || res.statusText);
       }
-      const info = await res.json();
-      setStatus(`Uploaded ${info.count} questions`);
+      setStatus(data.log || 'Success');
+      fetchInfo();
     } catch (err) {
       setStatus('Error: ' + err.message);
     }
+  };
+
+  const fetchInfo = async () => {
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_BASE}/admin/question-bank-info`, {
+        headers: { 'X-Admin-Api-Key': apiKey }
+      });
+      if (res.ok) {
+        const info = await res.json();
+        setBankInfo(info);
+      }
+    } catch {}
   };
 
   return (
@@ -74,6 +96,9 @@ export default function AdminUpload() {
           <p className="text-red-500">Invalid JSON</p>
         )}
         {status && <p>{status}</p>}
+        {bankInfo && (
+          <p>Current questions in bank: {bankInfo.count}</p>
+        )}
       </div>
     </Layout>
   );
