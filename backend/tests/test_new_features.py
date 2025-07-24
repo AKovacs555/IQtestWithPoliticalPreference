@@ -20,7 +20,7 @@ def test_schema_validation():
         "text": "Test?",
         "options": ["a", "b"],
         "correct_index": 0,
-        "category": "logic",
+        "category": "論理",
         "difficulty": "easy",
         "needs_image": False,
         "irt": {"a": 1.0, "b": 0.0}
@@ -30,16 +30,22 @@ def test_schema_validation():
 
 def test_balanced_sampling():
     qs = get_balanced_random_questions(8)
-    counts = {1: 0, 2: 0, 3: 0}
+    counts = {"easy": 0, "medium": 0, "hard": 0}
     for q in qs:
-        counts[q.get('difficulty', 2)] += 1
-    assert abs(counts[1] - 8 * 0.3) <= 1
-    assert abs(counts[2] - 8 * 0.4) <= 1
-    assert abs(counts[3] - 8 * 0.3) <= 1
+        b = q['irt']['b']
+        if b <= -0.33:
+            counts['easy'] += 1
+        elif b <= 0.33:
+            counts['medium'] += 1
+        else:
+            counts['hard'] += 1
+    assert abs(counts['easy'] - 8 * 0.3) <= 2
+    assert abs(counts['medium'] - 8 * 0.4) <= 2
+    assert abs(counts['hard'] - 8 * 0.3) <= 2
 
 
 def test_adaptive_stop():
-    pool = [q['id'] for q in get_balanced_random_questions(10)]
+    pool = get_balanced_random_questions(10)
     theta = 0.0
     asked = []
     answers = []
@@ -50,7 +56,7 @@ def test_adaptive_stop():
         asked.append(q['id'])
         correct = False
         theta = update_theta(theta, q['irt']['a'], q['irt']['b'], correct)
-        answers.append({'id': q['id'], 'answer': 0, 'correct': correct})
+        answers.append({'a': q['irt']['a'], 'b': q['irt']['b'], 'correct': correct})
         if should_stop(theta, answers):
             break
     assert len(answers) <= 20

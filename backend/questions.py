@@ -161,37 +161,39 @@ def get_random_questions(n: int, set_id: str | None = None) -> List[Dict[str, An
 def get_balanced_random_questions(
     n: int, split: Tuple[float, float, float] = (0.3, 0.4, 0.3)
 ) -> List[Dict[str, Any]]:
-    """Return ``n`` questions sampled by difficulty.
+    """Return ``n`` questions sampled by difficulty using IRT ``b`` values.
 
-    ``split`` defines the fraction of easy, medium and hard items. The
-    function tolerates small deviations when the pool does not contain
-    enough questions of a given difficulty.
+    ``split`` defines the fraction of easy, medium and hard items.  If the
+    question bank does not contain enough questions for a given level, the
+    function falls back to :func:`get_random_questions` using the default
+    pool.
     """
 
     if not QUESTION_BANK:
-        raise ValueError("Question bank is empty")
+        return get_random_questions(n)
 
-    groups = {1: [], 2: [], 3: []}
-    for q in QUESTION_BANK:
-        groups.setdefault(q.get("difficulty", 2), []).append(q)
+    if len(QUESTION_BANK) < n:
+        # sample with replacement when pool is small
+        return random.choices(QUESTION_BANK, k=n)
+
+    easy_list = [q for q in QUESTION_BANK if q.get("irt", {}).get("b", 0.0) <= -0.33]
+    medium_list = [
+        q for q in QUESTION_BANK if -0.33 < q.get("irt", {}).get("b", 0.0) <= 0.33
+    ]
+    hard_list = [q for q in QUESTION_BANK if q.get("irt", {}).get("b", 0.0) > 0.33]
 
     counts = [round(n * p) for p in split]
-    # ensure total matches n
     counts[2] = n - counts[0] - counts[1]
 
+    groups = [easy_list, medium_list, hard_list]
     selected: List[Dict[str, Any]] = []
-    for diff_level, count in zip([1, 2, 3], counts):
-        pool = groups.get(diff_level, [])
-        take = min(count, len(pool))
-        if take:
-            selected.extend(random.sample(pool, take))
-
-    # fill any shortfall with remaining items
-    if len(selected) < n:
-        remaining = [q for q in QUESTION_BANK if q not in selected]
-        if len(remaining) < n - len(selected):
-            raise ValueError("Not enough questions in bank")
-        selected.extend(random.sample(remaining, n - len(selected)))
+    for grp, count in zip(groups, counts):
+        if len(grp) >= count:
+            selected.extend(random.sample(grp, count))
+        elif grp:
+            selected.extend(random.choices(grp, k=count))
+        else:
+            selected.extend(random.choices(QUESTION_BANK, k=count))
 
     return selected
 

@@ -6,7 +6,11 @@ export default function QuestionCard({ question, onSelect, watermark }) {
   return (
     <div className="card bg-base-100 shadow-md p-4 space-y-4">
       {image && (
-        <img src={image} alt="" className="w-full max-h-80 object-contain" />
+        <img
+          src={image}
+          className="max-h-80 w-full object-contain mb-4"
+          alt="figure"
+        />
       )}
       <QuestionCanvas
         question={text}

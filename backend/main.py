@@ -481,13 +481,12 @@ async def adaptive_start(set_id: str | None = None):
     theta = 0.0
     session_id = secrets.token_hex(8)
     questions = get_random_questions(NUM_QUESTIONS, set_id)
-    pool_ids = [q["id"] for q in questions]
-    question = select_next_question(theta, [], pool_ids)
+    question = select_next_question(theta, [], questions)
     SESSIONS[session_id] = {
         "theta": theta,
         "asked": [question["id"]],
         "answers": [],
-        "pool": pool_ids,
+        "pool": questions,
     }
     return {"session_id": session_id, "question": _to_model(question)}
 
@@ -506,30 +505,21 @@ async def adaptive_answer(payload: AdaptiveAnswerRequest):
     session["theta"] = update_theta(
         old_theta, question["irt"]["a"], question["irt"]["b"], correct
     )
-    session["answers"].append({"id": qid, "answer": payload.answer, "correct": correct})
+    session["answers"].append(
+        {
+            "id": qid,
+            "a": question["irt"]["a"],
+            "b": question["irt"]["b"],
+            "correct": correct,
+        }
+    )
 
     if should_stop(session["theta"], session["answers"]):
-        theta = estimate_theta(
-            [
-                {
-                    "a": QUESTION_MAP[a["id"]]["irt"]["a"],
-                    "b": QUESTION_MAP[a["id"]]["irt"]["b"],
-                    "correct": a["correct"],
-                }
-                for a in session["answers"]
-            ]
-        )
+        theta = estimate_theta(session["answers"])
         iq_val = iq_score(theta)
         pct = percentile(theta, NORMATIVE_DIST)
         ability = ability_summary(theta)
-        se = standard_error(theta, [
-            {
-                "a": QUESTION_MAP[a["id"]]["irt"]["a"],
-                "b": QUESTION_MAP[a["id"]]["irt"]["b"],
-                "correct": a["correct"],
-            }
-            for a in session["answers"]
-        ])
+        se = standard_error(theta, session["answers"])
         share_url = generate_share_image(payload.session_id, iq_val, pct)
         del SESSIONS[payload.session_id]
         return {
@@ -543,27 +533,11 @@ async def adaptive_answer(payload: AdaptiveAnswerRequest):
 
     next_q = select_next_question(session["theta"], session["asked"], session["pool"])
     if next_q is None:
-        theta = estimate_theta(
-            [
-                {
-                    "a": QUESTION_MAP[a["id"]]["irt"]["a"],
-                    "b": QUESTION_MAP[a["id"]]["irt"]["b"],
-                    "correct": a["correct"],
-                }
-                for a in session["answers"]
-            ]
-        )
+        theta = estimate_theta(session["answers"])
         iq_val = iq_score(theta)
         pct = percentile(theta, NORMATIVE_DIST)
         ability = ability_summary(theta)
-        se = standard_error(theta, [
-            {
-                "a": QUESTION_MAP[a["id"]]["irt"]["a"],
-                "b": QUESTION_MAP[a["id"]]["irt"]["b"],
-                "correct": a["correct"],
-            }
-            for a in session["answers"]
-        ])
+        se = standard_error(theta, session["answers"])
         share_url = generate_share_image(payload.session_id, iq_val, pct)
         del SESSIONS[payload.session_id]
         return {

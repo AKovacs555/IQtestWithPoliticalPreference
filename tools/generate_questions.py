@@ -31,7 +31,8 @@ SCHEMA_PATH = Path("questions/schema.json")
 
 
 def _load_item_schema() -> Dict:
-    with SCHEMA_PATH.open() as f:
+    """Return the item schema from :data:`SCHEMA_PATH`."""
+    with SCHEMA_PATH.open(encoding="utf-8") as f:
         schema = json.load(f)
     return schema["properties"]["questions"]["items"]
 
@@ -44,7 +45,10 @@ def _load_bank() -> List[Dict]:
 
 
 def _save_bank(items: List[Dict]) -> None:
-    BANK_PATH.write_text(json.dumps(items, ensure_ascii=False, indent=2), encoding="utf-8")
+    BANK_PATH.write_text(
+        json.dumps(items, ensure_ascii=False, indent=2, sort_keys=True),
+        encoding="utf-8",
+    )
 
 
 def _difficulty_label(item: Dict) -> str:
@@ -80,14 +84,18 @@ def import_dir(path: Path) -> None:
             continue
 
         for item in items:
+            # convert legacy keys
             if "text" in item and "question" not in item:
                 item["question"] = item.pop("text")
             if "correct_index" in item and "answer" not in item:
                 item["answer"] = item.pop("correct_index")
 
-            item.setdefault("irt", {"a": 1.0, "b": 0.0})
+            item.setdefault("irt", {})
             item["irt"].setdefault("a", 1.0)
-            item["irt"].setdefault("b", 0.0)
+            if "b" not in item["irt"]:
+                diff = item.get("difficulty", "medium")
+                default_b = {"easy": -1.0, "hard": 1.0}.get(diff, 0.0)
+                item["irt"]["b"] = default_b
 
             qid = item.get("id")
             if qid is None or qid in seen_ids:
