@@ -1,52 +1,19 @@
 {
-  "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",
-  "description": "Schema for an IQ test question set",
-  "required": ["id", "language", "title", "questions"],
+  "required": ["text", "options", "correct_index", "category", "difficulty", "irt"],
   "properties": {
-    "id": {"type": "string", "description": "set identifier"},
-    "language": {"type": "string", "description": "ISO language code"},
-    "title": {"type": "string", "description": "display title"},
-    "questions": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "required": [
-          "text",
-          "options",
-          "correct_index",
-          "category",
-          "difficulty",
-          "irt"
-        ],
-        "properties": {
-          "id": {"type": "integer", "description": "unique question id"},
-          "text": {"type": "string", "description": "question text"},
-          "options": {
-            "type": "array",
-            "items": {"type": "string"},
-            "minItems": 2
-          },
-          "correct_index": {"type": "integer", "description": "index of the correct option"},
-          "category": {
-            "enum": ["語彙", "数理", "空間", "論理"],
-            "description": "domain of the item"
-          },
-          "difficulty": {
-            "enum": ["easy", "medium", "hard"],
-            "description": "difficulty label"
-          },
-          "needs_image": {"type": "boolean"},
-          "image": {"type": "string"},
-          "irt": {
-            "type": "object",
-            "properties": {
-              "a": {"type": "number"},
-              "b": {"type": "number"}
-            },
-            "required": ["a", "b"]
-          }
-        }
+    "text": {"type": "string", "maxLength": 140},
+    "options": {"type": "array", "items": {"type": "string"}, "minItems": 4, "maxItems": 4},
+    "correct_index": {"type": "integer", "minimum": 0, "maximum": 3},
+    "category": {"enum": ["語彙", "数理", "空間", "論理"]},
+    "difficulty": {"enum": ["easy", "medium", "hard"]},
+    "image": {"type": "string"},
+    "irt": {
+      "type": "object",
+      "required": ["a", "b"],
+      "properties": {
+        "a": {"type": "number"},
+        "b": {"type": "number"}
       }
     }
   }

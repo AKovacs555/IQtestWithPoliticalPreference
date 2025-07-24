@@ -11,7 +11,7 @@
       "category": "numerical",
       "difficulty": "medium",
       "needs_image": false,
-      "irt": {"a": 1.0, "b": 0.0}
+      "irt": {"a": 1.0, "b": -0.5}
     },
     {
       "id": 1,
@@ -21,7 +21,7 @@
       "category": "logic",
       "difficulty": "medium",
       "needs_image": false,
-      "irt": {"a": 1.0, "b": 0.0}
+      "irt": {"a": 1.0, "b": -0.5}
     }
   ]
 }

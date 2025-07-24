@@ -11,7 +11,7 @@
       "category": "numerical",
       "difficulty": "easy",
       "needs_image": false,
-      "irt": {"a": 1.0, "b": 0.0}
+      "irt": {"a": 1.0, "b": -0.5}
     }
   ]
 }

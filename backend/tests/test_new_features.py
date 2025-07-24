@@ -15,17 +15,15 @@ SCHEMA_PATH = Path(__file__).resolve().parents[2] / 'questions' / 'schema.json'
 def test_schema_validation():
     with SCHEMA_PATH.open() as f:
         schema = json.load(f)
-    item_schema = schema['properties']['questions']['items']
     sample = {
         "text": "Test?",
-        "options": ["a", "b"],
+        "options": ["a", "b", "c", "d"],
         "correct_index": 0,
         "category": "論理",
         "difficulty": "easy",
-        "needs_image": False,
         "irt": {"a": 1.0, "b": 0.0}
     }
-    validate(sample, item_schema)
+    validate(sample, schema)
 
 
 def test_balanced_sampling():
@@ -39,9 +37,9 @@ def test_balanced_sampling():
             counts['medium'] += 1
         else:
             counts['hard'] += 1
-    assert abs(counts['easy'] - 8 * 0.3) <= 2
-    assert abs(counts['medium'] - 8 * 0.4) <= 2
-    assert abs(counts['hard'] - 8 * 0.3) <= 2
+    assert abs(counts['easy'] - 8 * 0.3) <= 1
+    assert abs(counts['medium'] - 8 * 0.4) <= 1
+    assert abs(counts['hard'] - 8 * 0.3) <= 1
 
 
 def test_adaptive_stop():
