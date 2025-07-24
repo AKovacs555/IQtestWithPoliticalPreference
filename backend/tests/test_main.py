@@ -71,5 +71,7 @@ def test_upload_questions_success(monkeypatch):
         headers={"X-Admin-Api-Key": "secret"},
     )
     assert r.status_code == 200
-    assert r.json()["count"] == 1
+    data = r.json()
+    assert data["status"] == "success"
+    assert "Imported" in data.get("log", "")
     assert "1+1?" in stored.get("data", "")
