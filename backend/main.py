@@ -50,6 +50,7 @@ from scoring import (
 from payment import select_processor
 from analytics import log_event
 from tools.dif_analysis import dif_report
+from routes.exam import router as exam_router
 import json
 
 app = FastAPI()
@@ -63,6 +64,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(exam_router)
 
 # SMS provider handled by sms_service module
 
