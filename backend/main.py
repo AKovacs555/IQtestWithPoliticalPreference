@@ -61,7 +61,7 @@ async def on_startup():
     await init_db()
 
 # CORS for SPA
-origins = ["*"]
+origins = [os.getenv("VITE_API_BASE", "*")]
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
