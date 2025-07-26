@@ -127,18 +127,18 @@ To get started quickly, deploy the backend and frontend separately.
 
 ### Deploying the backend on Render
 
-1. Create a **Web Service** from this GitHub repository.
-2. Set the root directory to the project root.
-3. Use `pip install -r backend/requirements.txt` as the build command.
-4. Use `uvicorn backend.main:app --host 0.0.0.0 --port 10000` as the start command.
-5. Add the environment variables listed above in the Render dashboard.
+1. Connect the repository and Render will read `render.yaml` automatically.
+2. The service builds with `pip install -r requirements.txt` inside `backend/`.
+3. It starts using `uvicorn backend.main:app --host 0.0.0.0 --port 8000`.
+4. Set the required environment variables from the Render dashboard.
 
 ### Deploying the frontend on Vercel
 
 1. Create a Vercel project and point it at the `frontend/` directory.
 2. Define `VITE_API_BASE`, `VITE_STRIPE_PUBLISHABLE_KEY` and any Supabase keys under *Project Settings → Environment Variables*.
-3. Use `npm install` followed by `npm run build` for the build steps.
-4. Any change to the variables requires a redeploy from Vercel’s dashboard.
+3. After configuring the variables run `vercel env pull` to generate a local `.env` file for development.
+4. Use `npm install` followed by `npm run build` for the build steps.
+5. Any change to the variables requires a redeploy from Vercel’s dashboard.
 
 This repository now serves as a starting point for the revamped freemium quiz platform. Terms of Service and a Privacy Policy are provided under `templates/` and personal identifiers are hashed with per-record salts. Aggregated statistics apply differential privacy noise for research use only.
 

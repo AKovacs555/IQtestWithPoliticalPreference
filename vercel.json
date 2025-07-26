@@ -1,9 +1,11 @@
 {
-  "$schema": "https://openapi.vercel.sh/vercel.json",
-  "rewrites": [
+  "projects": [
     {
-      "source": "/(.*)",
-      "destination": "/index.html"
+      "src": "frontend",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "frontend/dist"
+      }
     }
   ]
 }

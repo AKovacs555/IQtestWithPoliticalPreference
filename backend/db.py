@@ -14,7 +14,8 @@ from sqlalchemy import (
     func,
 )
 
-DATABASE_URL = os.getenv("DATABASE_URL") or "sqlite+aiosqlite:///./test.db"
+# Database connection URL must be provided via the environment
+DATABASE_URL = os.environ["DATABASE_URL"]
 
 # Convert plain Postgres URLs to asyncpg syntax for create_async_engine
 if DATABASE_URL.startswith("postgresql://"):
@@ -52,6 +53,6 @@ async def init_db():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
-async def get_session() -> AsyncSession:
-    async with AsyncSessionLocal() as session:
-        yield session
+def get_session() -> AsyncSession:
+    """Return a new asynchronous SQLAlchemy session."""
+    return AsyncSessionLocal()
