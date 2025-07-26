@@ -298,8 +298,7 @@ async def verify_otp(data: OTPVerify):
                 points=0,
                 scores=[],
                 party_log=[],
-                party_ids=[],
-                demographics={},
+                demographic={},
             )
             session.add(user)
         await session.commit()
@@ -313,9 +312,8 @@ def _retry_price(user: User) -> int:
 
 
 def _assign_variant(user: User) -> int:
-    if user.variant is None:
-        user.variant = random.randint(0, len(PRICE_VARIANTS) - 1)
-    return user.variant
+    """Return a stable variant index for the user."""
+    return abs(hash(user.hashed_id)) % len(PRICE_VARIANTS)
 
 
 @app.get("/pricing/{user_id}", response_model=PricingResponse)
@@ -323,7 +321,16 @@ async def pricing(user_id: str, region: str = "US"):
     async with AsyncSessionLocal() as session:
         user = await session.get(User, user_id)
         if not user:
-            user = User(hashed_id=user_id, salt="", plays=0, referrals=0, points=0)
+            user = User(
+                hashed_id=user_id,
+                salt="",
+                plays=0,
+                referrals=0,
+                points=0,
+                scores=[],
+                party_log=[],
+                demographic={},
+            )
             session.add(user)
         processor = select_processor(region)
         variant_idx = _assign_variant(user)
@@ -346,7 +353,16 @@ async def record_play(action: UserAction):
     async with AsyncSessionLocal() as session:
         user = await session.get(User, action.user_id)
         if not user:
-            user = User(hashed_id=action.user_id, salt="", plays=0, referrals=0, points=0)
+            user = User(
+                hashed_id=action.user_id,
+                salt="",
+                plays=0,
+                referrals=0,
+                points=0,
+                scores=[],
+                party_log=[],
+                demographic={},
+            )
             session.add(user)
         paid = False
         if user.plays >= MAX_FREE_ATTEMPTS:
@@ -366,7 +382,16 @@ async def referral(action: UserAction):
     async with AsyncSessionLocal() as session:
         user = await session.get(User, action.user_id)
         if not user:
-            user = User(hashed_id=action.user_id, salt="", plays=0, referrals=0, points=0)
+            user = User(
+                hashed_id=action.user_id,
+                salt="",
+                plays=0,
+                referrals=0,
+                points=0,
+                scores=[],
+                party_log=[],
+                demographic={},
+            )
             session.add(user)
         user.referrals = (user.referrals or 0) + 1
         await session.commit()
@@ -378,7 +403,16 @@ async def ads_start(action: UserAction):
     async with AsyncSessionLocal() as session:
         user = await session.get(User, action.user_id)
         if not user:
-            user = User(hashed_id=action.user_id, salt="", plays=0, referrals=0, points=0)
+            user = User(
+                hashed_id=action.user_id,
+                salt="",
+                plays=0,
+                referrals=0,
+                points=0,
+                scores=[],
+                party_log=[],
+                demographic={},
+            )
             session.add(user)
         await session.commit()
     log_event({"event": "ad_start", "user_id": action.user_id})
@@ -390,7 +424,16 @@ async def ads_complete(action: UserAction):
     async with AsyncSessionLocal() as session:
         user = await session.get(User, action.user_id)
         if not user:
-            user = User(hashed_id=action.user_id, salt="", plays=0, referrals=0, points=0)
+            user = User(
+                hashed_id=action.user_id,
+                salt="",
+                plays=0,
+                referrals=0,
+                points=0,
+                scores=[],
+                party_log=[],
+                demographic={},
+            )
             session.add(user)
         user.points = (user.points or 0) + AD_REWARD_POINTS
         await session.commit()
@@ -702,14 +745,15 @@ async def dp_data_api(
         result = await session.execute(select(User))
         users = result.scalars().all()
     for user in users:
-        demo = user.demographics or {}
+        demo = user.demographic or {}
         if age_band and demo.get("age_band") != age_band:
             continue
         if gender and demo.get("gender") != gender:
             continue
         if income_band and demo.get("income_band") != income_band:
             continue
-        if party_id is not None and party_id not in (user.party_ids or []):
+        latest_parties = user.party_log[-1]["party_ids"] if user.party_log else []
+        if party_id is not None and party_id not in latest_parties:
             continue
         for s in (user.scores or []):
             scores.append(s.get("iq"))

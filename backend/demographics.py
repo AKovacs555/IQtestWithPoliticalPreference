@@ -22,9 +22,18 @@ async def collect_demographics(
     async with AsyncSessionLocal() as session:
         user = await session.get(User, user_id)
         if not user:
-            user = User(hashed_id=user_id, salt="", plays=0, referrals=0, points=0)
+            user = User(
+                hashed_id=user_id,
+                salt="",
+                plays=0,
+                referrals=0,
+                points=0,
+                scores=[],
+                party_log=[],
+                demographic={},
+            )
             session.add(user)
-        user.demographics = {
+        user.demographic = {
             "age_band": age_band,
             "gender": gender,
             "income_band": income_band,

@@ -1,7 +1,18 @@
 import os
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-from sqlalchemy.orm import declarative_base, sessionmaker
-from sqlalchemy import Column, Integer, String, JSON
+from sqlalchemy.ext.asyncio import (
+    create_async_engine,
+    AsyncSession,
+    async_sessionmaker,
+)
+from sqlalchemy.orm import declarative_base
+from sqlalchemy import (
+    Column,
+    String,
+    JSON,
+    BigInteger,
+    DateTime,
+    func,
+)
 
 DATABASE_URL = os.getenv("DATABASE_URL") or "sqlite+aiosqlite:///./test.db"
 
@@ -13,23 +24,29 @@ elif DATABASE_URL.startswith("postgres://"):
 elif DATABASE_URL.startswith("postgresql+psycopg2://"):
     DATABASE_URL = DATABASE_URL.replace("postgresql+psycopg2://", "postgresql+asyncpg://", 1)
 
-engine = create_async_engine(DATABASE_URL, future=True, echo=False)
-AsyncSessionLocal = sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
+engine = create_async_engine(
+    DATABASE_URL,
+    future=True,
+    pool_pre_ping=True,
+    echo=False,
+)
+AsyncSessionLocal = async_sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
 
 Base = declarative_base()
 
+
 class User(Base):
     __tablename__ = "users"
+
     hashed_id = Column(String, primary_key=True, index=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
     salt = Column(String, nullable=False)
-    plays = Column(Integer, default=0)
-    referrals = Column(Integer, default=0)
-    points = Column(Integer, default=0)
-    scores = Column(JSON, default=list)
-    party_log = Column(JSON, default=list)
-    party_ids = Column(JSON, default=list)
-    demographics = Column(JSON, default=dict)
-    variant = Column(Integer, nullable=True)
+    plays = Column(BigInteger, default=0)
+    points = Column(BigInteger, default=0)
+    referrals = Column(BigInteger, default=0)
+    scores = Column(JSON, nullable=True)
+    party_log = Column(JSON, nullable=True)
+    demographic = Column(JSON, nullable=True)
 
 async def init_db():
     async with engine.begin() as conn:

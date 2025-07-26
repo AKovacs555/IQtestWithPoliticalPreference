@@ -37,3 +37,4 @@ def test_verify_otp_creates_user(monkeypatch):
             return await session.get(User, user_id)
     user = asyncio.get_event_loop().run_until_complete(get_user())
     assert user is not None
+    assert user.created_at is not None

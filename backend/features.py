@@ -45,7 +45,8 @@ async def leaderboard_by_party(epsilon: float = 1.0) -> List[dict]:
         result = await session.execute(select(User))
         users = result.scalars().all()
     for user in users:
-        parties = user.party_ids or []
+        latest = user.party_log[-1]["party_ids"] if user.party_log else []
+        parties = latest
         scores = [s.get("iq") for s in (user.scores or [])]
         if not parties or not scores:
             continue
