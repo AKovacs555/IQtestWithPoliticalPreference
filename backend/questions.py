@@ -44,6 +44,8 @@ def available_sets() -> List[str]:
         return []
     ids = []
     for p in POOL_PATH.glob("*.json"):
+        if p.name == "schema.json":
+            continue
         try:
             with p.open() as f:
                 data = json.load(f)
@@ -56,9 +58,9 @@ def available_sets() -> List[str]:
 def load_questions(set_id: str | None = None) -> List[Dict[str, Any]]:
     """Load question files from :data:`POOL_PATH`.
 
-    Each file contains an object with a ``questions`` array.  ``text`` and
-    ``correct_index`` fields are mapped to ``question`` and ``answer`` for
-    backward compatibility.
+    Each file contains an object with a ``questions`` array following
+    :mod:`questions/schema.json`. Items must include ``question`` and ``answer``
+    fields. Older ``text``/``correct_index`` keys are no longer supported.
     """
 
     questions: List[Dict[str, Any]] = []
@@ -70,30 +72,37 @@ def load_questions(set_id: str | None = None) -> List[Dict[str, Any]]:
 
     seen_ids = set()
     next_id = 0
-    paths = [POOL_PATH / f"{set_id}.json"] if set_id else sorted(POOL_PATH.glob("*.json"))
+    paths = [POOL_PATH / f"{set_id}.json"] if set_id else sorted(p for p in POOL_PATH.glob("*.json") if p.name != "schema.json")
 
     for path in paths:
         with path.open() as f:
             data = json.load(f)
         for item in data.get("questions", []):
-            if "text" not in item or "correct_index" not in item:
-                continue
             qid = item.get("id")
             if qid is None or qid in seen_ids:
                 item["id"] = next_id
             else:
                 item["id"] = qid
             seen_ids.add(item["id"])
-            item["question"] = item.pop("text")
-            item["answer"] = item.pop("correct_index")
             questions.append(item)
             next_id = max(next_id, item["id"] + 1)
     return questions
 
 
 def validate_questions(set_id: str | None = None) -> None:
-    """Placeholder for schema validation (disabled)."""
-    return
+    """Validate question files against ``schema.json``."""
+    if not SCHEMA_PATH.exists():
+        return
+    with SCHEMA_PATH.open() as f:
+        schema = json.load(f)
+    paths = [POOL_PATH / f"{set_id}.json"] if set_id else sorted(p for p in POOL_PATH.glob("*.json") if p.name != "schema.json")
+    for path in paths:
+        with path.open() as f:
+            data = json.load(f)
+        try:
+            validate(data, schema)
+        except ValidationError as e:
+            raise ValueError(f"{path.name} invalid: {e.message}")
 
 
 DEFAULT_QUESTIONS: List[Dict[str, Any]] = []

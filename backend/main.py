@@ -76,7 +76,6 @@ app.include_router(exam_router)
 
 # Database placeholder (Supabase)
 DATABASE_URL = os.environ.get("DATABASE_URL", "")
-SUPABASE_API_KEY = os.environ.get("SUPABASE_API_KEY", "")
 
 # Number of questions per quiz session
 NUM_QUESTIONS = int(os.getenv("NUM_QUESTIONS", "20"))
@@ -87,7 +86,14 @@ MAX_FREE_ATTEMPTS = int(os.getenv("MAX_FREE_ATTEMPTS", "1"))
 from supabase import create_client
 from sqlalchemy import select
 from db import AsyncSessionLocal, User, init_db
-supabase = create_client(DATABASE_URL, SUPABASE_API_KEY)
+SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
+SUPABASE_API_KEY = os.environ.get("SUPABASE_API_KEY", "")
+supabase = None
+if SUPABASE_URL and SUPABASE_API_KEY:
+    try:
+        supabase = create_client(SUPABASE_URL, SUPABASE_API_KEY)
+    except Exception:
+        supabase = None
 
 EVENTS: list[dict] = []
 

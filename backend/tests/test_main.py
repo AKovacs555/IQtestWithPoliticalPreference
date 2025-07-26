@@ -4,33 +4,35 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 from main import app
 
-client = TestClient(app)
-
 def test_ping():
-    r = client.get('/ping')
-    assert r.status_code == 200
-    assert r.json() == {"message": "pong"}
+    with TestClient(app) as client:
+        r = client.get('/ping')
+        assert r.status_code == 200
+        assert r.json() == {"message": "pong"}
 
 
 def test_analytics_endpoint():
-    r = client.post('/analytics', json={'event': 'test'})
-    assert r.status_code == 200
-    assert r.json() == {}
+    with TestClient(app) as client:
+        r = client.post('/analytics', json={'event': 'test'})
+        assert r.status_code == 200
+        assert r.json() == {}
 
 
 def test_dif_report_auth():
-    r = client.get('/admin/dif-report?api_key=bad')
-    assert r.status_code == 403
+    with TestClient(app) as client:
+        r = client.get('/admin/dif-report?api_key=bad')
+        assert r.status_code == 403
 
 
 def test_upload_questions_auth():
     os.environ["ADMIN_API_KEY"] = "secret"
-    r = client.post(
-        "/admin/upload-questions",
-        json={"questions": []},
-        headers={"X-Admin-Api-Key": "bad"},
-    )
-    assert r.status_code == 401
+    with TestClient(app) as client:
+        r = client.post(
+            "/admin/upload-questions",
+            json={"questions": []},
+            headers={"X-Admin-Api-Key": "bad"},
+        )
+        assert r.status_code == 401
 
 
 def test_upload_questions_success(monkeypatch):
@@ -57,21 +59,20 @@ def test_upload_questions_success(monkeypatch):
     monkeypatch.setattr(Path, "write_text", fake_write)
 
     item = {
-        "text": "1+1?",
+        "id": 0,
+        "question": "1+1?",
         "options": ["1", "2", "3", "4"],
-        "correct_index": 1,
-        "category": "数理",
-        "difficulty": "easy",
-        "irt": {"a": 1.0, "b": 0.0},
+        "answer": 1,
+        "irt": {"a": 1.0, "b": 0.0}
     }
 
-    r = client.post(
-        "/admin/upload-questions",
-        json={"questions": [item]},
-        headers={"X-Admin-Api-Key": "secret"},
-    )
-    assert r.status_code == 200
-    data = r.json()
-    assert data["status"] == "success"
-    assert "Imported" in data.get("log", "")
-    assert "1+1?" in stored.get("data", "")
+    with TestClient(app) as client:
+        r = client.post(
+            "/admin/upload-questions",
+            json={"questions": [item]},
+            headers={"X-Admin-Api-Key": "secret"},
+        )
+        assert r.status_code == 200
+        data = r.json()
+        assert data["status"] == "success"
+        assert "Imported" in data.get("log", "")

@@ -76,7 +76,7 @@ AWS SNS を利用する場合は IAM コンソールでアクセスキーを発�
 - Aggregated data is available via `/leaderboard` and the authenticated `/data/iq` endpoint which returns differentially private averages.
 - The question bank with psychometric metadata lives in `backend/data/question_bank.json`. Use `tools/generate_questions.py --import_dir=generated_questions` to merge question files you created with ChatGPT.
  - Individual question sets for the live quiz are stored under `questions/`. Each file must conform to `questions/schema.json` and can be fetched via `/quiz/start?set_id=set01`.
-- The backend reads these JSON files at runtime so new sets can be added via GitHub without redeploying the API.
+ - The backend reads these JSON files at runtime so new sets can be added via GitHub without redeploying the API. Non‑developers can simply upload a file like `set03.json` to the `questions/` folder using the web interface.
   - Additional sets can simply be placed in the top-level `questions/` directory. Each file is validated against `schema.json` on startup so redeploy is unnecessary. Ensure all items are
     manually reviewed before use. The helper `tools/generate_iq_questions.py` can
     create new items in this format. It accepts `--n`, `--start_id` and
