@@ -14,7 +14,8 @@ except Exception:  # Pillow not installed
     Image = ImageDraw = ImageFont = None
 
 
-import main
+from db import AsyncSessionLocal, User
+from sqlalchemy import select
 from dp import add_laplace
 
 
@@ -33,16 +34,19 @@ def dp_average(
     return add_laplace(mean, epsilon, sensitivity=1 / len(values))
 
 
-def leaderboard_by_party(epsilon: float = 1.0) -> List[dict]:
+async def leaderboard_by_party(epsilon: float = 1.0) -> List[dict]:
     """Return average IQ by party with differential privacy.
 
     Parties with fewer than ``min_count`` submissions are omitted to
     preserve privacy. Laplace noise is added using :func:`dp_average`.
     """
     buckets: dict[int, List[float]] = {}
-    for user in main.USERS.values():
-        parties = user.get("party_ids")
-        scores = [s.get("iq") for s in user.get("scores", [])]
+    async with AsyncSessionLocal() as session:
+        result = await session.execute(select(User))
+        users = result.scalars().all()
+    for user in users:
+        parties = user.party_ids or []
+        scores = [s.get("iq") for s in (user.scores or [])]
         if not parties or not scores:
             continue
         avg_score = sum(scores) / len(scores)
