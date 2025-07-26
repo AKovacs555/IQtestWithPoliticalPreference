@@ -6,10 +6,10 @@ application this would persist to Supabase with hashed identifiers.
 from __future__ import annotations
 
 from datetime import datetime
-import main
+from db import AsyncSessionLocal, User
 
 
-def collect_demographics(
+async def collect_demographics(
     age_band: str, gender: str, income_band: str, occupation: str, user_id: str
 ) -> None:
     """Store demographic details for ``user_id``.
@@ -19,21 +19,16 @@ def collect_demographics(
     records the update timestamp. When deploying with a real database this
     function should perform an UPSERT into the demographics table.
     """
-    user = main.USERS.setdefault(
-        user_id,
-        {
-            "salt": "",
-            "plays": 0,
-            "referrals": 0,
-            "scores": [],
-            "party_log": [],
-            "demographics": {},
-        },
-    )
-    user["demographics"] = {
-        "age_band": age_band,
-        "gender": gender,
-        "income_band": income_band,
-        "occupation": occupation,
-        "updated": datetime.utcnow().isoformat(),
-    }
+    async with AsyncSessionLocal() as session:
+        user = await session.get(User, user_id)
+        if not user:
+            user = User(hashed_id=user_id, salt="", plays=0, referrals=0, points=0)
+            session.add(user)
+        user.demographics = {
+            "age_band": age_band,
+            "gender": gender,
+            "income_band": income_band,
+            "occupation": occupation,
+            "updated": datetime.utcnow().isoformat(),
+        }
+        await session.commit()
