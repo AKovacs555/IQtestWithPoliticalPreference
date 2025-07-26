@@ -5,9 +5,9 @@
   "questions": [
     {
       "id": 0,
-      "text": "次の数列を完成させてください: 2, 4, 8, 16, ?",
+      "question": "次の数列を完成させてください: 2, 4, 8, 16, ?",
       "options": ["18", "24", "32", "48"],
-      "correct_index": 2,
+      "answer": 2,
       "category": "numerical",
       "difficulty": "easy",
       "needs_image": false,

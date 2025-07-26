@@ -1,8 +1,14 @@
 {
-  "text": "Sample question?",
-  "options": ["A", "B", "C", "D"],
-  "correct_index": 1,
-  "category": "論理",
-  "difficulty": "easy",
-  "irt": {"a": 1.0, "b": 0.0}
+  "id": "sample",
+  "language": "en",
+  "title": "Sample",
+  "questions": [
+    {
+      "id": 0,
+      "question": "Sample question?",
+      "options": ["A", "B", "C", "D"],
+      "answer": 1,
+      "irt": {"a": 1.0, "b": 0.0}
+    }
+  ]
 }

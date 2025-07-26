@@ -1,19 +1,35 @@
 {
+  "id": "https://example.com/question-set.schema.json",
   "type": "object",
-  "required": ["text", "options", "correct_index", "category", "difficulty", "irt"],
+  "required": ["id", "language", "title", "questions"],
   "properties": {
-    "text": {"type": "string", "maxLength": 140},
-    "options": {"type": "array", "items": {"type": "string"}, "minItems": 4, "maxItems": 4},
-    "correct_index": {"type": "integer", "minimum": 0, "maximum": 3},
-    "category": {"enum": ["語彙", "数理", "空間", "論理"]},
-    "difficulty": {"enum": ["easy", "medium", "hard"]},
-    "image": {"type": "string"},
-    "irt": {
-      "type": "object",
-      "required": ["a", "b"],
-      "properties": {
-        "a": {"type": "number"},
-        "b": {"type": "number"}
+    "id": {"type": "string"},
+    "language": {"type": "string"},
+    "title": {"type": "string"},
+    "questions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "question", "options", "answer", "irt"],
+        "properties": {
+          "id": {"type": "integer"},
+          "question": {"type": "string"},
+          "options": {
+            "type": "array",
+            "items": {"type": "string"},
+            "minItems": 4,
+            "maxItems": 4
+          },
+          "answer": {"type": "integer", "minimum": 0, "maximum": 3},
+          "irt": {
+            "type": "object",
+            "properties": {
+              "a": {"type": "number"},
+              "b": {"type": "number"}
+            },
+            "required": ["a", "b"]
+          }
+        }
       }
     }
   }

@@ -16,12 +16,18 @@ def test_schema_validation():
     with SCHEMA_PATH.open() as f:
         schema = json.load(f)
     sample = {
-        "text": "Test?",
-        "options": ["a", "b", "c", "d"],
-        "correct_index": 0,
-        "category": "論理",
-        "difficulty": "easy",
-        "irt": {"a": 1.0, "b": 0.0}
+        "id": "test",
+        "language": "en",
+        "title": "Unit",
+        "questions": [
+            {
+                "id": 0,
+                "question": "Test?",
+                "options": ["a", "b", "c", "d"],
+                "answer": 0,
+                "irt": {"a": 1.0, "b": 0.0}
+            }
+        ]
     }
     validate(sample, schema)
 
