@@ -182,6 +182,10 @@ Question sets in `questions/` follow `questions/schema.json` and contain the fol
 
 Older files using `text` and `correct_index` are still supported by the backend, but new files should adopt `question` and `answer`.
 Files are validated against `questions/schema.json` at startup so new sets can be committed without redeploying the API.
+To manually check your JSON before committing, run:
+```bash
+python tools/validate_questions.py
+```
 
 ## Internationalisation
 
