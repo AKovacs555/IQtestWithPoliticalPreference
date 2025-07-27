@@ -130,6 +130,7 @@ __all__ = [
     "load_questions",
     "QUESTION_MAP",
     "get_balanced_random_questions",
+    "get_balanced_random_questions_by_set",
 ]
 
 
@@ -166,6 +167,34 @@ def get_balanced_random_questions(
     used_ids = {q["id"] for q in selected}
     if len(selected) < n:
         remaining_pool = [q for q in QUESTION_MAP.values() if q["id"] not in used_ids]
+        selected += random.sample(remaining_pool, n - len(selected))
+    random.shuffle(selected)
+    return selected
+
+
+def get_balanced_random_questions_by_set(
+    n: int,
+    set_id: str,
+    split: Tuple[float, float, float] = (0.3, 0.4, 0.3),
+) -> List[Dict[str, Any]]:
+    """Sample ``n`` questions from a specific set by difficulty (IRT b values)."""
+
+    pool = load_questions(set_id)
+    if n > len(pool):
+        raise ValueError("Not enough questions in pool")
+    easy = [q for q in pool if q["irt"]["b"] <= -0.33]
+    mid = [q for q in pool if -0.33 < q["irt"]["b"] < 0.33]
+    hard = [q for q in pool if q["irt"]["b"] >= 0.33]
+
+    k_e, k_m, k_h = map(lambda r: int(round(n * r)), split)
+
+    def _pick(group, k):
+        return random.sample(group, k) if len(group) >= k else list(group)
+
+    selected = _pick(easy, k_e) + _pick(mid, k_m) + _pick(hard, k_h)
+    used_ids = {q["id"] for q in selected}
+    if len(selected) < n:
+        remaining_pool = [q for q in pool if q["id"] not in used_ids]
         selected += random.sample(remaining_pool, n - len(selected))
     random.shuffle(selected)
     return selected

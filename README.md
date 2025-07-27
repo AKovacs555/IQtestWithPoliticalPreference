@@ -72,6 +72,7 @@ AWS SNS を利用する場合は IAM コンソールでアクセスキーを発�
 `AWS_ACCESS_KEY_ID` と `AWS_SECRET_ACCESS_KEY` を設定します。
 - OTP endpoints: `/auth/request-otp` and `/auth/verify-otp` support SMS via Twilio or SNS and fallback email codes through Supabase. Identifiers are hashed with per-record salts.
 - Quiz endpoints: `/quiz/sets` returns the list of available set IDs. `/quiz/start?set_id=<id>` begins a quiz and provides a session ID along with the questions for that set. `/quiz/submit` accepts all answers at once and returns the score, percentile and share URL. `/adaptive/start` and `/adaptive/answer` remain for legacy clients but are no longer used by the default frontend.
+- The quiz now samples questions by difficulty (30% easy, 40% medium, 30% hard) for a balanced test.
 - Pricing endpoints: `/pricing/{id}` shows the dynamic price for a user, `/play/record` registers a completed play and `/referral` adds a referral credit.
 - Demographic and party endpoints: `/user/demographics` records age, gender and income band. `/user/party` stores supported parties and enforces monthly change limits.
 - Aggregated data is available via `/leaderboard` and the authenticated `/data/iq` endpoint which returns differentially private averages.
@@ -118,6 +119,7 @@ medium and `{"a": 1.0, "b": 0.7}` for hard questions.
   and apply a watermark. Comments note that screenshots cannot be fully blocked.
 - React components are organised under `src/components` and `src/pages` for clarity.
 - The `Quiz` component now stores answers locally and submits them all at once via `/quiz/submit`.
+- Each test session is limited to 5 minutes and will auto-submit when time runs out.
 - A new `Leaderboard` page displays average IQ by party using the `/leaderboard` API.
 - Users can toggle between light and dark themes using the button in the navbar.
 - Translations live under `frontend/translations/` and are loaded via `src/i18n.js`.

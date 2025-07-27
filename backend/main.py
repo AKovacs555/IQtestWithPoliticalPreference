@@ -37,6 +37,8 @@ from questions import (
     DEFAULT_QUESTIONS,
     QUESTION_MAP,
     get_random_questions,
+    get_balanced_random_questions,
+    get_balanced_random_questions_by_set,
     available_sets,
 )
 from adaptive import select_next_question, should_stop
@@ -452,13 +454,12 @@ async def quiz_sets():
 
 @app.get("/quiz/start", response_model=QuizStartResponse)
 async def start_quiz(set_id: str | None = None):
-    """Begin a fixed-form quiz.
-
-    If ``set_id`` is provided, questions are drawn from that set;
-    otherwise the global pool is used.
-    """
+    """Begin a fixed-form quiz with difficulty-balanced questions."""
     try:
-        questions = get_random_questions(NUM_QUESTIONS, set_id)
+        if set_id:
+            questions = get_balanced_random_questions_by_set(NUM_QUESTIONS, set_id)
+        else:
+            questions = get_balanced_random_questions(NUM_QUESTIONS)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     session_id = secrets.token_hex(8)
