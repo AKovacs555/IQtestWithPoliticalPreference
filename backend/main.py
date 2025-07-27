@@ -70,9 +70,6 @@ app.include_router(exam_router)
 
 # SMS provider handled by sms_service module
 
-# Database placeholder (Supabase)
-DATABASE_URL = os.environ.get("DATABASE_URL", "")
-
 # Number of questions per quiz session
 NUM_QUESTIONS = int(os.getenv("NUM_QUESTIONS", "20"))
 
@@ -88,7 +85,6 @@ from db import (
 )
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
 SUPABASE_API_KEY = os.environ.get("SUPABASE_API_KEY", "")
-supabase = get_supabase()
 
 EVENTS: list[dict] = []
 
@@ -259,6 +255,7 @@ async def request_otp(data: OTPRequest):
         OTP_CODES[data.phone] = code
         return {"status": "sent"}
     if data.email:
+        supabase = get_supabase()
         supabase.auth.sign_in_with_otp({"email": data.email})
         return {"status": "email_sent"}
     raise HTTPException(status_code=400, detail="No contact provided")
@@ -271,6 +268,7 @@ async def verify_otp(data: OTPVerify):
             raise HTTPException(status_code=400, detail="Invalid code")
         OTP_CODES.pop(data.phone, None)
     elif data.email:
+        supabase = get_supabase()
         user = supabase.auth.verify_otp(
             {"email": data.email, "token": data.code, "type": "email"}
         )

@@ -38,9 +38,12 @@ class DummyTable:
 
     def execute(self):
         if self._insert is not None:
-            for row in self._insert:
-                self.rows.append(row)
-            return DummyResponse(self._insert)
+            if isinstance(self._insert, list):
+                self.rows.extend(self._insert)
+                return DummyResponse(self._insert)
+            else:
+                self.rows.append(self._insert)
+                return DummyResponse([self._insert])
         if self._update is not None:
             for r in self.rows:
                 if r.get(self._eq_column) == self._eq_value:
@@ -64,5 +67,7 @@ class DummySupabase:
 @pytest.fixture(autouse=True)
 def fake_supabase(monkeypatch):
     supa = DummySupabase()
-    monkeypatch.setattr("backend.db.get_supabase", lambda: supa)
+    monkeypatch.setattr("db.get_supabase", lambda: supa, raising=False)
+    monkeypatch.setattr("backend.db.get_supabase", lambda: supa, raising=False)
+    monkeypatch.setattr("main.get_supabase", lambda: supa, raising=False)
     return supa
