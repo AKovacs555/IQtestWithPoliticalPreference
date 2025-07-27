@@ -15,6 +15,7 @@ import { Chart } from 'chart.js/auto';
 import QuestionCard from '../components/QuestionCard';
 import Settings from './Settings.jsx';
 import DemographicsForm from './DemographicsForm.jsx';
+import History from './History.jsx';
 import confetti from 'canvas-confetti';
 import { getQuizStart, submitQuiz, getSurvey, submitSurvey } from '../api';
 
@@ -385,6 +386,7 @@ export default function App() {
         <Route path="/result" element={<Result />} />
         <Route path="/leaderboard" element={<Leaderboard />} />
         <Route path="/settings/:userId" element={<Settings />} />
+        <Route path="/history/:userId" element={<History />} />
         <Route path="/party" element={<PartySelect />} />
         <Route path="/admin/upload" element={<AdminUpload />} />
       </Routes>

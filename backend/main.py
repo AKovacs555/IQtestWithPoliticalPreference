@@ -242,6 +242,10 @@ class UserStats(BaseModel):
     party_log: list
 
 
+class HistoryResponse(BaseModel):
+    scores: list[ScoreEntry]
+
+
 class UserAction(BaseModel):
     user_id: str
 
@@ -721,13 +725,19 @@ async def user_stats(user_id: str):
     }
 
 
-@app.get("/user/history/{user_id}")
+@app.get("/user/history/{user_id}", response_model=HistoryResponse)
 async def user_history(user_id: str):
-    """Return past quiz scores for the user."""
+    """Return past quiz scores for the user sorted by timestamp desc."""
     user = get_user(user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    return {"scores": user.get("scores") or []}
+    scores = user.get("scores") or []
+    scores = sorted(
+        scores,
+        key=lambda s: s.get("timestamp") or "",
+        reverse=True,
+    )
+    return {"scores": scores}
 
 
 @app.get("/points/{user_id}")

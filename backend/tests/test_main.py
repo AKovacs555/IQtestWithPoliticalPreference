@@ -76,3 +76,37 @@ def test_upload_questions_success(monkeypatch):
         data = r.json()
         assert data["status"] == "success"
         assert "Imported" in data.get("log", "")
+
+def test_history_sorted():
+    from backend import db
+    user_id = 'hist_user'
+    db.create_user({
+        'hashed_id': user_id,
+        'salt': '',
+        'plays': 0,
+        'referrals': 0,
+        'points': 0,
+        'scores': [
+            {
+                'iq': 100,
+                'percentile': 50,
+                'timestamp': '2023-01-01T00:00:00',
+                'set_id': 'set1'
+            },
+            {
+                'iq': 110,
+                'percentile': 75,
+                'timestamp': '2023-02-01T00:00:00',
+                'set_id': 'set2'
+            }
+        ],
+        'party_log': [],
+        'demographic': {}
+    })
+    with TestClient(app) as client:
+        r = client.get(f'/user/history/{user_id}')
+        assert r.status_code == 200
+        data = r.json()
+        assert len(data['scores']) == 2
+        assert data['scores'][0]['timestamp'] == '2023-02-01T00:00:00'
+        assert data['scores'][1]['timestamp'] == '2023-01-01T00:00:00'

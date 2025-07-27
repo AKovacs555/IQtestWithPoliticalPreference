@@ -43,6 +43,7 @@ export default function Settings() {
               <li key={i}>IQ {s.iq.toFixed(1)} ({s.percentile.toFixed(1)}%)</li>
             ))}
           </ul>
+          <Link to={`/history/${userId}`} className="underline text-sm">Full History</Link>
         </div>
         <div>
           <h3 className="font-semibold">Party Changes</h3>
