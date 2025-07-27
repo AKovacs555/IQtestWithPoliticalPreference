@@ -56,6 +56,20 @@ const Quiz = () => {
     load();
   }, [setId]);
 
+  // Prevent copying or cutting text and disable context menu
+  React.useEffect(() => {
+    const preventCopy = (e) => e.preventDefault();
+    const preventContext = (e) => e.preventDefault();
+    document.addEventListener('copy', preventCopy);
+    document.addEventListener('cut', preventCopy);
+    document.addEventListener('contextmenu', preventContext);
+    return () => {
+      document.removeEventListener('copy', preventCopy);
+      document.removeEventListener('cut', preventCopy);
+      document.removeEventListener('contextmenu', preventContext);
+    };
+  }, []);
+
   React.useEffect(() => {
     const t = setInterval(() => setTimeLeft(t => Math.max(t - 1, 0)), 1000);
     return () => clearInterval(t);
@@ -128,7 +142,7 @@ const Quiz = () => {
   return (
     <PageTransition>
       <Layout>
-        <div className="space-y-4 max-w-lg mx-auto">
+        <div className="space-y-4 max-w-lg mx-auto quiz-container">
           {loading && <p>Loading...</p>}
           {error && <p className="text-error">{error}</p>}
           {!loading && !error && (

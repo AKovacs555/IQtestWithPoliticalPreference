@@ -4,6 +4,7 @@ import hmac
 import secrets
 import random
 import time
+from datetime import datetime
 from typing import List, Optional
 
 import sys
@@ -227,10 +228,17 @@ class PricingResponse(BaseModel):
     variant: int
 
 
+class ScoreEntry(BaseModel):
+    iq: float
+    percentile: float
+    timestamp: str | None = None
+    set_id: str | None = None
+
+
 class UserStats(BaseModel):
     plays: int
     referrals: int
-    scores: list
+    scores: list[ScoreEntry]
     party_log: list
 
 
@@ -463,7 +471,10 @@ async def start_quiz(set_id: str | None = None):
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     session_id = secrets.token_hex(8)
-    app.state.sessions[session_id] = {"question_ids": [q["id"] for q in questions]}
+    app.state.sessions[session_id] = {
+        "question_ids": [q["id"] for q in questions],
+        "set_id": set_id,
+    }
     models = [
         QuizQuestion(
             id=q["id"],
@@ -480,7 +491,8 @@ async def start_quiz(set_id: str | None = None):
 async def submit_quiz(payload: QuizSubmitRequest):
     if not payload.session_id or payload.session_id not in app.state.sessions:
         raise HTTPException(status_code=400, detail="Invalid session")
-    question_ids = app.state.sessions[payload.session_id]["question_ids"]
+    session_data = app.state.sessions[payload.session_id]
+    question_ids = session_data["question_ids"]
     if len(payload.answers) != len(question_ids):
         raise HTTPException(status_code=400, detail="Expected all answers")
 
@@ -511,7 +523,14 @@ async def submit_quiz(payload: QuizSubmitRequest):
         if user:
             user["plays"] = user.get("plays", 0) + 1
             scores = user.get("scores") or []
-            scores.append({"iq": iq, "percentile": pct})
+            scores.append(
+                {
+                    "iq": iq,
+                    "percentile": pct,
+                    "timestamp": datetime.utcnow().isoformat(),
+                    "set_id": session_data.get("set_id"),
+                }
+            )
             user["scores"] = scores
             db_update_user(
                 payload.user_id,
@@ -700,6 +719,15 @@ async def user_stats(user_id: str):
         "scores": user.get("scores") or [],
         "party_log": user.get("party_log") or [],
     }
+
+
+@app.get("/user/history/{user_id}")
+async def user_history(user_id: str):
+    """Return past quiz scores for the user."""
+    user = get_user(user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return {"scores": user.get("scores") or []}
 
 
 @app.get("/points/{user_id}")
