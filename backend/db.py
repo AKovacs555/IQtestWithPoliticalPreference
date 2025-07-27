@@ -1,58 +1,44 @@
 import os
-from sqlalchemy.ext.asyncio import (
-    create_async_engine,
-    AsyncSession,
-    async_sessionmaker,
-)
-from sqlalchemy.orm import declarative_base
-from sqlalchemy import (
-    Column,
-    String,
-    JSON,
-    BigInteger,
-    DateTime,
-    func,
-)
+from typing import Any, Dict, Optional, List
+from supabase import create_client, Client
 
-# Database connection URL must be provided via the environment
-DATABASE_URL = os.environ["DATABASE_URL"]
-
-# Convert plain Postgres URLs to asyncpg syntax for create_async_engine
-if DATABASE_URL.startswith("postgresql://"):
-    DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://", 1)
-elif DATABASE_URL.startswith("postgres://"):
-    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+asyncpg://", 1)
-elif DATABASE_URL.startswith("postgresql+psycopg2://"):
-    DATABASE_URL = DATABASE_URL.replace("postgresql+psycopg2://", "postgresql+asyncpg://", 1)
-
-engine = create_async_engine(
-    DATABASE_URL,
-    future=True,
-    pool_pre_ping=True,
-    echo=False,
-)
-AsyncSessionLocal = async_sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
-
-Base = declarative_base()
+_supabase: Client | None = None
 
 
-class User(Base):
-    __tablename__ = "users"
+def get_supabase() -> Client:
+    """Return a cached Supabase client."""
+    global _supabase
+    if _supabase is None:
+        supabase_url = os.environ["SUPABASE_URL"]
+        supabase_api_key = os.environ["SUPABASE_API_KEY"]
+        _supabase = create_client(supabase_url, supabase_api_key)
+    return _supabase
 
-    hashed_id = Column(String, primary_key=True, index=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    salt = Column(String, nullable=False)
-    plays = Column(BigInteger, default=0)
-    points = Column(BigInteger, default=0)
-    referrals = Column(BigInteger, default=0)
-    scores = Column(JSON, nullable=True)
-    party_log = Column(JSON, nullable=True)
-    demographic = Column(JSON, nullable=True)
 
-async def init_db():
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+def get_user(hashed_id: str) -> Optional[Dict[str, Any]]:
+    supabase = get_supabase()
+    resp = (
+        supabase.from_("users")
+        .select("*")
+        .eq("hashed_id", hashed_id)
+        .single()
+        .execute()
+    )
+    return resp.data if resp.data else None
 
-def get_session() -> AsyncSession:
-    """Return a new asynchronous SQLAlchemy session."""
-    return AsyncSessionLocal()
+
+def create_user(user_data: Dict[str, Any]) -> Dict[str, Any]:
+    supabase = get_supabase()
+    resp = supabase.from_("users").insert(user_data).execute()
+    return resp.data[0]
+
+
+def update_user(hashed_id: str, update_data: Dict[str, Any]) -> None:
+    supabase = get_supabase()
+    supabase.from_("users").update(update_data).eq("hashed_id", hashed_id).execute()
+
+
+def get_all_users() -> List[Dict[str, Any]]:
+    supabase = get_supabase()
+    resp = supabase.from_("users").select("*").execute()
+    return resp.data or []
