@@ -9,7 +9,7 @@ export default function QuestionCard({ question, onSelect, watermark }) {
         <img
           src={question.image}
           className="max-h-80 w-full object-contain mb-4"
-          alt="figure"
+          alt={question.image_prompt || 'question image'}
         />
       )}
       <QuestionCanvas

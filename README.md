@@ -180,6 +180,8 @@ Question sets in `questions/` follow `questions/schema.json` and contain the fol
   * `options` (array of strings) – four answer choices.
   * `answer` (integer) – zero‑based index (0–3) of the correct answer.
   * `irt` (object) – psychometric parameters `{ "a": 1.0, "b": 0.0 }` by default.
+  * `image` (string, optional) – relative path to an image shown above the question.
+  * `image_prompt` (string, optional) – description of the image for accessibility.
 
 Older files using `text` and `correct_index` are still supported by the backend, but new files should adopt `question` and `answer`.
 Files are validated against `questions/schema.json` at startup so new sets can be committed without redeploying the API.
@@ -187,6 +189,11 @@ To manually check your JSON before committing, run:
 ```bash
 python tools/validate_questions.py
 ```
+
+Place any image files referenced by the `image` field under
+`frontend/public/images/questions/` (or another static asset path) so they
+are served directly by the React app. Store the relative URL in the JSON,
+for example `/images/questions/set01_q01.png`.
 
 ## Internationalisation
 
