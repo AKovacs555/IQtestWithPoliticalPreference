@@ -56,10 +56,6 @@ import json
 app = FastAPI()
 app.state.sessions = {}
 
-@app.on_event("startup")
-async def on_startup():
-    await init_db()
-
 # CORS for SPA
 origins = [os.getenv("VITE_API_BASE", "*")]
 app.add_middleware(
@@ -83,17 +79,16 @@ NUM_QUESTIONS = int(os.getenv("NUM_QUESTIONS", "20"))
 # Maximum free attempts before payment is required
 MAX_FREE_ATTEMPTS = int(os.getenv("MAX_FREE_ATTEMPTS", "1"))
 
-from supabase import create_client
-from sqlalchemy import select
-from db import AsyncSessionLocal, User, init_db
+from db import (
+    get_user,
+    create_user as db_create_user,
+    update_user as db_update_user,
+    get_all_users,
+    get_supabase,
+)
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
 SUPABASE_API_KEY = os.environ.get("SUPABASE_API_KEY", "")
-supabase = None
-if SUPABASE_URL and SUPABASE_API_KEY:
-    try:
-        supabase = create_client(SUPABASE_URL, SUPABASE_API_KEY)
-    except Exception:
-        supabase = None
+supabase = get_supabase()
 
 EVENTS: list[dict] = []
 
@@ -287,61 +282,59 @@ async def verify_otp(data: OTPVerify):
     phone_or_email = data.phone or data.email
     salt = secrets.token_hex(8)
     hashed = hash_phone(phone_or_email, salt)
-    async with AsyncSessionLocal() as session:
-        user = await session.get(User, hashed)
-        if not user:
-            user = User(
-                hashed_id=hashed,
-                salt=salt,
-                plays=0,
-                referrals=0,
-                points=0,
-                scores=[],
-                party_log=[],
-                demographic={},
-            )
-            session.add(user)
-        await session.commit()
+    user = get_user(hashed)
+    if not user:
+        db_create_user(
+            {
+                "hashed_id": hashed,
+                "salt": salt,
+                "plays": 0,
+                "referrals": 0,
+                "points": 0,
+                "scores": [],
+                "party_log": [],
+                "demographic": {},
+            }
+        )
     return {"status": "verified", "id": hashed}
 
 
-def _retry_price(user: User) -> int:
-    plays_paid = max((user.plays or 0) - (user.referrals or 0), 0)
+def _retry_price(user: dict) -> int:
+    plays_paid = max((user.get("plays", 0)) - (user.get("referrals", 0)), 0)
     idx = plays_paid if plays_paid < len(PRICES) else len(PRICES) - 1
     return PRICES[idx]
 
 
-def _assign_variant(user: User) -> int:
+def _assign_variant(user: dict) -> int:
     """Return a stable variant index for the user."""
-    return abs(hash(user.hashed_id)) % len(PRICE_VARIANTS)
+    return abs(hash(user["hashed_id"])) % len(PRICE_VARIANTS)
 
 
 @app.get("/pricing/{user_id}", response_model=PricingResponse)
 async def pricing(user_id: str, region: str = "US"):
-    async with AsyncSessionLocal() as session:
-        user = await session.get(User, user_id)
-        if not user:
-            user = User(
-                hashed_id=user_id,
-                salt="",
-                plays=0,
-                referrals=0,
-                points=0,
-                scores=[],
-                party_log=[],
-                demographic={},
-            )
-            session.add(user)
-        processor = select_processor(region)
-        variant_idx = _assign_variant(user)
-        log_event({"event": "pricing_shown", "user_id": user_id, "variant": variant_idx})
-        price = PRICE_VARIANTS[variant_idx]
-        retry_price = _retry_price(user)
-        await session.commit()
+    user = get_user(user_id)
+    if not user:
+        user = db_create_user(
+            {
+                "hashed_id": user_id,
+                "salt": "",
+                "plays": 0,
+                "referrals": 0,
+                "points": 0,
+                "scores": [],
+                "party_log": [],
+                "demographic": {},
+            }
+        )
+    processor = select_processor(region)
+    variant_idx = _assign_variant(user)
+    log_event({"event": "pricing_shown", "user_id": user_id, "variant": variant_idx})
+    price = PRICE_VARIANTS[variant_idx]
+    retry_price = _retry_price(user)
     return {
         "price": price,
         "retry_price": retry_price,
-        "plays": user.plays,
+        "plays": user.get("plays", 0),
         "processor": processor,
         "pro_price": PRO_PRICE_MONTHLY,
         "variant": variant_idx,
@@ -350,95 +343,94 @@ async def pricing(user_id: str, region: str = "US"):
 
 @app.post("/play/record")
 async def record_play(action: UserAction):
-    async with AsyncSessionLocal() as session:
-        user = await session.get(User, action.user_id)
-        if not user:
-            user = User(
-                hashed_id=action.user_id,
-                salt="",
-                plays=0,
-                referrals=0,
-                points=0,
-                scores=[],
-                party_log=[],
-                demographic={},
-            )
-            session.add(user)
-        paid = False
-        if user.plays >= MAX_FREE_ATTEMPTS:
-            if user.points >= RETRY_POINT_COST:
-                user.points -= RETRY_POINT_COST
-                paid = True
-            else:
-                raise HTTPException(status_code=402, detail="Payment required")
-        user.plays = (user.plays or 0) + 1
-        await session.commit()
+    user = get_user(action.user_id)
+    if not user:
+        user = db_create_user(
+            {
+                "hashed_id": action.user_id,
+                "salt": "",
+                "plays": 0,
+                "referrals": 0,
+                "points": 0,
+                "scores": [],
+                "party_log": [],
+                "demographic": {},
+            }
+        )
+    paid = False
+    if user.get("plays", 0) >= MAX_FREE_ATTEMPTS:
+        if user.get("points", 0) >= RETRY_POINT_COST:
+            user["points"] -= RETRY_POINT_COST
+            paid = True
+        else:
+            raise HTTPException(status_code=402, detail="Payment required")
+    user["plays"] = user.get("plays", 0) + 1
+    db_update_user(action.user_id, {"plays": user["plays"], "points": user.get("points", 0)})
     log_event({"event": "play_record", "user_id": action.user_id, "paid": paid})
-    return {"plays": user.plays, "points": user.points}
+    return {"plays": user["plays"], "points": user.get("points", 0)}
 
 
 @app.post("/referral")
 async def referral(action: UserAction):
-    async with AsyncSessionLocal() as session:
-        user = await session.get(User, action.user_id)
-        if not user:
-            user = User(
-                hashed_id=action.user_id,
-                salt="",
-                plays=0,
-                referrals=0,
-                points=0,
-                scores=[],
-                party_log=[],
-                demographic={},
-            )
-            session.add(user)
-        user.referrals = (user.referrals or 0) + 1
-        await session.commit()
-    return {"referrals": user.referrals}
+    user = get_user(action.user_id)
+    if not user:
+        user = db_create_user(
+            {
+                "hashed_id": action.user_id,
+                "salt": "",
+                "plays": 0,
+                "referrals": 0,
+                "points": 0,
+                "scores": [],
+                "party_log": [],
+                "demographic": {},
+            }
+        )
+    user["referrals"] = user.get("referrals", 0) + 1
+    db_update_user(action.user_id, {"referrals": user["referrals"]})
+    return {"referrals": user["referrals"]}
 
 
 @app.post("/ads/start")
 async def ads_start(action: UserAction):
-    async with AsyncSessionLocal() as session:
-        user = await session.get(User, action.user_id)
-        if not user:
-            user = User(
-                hashed_id=action.user_id,
-                salt="",
-                plays=0,
-                referrals=0,
-                points=0,
-                scores=[],
-                party_log=[],
-                demographic={},
-            )
-            session.add(user)
-        await session.commit()
+    user = get_user(action.user_id)
+    if not user:
+        user = db_create_user(
+            {
+                "hashed_id": action.user_id,
+                "salt": "",
+                "plays": 0,
+                "referrals": 0,
+                "points": 0,
+                "scores": [],
+                "party_log": [],
+                "demographic": {},
+            }
+        )
     log_event({"event": "ad_start", "user_id": action.user_id})
     return {"status": "started"}
 
 
 @app.post("/ads/complete")
 async def ads_complete(action: UserAction):
-    async with AsyncSessionLocal() as session:
-        user = await session.get(User, action.user_id)
-        if not user:
-            user = User(
-                hashed_id=action.user_id,
-                salt="",
-                plays=0,
-                referrals=0,
-                points=0,
-                scores=[],
-                party_log=[],
-                demographic={},
-            )
-            session.add(user)
-        user.points = (user.points or 0) + AD_REWARD_POINTS
-        await session.commit()
+    user = get_user(action.user_id)
+    if not user:
+        user = db_create_user(
+            {
+                "hashed_id": action.user_id,
+                "salt": "",
+                "plays": 0,
+                "referrals": 0,
+                "points": 0,
+                "scores": [],
+                "party_log": [],
+                "demographic": {},
+            }
+        )
+    user["points"] = user.get("points", 0) + AD_REWARD_POINTS
+    db_update_user(action.user_id, {"points": user["points"]})
     log_event({"event": "ad_complete", "user_id": action.user_id})
-    return {"points": user.points}
+    return {"points": user["points"]}
 
 
 @app.get("/ping")
@@ -510,14 +502,16 @@ async def submit_quiz(payload: QuizSubmitRequest):
     share_url = generate_share_image(payload.user_id or "anon", iq, pct)
 
     if payload.user_id:
-        async with AsyncSessionLocal() as session:
-            user = await session.get(User, payload.user_id)
-            if user:
-                user.plays = (user.plays or 0) + 1
-                scores = user.scores or []
-                scores.append({"iq": iq, "percentile": pct})
-                user.scores = scores
-                await session.commit()
+        user = get_user(payload.user_id)
+        if user:
+            user["plays"] = user.get("plays", 0) + 1
+            scores = user.get("scores") or []
+            scores.append({"iq": iq, "percentile": pct})
+            user["scores"] = scores
+            db_update_user(
+                payload.user_id,
+                {"plays": user["plays"], "scores": user["scores"]},
+            )
 
     # remove session once quiz is graded
     app.state.sessions.pop(payload.session_id, None)
@@ -687,25 +681,23 @@ async def user_party(selection: PartySelection):
 @app.get("/user/stats/{user_id}", response_model=UserStats)
 async def user_stats(user_id: str):
     """Return play counts and history for a user."""
-    async with AsyncSessionLocal() as session:
-        user = await session.get(User, user_id)
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found")
-        return {
-            "plays": user.plays or 0,
-            "referrals": user.referrals or 0,
-            "scores": user.scores or [],
-            "party_log": user.party_log or [],
-        }
+    user = get_user(user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return {
+        "plays": user.get("plays", 0),
+        "referrals": user.get("referrals", 0),
+        "scores": user.get("scores") or [],
+        "party_log": user.get("party_log") or [],
+    }
 
 
 @app.get("/points/{user_id}")
 async def points_balance(user_id: str):
-    async with AsyncSessionLocal() as session:
-        user = await session.get(User, user_id)
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found")
-        return {"points": user.points or 0}
+    user = get_user(user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return {"points": user.get("points", 0)}
 
 
 @app.post("/analytics")
@@ -741,21 +733,20 @@ async def dp_data_api(
 
     epsilon = float(os.getenv("DP_EPSILON", "1.0"))
     scores: List[float] = []
-    async with AsyncSessionLocal() as session:
-        result = await session.execute(select(User))
-        users = result.scalars().all()
+    users = get_all_users()
     for user in users:
-        demo = user.demographic or {}
+        demo = user.get("demographic") or {}
         if age_band and demo.get("age_band") != age_band:
             continue
         if gender and demo.get("gender") != gender:
             continue
         if income_band and demo.get("income_band") != income_band:
             continue
-        latest_parties = user.party_log[-1]["party_ids"] if user.party_log else []
+        latest_parties = user.get("party_log")
+        latest_parties = latest_parties[-1]["party_ids"] if latest_parties else []
         if party_id is not None and party_id not in latest_parties:
             continue
-        for s in (user.scores or []):
+        for s in (user.get("scores") or []):
             scores.append(s.get("iq"))
 
     if len(scores) < MIN_BUCKET_SIZE:
@@ -775,11 +766,9 @@ async def admin_update_norms(api_key: str):
         raise HTTPException(status_code=403, detail="Invalid API key")
 
     scores: List[float] = []
-    async with AsyncSessionLocal() as session:
-        result = await session.execute(select(User))
-        users = result.scalars().all()
+    users = get_all_users()
     for user in users:
-        for s in (user.scores or []):
+        for s in (user.get("scores") or []):
             scores.append(s.get("iq"))
     update_normative_distribution(scores)
     return {"added": len(scores)}

@@ -14,8 +14,7 @@ except Exception:  # Pillow not installed
     Image = ImageDraw = ImageFont = None
 
 
-from db import AsyncSessionLocal, User
-from sqlalchemy import select
+from db import get_all_users
 from dp import add_laplace
 
 
@@ -41,13 +40,12 @@ async def leaderboard_by_party(epsilon: float = 1.0) -> List[dict]:
     preserve privacy. Laplace noise is added using :func:`dp_average`.
     """
     buckets: dict[int, List[float]] = {}
-    async with AsyncSessionLocal() as session:
-        result = await session.execute(select(User))
-        users = result.scalars().all()
+    users = get_all_users()
     for user in users:
-        latest = user.party_log[-1]["party_ids"] if user.party_log else []
+        latest = user.get("party_log", [])
+        latest = latest[-1]["party_ids"] if latest else []
         parties = latest
-        scores = [s.get("iq") for s in (user.scores or [])]
+        scores = [s.get("iq") for s in (user.get("scores") or [])]
         if not parties or not scores:
             continue
         avg_score = sum(scores) / len(scores)

@@ -1,12 +1,10 @@
 fastapi
 uvicorn[standard]
-asyncpg
 aiosqlite
-supabase
+supabase-py>=2.0.0
 stripe
 python-multipart
 twilio
-SQLAlchemy
 boto3
 pillow
 jsonschema

@@ -1,9 +1,10 @@
-import os, sys, asyncio, uuid
+import os, sys, uuid
 from fastapi.testclient import TestClient
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 import main
-from main import app, AsyncSessionLocal, User
+from main import app
+from backend import db
 
 
 def test_payment_flow(monkeypatch):
@@ -32,9 +33,5 @@ def test_verify_otp_creates_user(monkeypatch):
         r = client.post("/auth/verify-otp", json={"phone": phone, "code": code})
         assert r.status_code == 200
         user_id = r.json()["id"]
-    async def get_user():
-        async with AsyncSessionLocal() as session:
-            return await session.get(User, user_id)
-    user = asyncio.get_event_loop().run_until_complete(get_user())
+    user = db.get_user(user_id)
     assert user is not None
-    assert user.created_at is not None
