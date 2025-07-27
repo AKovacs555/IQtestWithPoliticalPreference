@@ -4,7 +4,10 @@ import QuestionCanvas from './QuestionCanvas';
 export default function QuestionCard({ question, onSelect, watermark }) {
   const { question: text, options } = question;
   return (
-    <div className="card bg-base-100 shadow-md p-4 space-y-4">
+    <div className="card bg-base-100 shadow-md p-4 space-y-4 relative">
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-20 text-xs select-none">
+        {watermark}
+      </div>
       {question.image && (
         <img
           src={question.image}

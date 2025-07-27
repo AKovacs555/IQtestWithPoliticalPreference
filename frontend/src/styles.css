@@ -12,3 +12,7 @@
 body {
   @apply bg-base-200 text-base-content;
 }
+
+.quiz-container {
+  user-select: none;
+}
