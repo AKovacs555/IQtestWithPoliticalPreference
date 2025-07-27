@@ -15,8 +15,10 @@ This project provides an IQ quiz and political preference survey using a respons
   uvicorn backend.main:app --reload
   ```
 - Environment variables (see `.env.example`):
-  - `DATABASE_URL` – Supabase Postgres connection string.
   - `SUPABASE_API_KEY` – API key for Supabase.
+  - `SUPABASE_URL` – base URL for Supabase (required for share images).
+  - The backend communicates with Supabase purely through the REST API so
+    no `DATABASE_URL` is needed.
   - `SMS_PROVIDER` – `twilio` (default) or `sns` for Amazon SNS.
   - When using Twilio: `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_VERIFY_SERVICE_SID`.
   - When using SNS: `AWS_REGION` and AWS credentials configured in the environment.
@@ -31,7 +33,6 @@ This project provides an IQ quiz and political preference survey using a respons
   - `DP_EPSILON` – epsilon used when adding Laplace noise to aggregated data.
   - `DP_MIN_COUNT` – minimum records required before an aggregate is reported.
   - `DATA_API_KEY` – authentication token for the paid differential‑privacy API.
-  - `SUPABASE_URL` – base URL for Supabase (required for share images).
   - `SUPABASE_SHARE_BUCKET` – bucket name for storing generated share images.
   - `ADMIN_API_KEY` – token for admin endpoints such as normative updates.
   - `AD_UNIT_ID_ANDROID`, `AD_UNIT_ID_IOS`, `ADMOB_APP_ID` – Google AdMob ad identifiers.
