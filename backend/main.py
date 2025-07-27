@@ -136,6 +136,7 @@ class QuizQuestion(BaseModel):
     id: int
     question: str
     options: List[str]
+    image: Optional[str] = None
 
 
 class QuizStartResponse(BaseModel):
@@ -463,7 +464,12 @@ async def start_quiz(set_id: str | None = None):
     session_id = secrets.token_hex(8)
     app.state.sessions[session_id] = {"question_ids": [q["id"] for q in questions]}
     models = [
-        QuizQuestion(id=q["id"], question=q["question"], options=q["options"])
+        QuizQuestion(
+            id=q["id"],
+            question=q["question"],
+            options=q["options"],
+            image=q.get("image"),
+        )
         for q in questions
     ]
     return {"session_id": session_id, "questions": models}
@@ -525,7 +531,12 @@ async def submit_quiz(payload: QuizSubmitRequest):
 
 
 def _to_model(q) -> QuizQuestion:
-    return QuizQuestion(id=q["id"], question=q["question"], options=q["options"])
+    return QuizQuestion(
+        id=q["id"],
+        question=q["question"],
+        options=q["options"],
+        image=q.get("image"),
+    )
 
 
 @app.get("/adaptive/start", response_model=AdaptiveStartResponse)

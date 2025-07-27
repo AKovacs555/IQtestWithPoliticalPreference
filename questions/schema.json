@@ -28,7 +28,9 @@
               "b": {"type": "number"}
             },
             "required": ["a", "b"]
-          }
+          },
+          "image": {"type": "string"},
+          "image_prompt": {"type": "string"}
         }
       }
     }
