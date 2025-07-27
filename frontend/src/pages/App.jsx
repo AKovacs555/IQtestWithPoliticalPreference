@@ -33,7 +33,7 @@ const Quiz = () => {
   const [questions, setQuestions] = React.useState([]);
   const [answers, setAnswers] = React.useState([]);
   const [current, setCurrent] = React.useState(0);
-  const [timeLeft, setTimeLeft] = React.useState(360);
+  const [timeLeft, setTimeLeft] = React.useState(300);
   const [suspicious, setSuspicious] = React.useState(false);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState(null);
@@ -60,6 +60,26 @@ const Quiz = () => {
     const t = setInterval(() => setTimeLeft(t => Math.max(t - 1, 0)), 1000);
     return () => clearInterval(t);
   }, []);
+
+  React.useEffect(() => {
+    if (timeLeft === 0 && !loading && !error) {
+      (async () => {
+        const result = await submitQuiz(
+          session,
+          answers.map((ans, idx) => ({
+            id: questions[idx].id,
+            answer: ans ?? -1,
+          }))
+        );
+        const params = new URLSearchParams({
+          score: result.iq,
+          percentile: result.percentile,
+          share: result.share_url,
+        });
+        window.location.href = '/result?' + params.toString();
+      })();
+    }
+  }, [timeLeft, loading, error]);
 
   React.useEffect(() => {
     let hideTime = null;

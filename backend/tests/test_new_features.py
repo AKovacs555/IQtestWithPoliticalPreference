@@ -5,7 +5,10 @@ from jsonschema import validate
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 
-from questions import get_balanced_random_questions
+from questions import (
+    get_balanced_random_questions,
+    get_balanced_random_questions_by_set,
+)
 from adaptive import select_next_question, should_stop
 from irt import update_theta
 
@@ -46,6 +49,11 @@ def test_balanced_sampling():
     assert abs(counts['easy'] - 8 * 0.3) <= 1
     assert abs(counts['medium'] - 8 * 0.4) <= 1
     assert abs(counts['hard'] - 8 * 0.3) <= 1
+
+
+def test_balanced_sampling_by_set():
+    qs = get_balanced_random_questions_by_set(1, 'set01')
+    assert len(qs) == 1
 
 
 def test_adaptive_stop():
