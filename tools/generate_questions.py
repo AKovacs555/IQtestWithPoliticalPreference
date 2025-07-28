@@ -117,7 +117,14 @@ def import_dir(path: Path) -> None:
                 item["id"] = qid
                 seen_ids.add(qid)
 
+            # legacy field not used by the backend
             item.pop("needs_image", None)
+
+            # keep image and image_prompt fields if provided
+            if "image" in item:
+                item["image"] = item["image"]
+            if "image_prompt" in item:
+                item["image_prompt"] = item["image_prompt"]
 
             bank.append(item)
             counts[_difficulty_label(item)] += 1
