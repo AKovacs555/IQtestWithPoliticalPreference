@@ -12,6 +12,7 @@ export default function Pricing() {
   const [price, setPrice] = useState(0);
   const [proPrice, setProPrice] = useState(0);
   const [progress, setProgress] = useState(0);
+  const [crypto, setCrypto] = useState('usdt');
 
   const watchAd = () => {
     setProgress(0);
@@ -50,7 +51,19 @@ export default function Pricing() {
           <div className="card bg-base-100 shadow-md p-4">
             <h3 className="font-semibold mb-2">{t('pricing.retry')}</h3>
             <p className="mb-4">{price} JPY</p>
-            <button className="btn btn-secondary">Pay with Stripe</button>
+            <select className="select select-bordered w-full mb-2" value={crypto} onChange={e => setCrypto(e.target.value)}>
+              <option value="sol">SOL</option>
+              <option value="xrp">XRP</option>
+              <option value="trx">TRX</option>
+              <option value="usdttrc20">USDT</option>
+              <option value="eth">ETH</option>
+              <option value="bnb">BNB</option>
+            </select>
+            <button className="btn btn-secondary" onClick={() => {
+              fetch(`${API_BASE}/purchase`, { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ user_id: userId, amount: price, pay_currency: crypto }) })
+                .then(res => res.json())
+                .then(data => { if (data.payment_url) window.location = data.payment_url; });
+            }}>Pay with Crypto</button>
           </div>
           <div className="card bg-base-100 shadow-md p-4">
             <h3 className="font-semibold mb-2">{t('pricing.subscribe')}</h3>

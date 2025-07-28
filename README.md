@@ -22,10 +22,10 @@ This project provides an IQ quiz and political preference survey using a respons
   - `SMS_PROVIDER` – `twilio` (default) or `sns` for Amazon SNS.
   - When using Twilio: `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_VERIFY_SERVICE_SID`.
   - When using SNS: `AWS_REGION` and AWS credentials configured in the environment.
-  - `PAYPAY_API_KEY` or `LINEPAY_API_KEY` – enable local payment gateways in Japan.
   - The backend logs an estimated cost for each OTP sent based on the selected SMS provider.
-  - `STRIPE_SECRET_KEY` – Stripe secret key for payments.
-  - `STRIPE_PUBLISHABLE_KEY` – Stripe public key for the client.
+  - `NOWPAYMENTS_API_KEY` – API key for cryptocurrency payments.
+  - `NOWPAYMENTS_CALLBACK_URL` – URL for payment confirmations.
+  - `NOWPAYMENTS_CURRENCY` – fiat currency to convert payouts into (optional).
   - `PHONE_SALT` – salt for hashing phone or email identifiers.
   - `MAX_FREE_ATTEMPTS` – number of free quiz attempts allowed before payment is required (default `1`).
   - `RETRY_PRICE_TIERS` – comma separated yen prices for paid retries.
@@ -42,22 +42,21 @@ This project provides an IQ quiz and political preference survey using a respons
     This should point to the Render deployment, e.g.
     `https://iqandpoliticalpreference.onrender.com`. Be sure to redeploy
     the frontend after changing environment variables.
-  - `VITE_STRIPE_PUBLISHABLE_KEY` – public Stripe key used by the frontend.
 
 When running the project locally, copy `.env.example` to `.env` and fill in the
 required keys before starting the backend or frontend.
 
 ## 環境設定
 
-Supabase、Stripe、AWS SNS、Google AdMob のアカウントを作成し、それぞれのダッシュボードから API キーを取得してください。取得したキーは Vercel または Render の環境変数に設定します。
+Supabase、NOWPayments、AWS SNS、Google AdMob のアカウントを作成し、それぞれのダッシュボードから API キーを取得してください。取得したキーは Vercel または Render の環境変数に設定します。
 
 - [Supabase ドキュメント](https://supabase.com/docs)
-- [Stripe ドキュメント](https://stripe.com/docs)
+- [NOWPayments ドキュメント](https://nowpayments.io)
 - [AWS SNS ドキュメント](https://docs.aws.amazon.com/sns)
 - [Google AdMob ドキュメント](https://developers.google.com/admob)
 
 - Supabase: Settings > API で URL と service role キーをコピー
-- Stripe: ダッシュボードの 開発者 > API キー から取得
+- NOWPayments: 個人商人アカウントを作成し、API キーを生成してコールバック URL を設定
 - Google AdMob: アプリ ID と広告ユニット ID を作成してコピー
 - AWS SNS: IAM ユーザーのアクセスキーを使用
 ### 広告設定
@@ -138,7 +137,7 @@ To get started quickly, deploy the backend and frontend separately.
 ### Deploying the frontend on Vercel
 
 1. Create a Vercel project and point it at the `frontend/` directory.
-2. Define `VITE_API_BASE`, `VITE_STRIPE_PUBLISHABLE_KEY` and any Supabase keys under *Project Settings → Environment Variables*.
+2. Define `VITE_API_BASE` and any Supabase keys under *Project Settings → Environment Variables*.
 3. After configuring the variables run `vercel env pull` to generate a local `.env` file for development.
 4. Use `npm install` followed by `npm run build` for the build steps.
 5. Any change to the variables requires a redeploy from Vercel’s dashboard.
@@ -209,8 +208,8 @@ languages using the `dir` attribute on the root element.
 - **SMS verification:** configurable between Twilio and Amazon SNS. Choose the provider with the best local rates.
 - **Email OTP:** provided free via Supabase auth as a fallback for users without SMS.
 - **Serverless hosting:** deploy FastAPI on platforms such as Vercel or Cloudflare Workers. Supabase provides the managed Postgres database and authentication layer.
-- **Payments:** Stripe is used by default but the `/pricing` API enables switching to local processors like PayPay or Line Pay with minimal code changes.
-  Checkout sessions and webhooks update user entitlements automatically.
+- **Payments:** Cryptocurrency payments are handled via NOWPayments and PayPal can be used if credentials are provided.
+  NOWPayments invoices support SOL, XRP, TRX, USDT, ETH and BNB.
 - **Analytics:** the `/analytics` endpoint logs anonymous events to a self-hosted solution, avoiding third-party trackers.
 
 ## Share image generation
