@@ -50,7 +50,11 @@ from scoring import (
     ability_summary,
     standard_error,
 )
-from payment import select_processor
+from payment import (
+    select_processor,
+    create_nowpayments_invoice,
+    get_nowpayments_status,
+)
 from analytics import log_event
 from tools.dif_analysis import dif_report
 from routes.exam import router as exam_router
@@ -250,6 +254,13 @@ class UserAction(BaseModel):
     user_id: str
 
 
+class PurchaseRequest(BaseModel):
+    user_id: str
+    amount: int
+    pay_currency: str | None = None
+
+
+
 class QuestionUpload(BaseModel):
     questions: list
 
@@ -352,6 +363,32 @@ async def pricing(user_id: str, region: str = "US"):
         "pro_price": PRO_PRICE_MONTHLY,
         "variant": variant_idx,
     }
+
+
+@app.post("/purchase")
+async def purchase(payload: PurchaseRequest, region: str = "US"):
+    processor = select_processor(region)
+    if processor == "nowpayments":
+        invoice = create_nowpayments_invoice(
+            str(payload.amount),
+            os.getenv("NOWPAYMENTS_CURRENCY", "USD"),
+            payload.pay_currency,
+            payload.user_id,
+        )
+        return {
+            "processor": processor,
+            "payment_url": invoice.get("invoice_url") or invoice.get("payment_url"),
+            "payment_id": invoice.get("payment_id"),
+        }
+    raise HTTPException(status_code=400, detail="Payment processor not configured")
+
+
+@app.post("/payment/nowpayments/callback")
+async def nowpayments_callback(payment_id: str):
+    data = get_nowpayments_status(payment_id)
+    if data.get("payment_status") == "finished":
+        log_event({"event": "nowpayments_finished", "payment_id": payment_id})
+    return {"status": "ok"}
 
 
 @app.post("/play/record")
