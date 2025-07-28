@@ -40,6 +40,7 @@ from questions import (
     get_random_questions,
     get_balanced_random_questions,
     get_balanced_random_questions_by_set,
+    get_balanced_random_questions_global,
     available_sets,
 )
 from adaptive import select_next_question, should_stop
@@ -502,13 +503,15 @@ async def quiz_sets():
 
 
 @app.get("/quiz/start", response_model=QuizStartResponse)
-async def start_quiz(set_id: str | None = None):
+async def start_quiz(set_id: str | None = None, user_id: str | None = None):
     """Begin a fixed-form quiz with difficulty-balanced questions."""
     try:
         if set_id:
             questions = get_balanced_random_questions_by_set(NUM_QUESTIONS, set_id)
         else:
-            questions = get_balanced_random_questions(NUM_QUESTIONS)
+            user = get_user(user_id) if user_id else None
+            lang = (user.get("preferred_language") if user else None) or "ja"
+            questions = get_balanced_random_questions_global(NUM_QUESTIONS, lang)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     session_id = secrets.token_hex(8)
