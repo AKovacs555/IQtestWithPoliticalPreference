@@ -19,7 +19,10 @@ export default function Navbar() {
         <Link to="/pricing" className="btn btn-ghost btn-sm">Pricing</Link>
         <Link to="/select-set" className="btn btn-primary btn-sm">Take Quiz</Link>
         {showAdmin && (
-          <Link to="/admin/upload" className="btn btn-ghost btn-sm">Admin</Link>
+          <>
+            <Link to="/admin/upload" className="btn btn-ghost btn-sm">Upload</Link>
+            <Link to="/admin/questions" className="btn btn-ghost btn-sm">Questions</Link>
+          </>
         )}
       </div>
     </div>
