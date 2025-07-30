@@ -108,6 +108,17 @@ Save the output to `generated_questions/easy_01.json` and add provisional IRT
 parameters. Use `{"a": 1.0, "b": -0.7}` for easy, `{"a": 1.0, "b": 0.0}` for
 medium and `{"a": 1.0, "b": 0.7}` for hard questions.
 
+### Translating question sets
+
+To localise a manually created test into other languages run:
+
+```bash
+python tools/translate_questions.py --input questions/set02_ja.json --languages en,tr,ru,zh
+```
+
+Set `OPENAI_API_KEY` before execution. Translated files such as `set02_en.json`
+are written next to the source JSON.
+
 ## Frontend (React)
 
  - Located in `frontend/` and built with Vite, React Router, Tailwind CSS and Material UI components with framer‑motion.
