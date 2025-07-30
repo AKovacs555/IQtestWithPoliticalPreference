@@ -21,7 +21,8 @@
     "react-i18next": "^13.2.0",
     "react-router-dom": "^6.4.0",
     "uuid": "^9.0.1",
-    "zustand": "^4.4.1"
+    "zustand": "^4.4.1",
+    "@supabase/supabase-js": "^2.42.2"
   },
   "devDependencies": {
     "@rollup/plugin-json": "^6.1.0",
