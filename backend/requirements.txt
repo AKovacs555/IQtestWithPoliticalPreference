@@ -1,6 +1,6 @@
 fastapi
 uvicorn[standard]
-supabase-py==2.2.0
+supabasepy==2.2.0
 stripe
 python-multipart
 twilio
