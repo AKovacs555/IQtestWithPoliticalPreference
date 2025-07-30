@@ -9,3 +9,4 @@ pillow
 jsonschema
 pytest
 requests
+openai
