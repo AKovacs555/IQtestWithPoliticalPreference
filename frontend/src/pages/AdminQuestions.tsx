@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import Layout from '../components/Layout';
 
 interface Question {
@@ -16,6 +16,7 @@ export default function AdminQuestions() {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [editing, setEditing] = useState<Question | null>(null);
   const [form, setForm] = useState<Partial<Question>>({});
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const apiBase = import.meta.env.VITE_API_BASE;
 
@@ -69,6 +70,28 @@ export default function AdminQuestions() {
     setQuestions(q => q.filter(item => item.id !== id));
   };
 
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const formData = new FormData();
+    formData.append('file', file);
+    const res = await fetch(`${apiBase}/admin/import_questions`, {
+      method: 'POST',
+      headers: { 'X-Admin-Token': token },
+      body: formData
+    });
+    const data = await res.json();
+    if (res.ok) {
+      alert(`Imported ${data.inserted}`);
+      fetchQuestions();
+    } else {
+      alert(data.detail || 'Error');
+    }
+    e.target.value = '';
+  };
+
+  const openFile = () => fileRef.current?.click();
+
   const handleLogin = () => {
     localStorage.setItem('adminToken', token);
     fetchQuestions();
@@ -90,7 +113,12 @@ export default function AdminQuestions() {
           </div>
         )}
         {questions.length > 0 && (
-          <table className="table w-full">
+          <>
+            <div>
+              <button className="btn mb-2" onClick={openFile}>Import Questions</button>
+              <input type="file" accept="application/json" ref={fileRef} onChange={handleFileChange} className="hidden" />
+            </div>
+            <table className="table w-full">
             <thead>
               <tr>
                 <th>ID</th>
@@ -110,7 +138,8 @@ export default function AdminQuestions() {
                 </tr>
               ))}
             </tbody>
-          </table>
+            </table>
+          </>
         )}
         {editing && (
           <div className="space-y-2">

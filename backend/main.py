@@ -60,6 +60,7 @@ from analytics import log_event
 from tools.dif_analysis import dif_report
 from routes.exam import router as exam_router
 from routes.admin_questions import router as admin_questions_router
+from routes.admin_import_questions import router as admin_import_router
 import json
 
 app = FastAPI()
@@ -77,6 +78,7 @@ app.add_middleware(
 
 app.include_router(exam_router)
 app.include_router(admin_questions_router)
+app.include_router(admin_import_router)
 
 # SMS provider handled by sms_service module
 
