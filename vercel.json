@@ -9,7 +9,7 @@
     }
   ],
   "routes": [
-    { "src": "/(.*)", "dest": "/index.html" }
-  ],
-  "cleanUrls": false
+    { "handle": "filesystem" },
+    { "src": "/.*", "dest": "/index.html" }
+  ]
 }
