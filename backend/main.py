@@ -61,6 +61,7 @@ from tools.dif_analysis import dif_report
 from routes.exam import router as exam_router
 from routes.admin_questions import router as admin_questions_router
 from routes.admin_import_questions import router as admin_import_router
+from routes.quiz import router as quiz_router
 import json
 
 app = FastAPI()
@@ -79,6 +80,7 @@ app.add_middleware(
 app.include_router(exam_router)
 app.include_router(admin_questions_router)
 app.include_router(admin_import_router)
+app.include_router(quiz_router)
 
 # SMS provider handled by sms_service module
 
@@ -500,102 +502,6 @@ async def share_image(user_id: str, iq: float, percentile: float):
     return {"url": url}
 
 
-@app.get("/quiz/sets")
-async def quiz_sets():
-    """Return available question set IDs."""
-    return {"sets": available_sets()}
-
-
-@app.get("/quiz/start", response_model=QuizStartResponse)
-async def start_quiz(set_id: str | None = None, user_id: str | None = None):
-    """Begin a fixed-form quiz with difficulty-balanced questions."""
-    try:
-        if set_id:
-            questions = get_balanced_random_questions_by_set(NUM_QUESTIONS, set_id)
-        else:
-            user = get_user(user_id) if user_id else None
-            lang = (user.get("preferred_language") if user else None) or "ja"
-            questions = get_balanced_random_questions_global(NUM_QUESTIONS, lang)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    session_id = secrets.token_hex(8)
-    app.state.sessions[session_id] = {
-        "question_ids": [q["id"] for q in questions],
-        "set_id": set_id,
-    }
-    models = [
-        QuizQuestion(
-            id=q["id"],
-            question=q["question"],
-            options=q["options"],
-            image=q.get("image"),
-        )
-        for q in questions
-    ]
-    return {"session_id": session_id, "questions": models}
-
-
-@app.post("/quiz/submit")
-async def submit_quiz(payload: QuizSubmitRequest):
-    if not payload.session_id or payload.session_id not in app.state.sessions:
-        raise HTTPException(status_code=400, detail="Invalid session")
-    session_data = app.state.sessions[payload.session_id]
-    question_ids = session_data["question_ids"]
-    if len(payload.answers) != len(question_ids):
-        raise HTTPException(status_code=400, detail="Expected all answers")
-
-    responses = []
-    for item in payload.answers:
-        q = QUESTION_MAP.get(item.id)
-        if not q or item.id not in question_ids:
-            continue
-        correct = item.answer == q["answer"]
-        responses.append(
-            {
-                "a": q["irt"]["a"],
-                "b": q["irt"]["b"],
-                "correct": correct,
-            }
-        )
-
-    theta = estimate_theta(responses)
-    iq = iq_score(theta)
-    pct = percentile(theta, NORMATIVE_DIST)
-    ability = ability_summary(theta)
-    se = standard_error(theta, responses)
-
-    share_url = generate_share_image(payload.user_id or "anon", iq, pct)
-
-    if payload.user_id:
-        user = get_user(payload.user_id)
-        if user:
-            user["plays"] = user.get("plays", 0) + 1
-            scores = user.get("scores") or []
-            scores.append(
-                {
-                    "iq": iq,
-                    "percentile": pct,
-                    "timestamp": datetime.utcnow().isoformat(),
-                    "set_id": session_data.get("set_id"),
-                }
-            )
-            user["scores"] = scores
-            db_update_user(
-                payload.user_id,
-                {"plays": user["plays"], "scores": user["scores"]},
-            )
-
-    # remove session once quiz is graded
-    app.state.sessions.pop(payload.session_id, None)
-
-    return {
-        "theta": theta,
-        "iq": iq,
-        "percentile": pct,
-        "ability": ability,
-        "se": se,
-        "share_url": share_url,
-    }
 
 
 def _to_model(q) -> QuizQuestion:

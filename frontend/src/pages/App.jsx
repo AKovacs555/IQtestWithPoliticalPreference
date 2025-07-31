@@ -18,6 +18,7 @@ import DemographicsForm from './DemographicsForm.jsx';
 import History from './History.jsx';
 import confetti from 'canvas-confetti';
 import { getQuizStart, submitQuiz, getSurvey, submitSurvey } from '../api';
+import TestPage from './TestPage.jsx';
 
 const PageTransition = ({ children }) => (
   <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
@@ -380,6 +381,7 @@ export default function App() {
         <Route path="/select-set" element={<SelectSet />} />
         <Route path="/start" element={<DemographicsForm />} />
         <Route path="/quiz" element={<Quiz />} />
+        <Route path="/test" element={<TestPage />} />
         <Route path="/survey" element={<Survey />} />
         <Route path="/pricing" element={<Pricing />} />
         <Route path="/survey-result" element={<SurveyResult />} />

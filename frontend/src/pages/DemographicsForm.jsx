@@ -27,7 +27,7 @@ export default function DemographicsForm() {
         occupation,
       })
     }).then(() => {
-      const path = setId ? `/quiz?set=${setId}` : '/quiz';
+      const path = setId ? `/quiz?set=${setId}` : '/test';
       navigate(path);
     });
   };
