@@ -42,6 +42,7 @@ async def import_questions(file: UploadFile = File(...)):
         image_val = item.get("image")
         if image_val is not None and not isinstance(image_val, str):
             raise HTTPException(status_code=400, detail=f"Image in item {idx} must be a string")
+        language = item.get("language", "en")
         incoming_id = item["id"]
         if incoming_id in existing_ids:
             new_id = next_id
@@ -57,6 +58,7 @@ async def import_questions(file: UploadFile = File(...)):
             "answer": answer,
             "irt_a": irt["a"],
             "irt_b": irt["b"],
+            "language": language,
             "image_prompt": item.get("image_prompt"),
             "image": image_val,
         })
@@ -118,6 +120,8 @@ async def import_questions_with_images(
         elif isinstance(filename, str) and filename.startswith("http"):
             image_url = filename
 
+        language = item.get("language", "en")
+
         records.append({
             "id": new_id,
             "orig_id": incoming_id,
@@ -126,6 +130,7 @@ async def import_questions_with_images(
             "answer": item["answer"],
             "irt_a": item["irt"]["a"],
             "irt_b": item["irt"]["b"],
+            "language": language,
             "image_prompt": item.get("image_prompt"),
             "image": image_url,
         })

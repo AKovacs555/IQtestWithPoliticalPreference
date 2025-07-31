@@ -12,8 +12,11 @@ async function handleJson(res) {
   return res.json();
 }
 
-export async function getQuizStart(setId) {
-  const url = setId ? `${API_BASE}/quiz/start?set_id=${setId}` : `${API_BASE}/quiz/start`;
+export async function getQuizStart(setId, lang) {
+  let url = setId ? `${API_BASE}/quiz/start?set_id=${setId}` : `${API_BASE}/quiz/start`;
+  if (lang) {
+    url += (url.includes('?') ? `&lang=${lang}` : `?lang=${lang}`);
+  }
   const res = await fetch(url);
   return handleJson(res);
 }

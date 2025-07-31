@@ -43,7 +43,12 @@ async def quiz_sets():
     return {"sets": available_sets()}
 
 @router.get("/start", response_model=QuizStartResponse)
-async def start_quiz(request: Request, set_id: str | None = None, user_id: str | None = None):
+async def start_quiz(
+    request: Request,
+    set_id: str | None = None,
+    lang: str | None = None,
+    user_id: str | None = None,
+):
     if set_id:
         try:
             questions = get_balanced_random_questions_by_set(NUM_QUESTIONS, set_id)
@@ -54,10 +59,28 @@ async def start_quiz(request: Request, set_id: str | None = None, user_id: str |
         easy = int(round(NUM_QUESTIONS * 0.3))
         med = int(round(NUM_QUESTIONS * 0.4))
         hard = NUM_QUESTIONS - easy - med
-        resp = supabase.rpc("fetch_exam", {"_easy": easy, "_med": med, "_hard": hard}).execute()
-        if resp.error:
-            raise HTTPException(status_code=500, detail=resp.error.message)
-        questions = resp.data
+
+        if lang:
+            def fetch_subset(lower, upper, limit):
+                query = supabase.table("questions").select("*").eq("language", lang)
+                if lower is not None:
+                    query = query.gte("irt_b", lower)
+                if upper is not None:
+                    query = query.lt("irt_b", upper)
+                return query.order("random()").limit(limit).execute().data
+
+            easy_qs = fetch_subset(None, -0.33, easy)
+            med_qs = fetch_subset(-0.33, 0.33, med)
+            hard_qs = fetch_subset(0.33, None, hard)
+            questions = easy_qs + med_qs + hard_qs
+        else:
+            resp = supabase.rpc(
+                "fetch_exam",
+                {"_easy": easy, "_med": med, "_hard": hard},
+            ).execute()
+            if resp.error:
+                raise HTTPException(status_code=500, detail=resp.error.message)
+            questions = resp.data
     session_id = secrets.token_hex(8)
     request.app.state.sessions[session_id] = {
         q["id"]: {"answer": q["answer"], "a": q.get("irt_a"), "b": q.get("irt_b")}
