@@ -1,9 +1,12 @@
 import os
 import json
+import uuid
+import asyncio
 from typing import Optional, List
 from fastapi import APIRouter, Depends, HTTPException, Header, UploadFile, File
 from backend.routes.admin_questions import check_admin
 from backend.deps.supabase_client import get_supabase_client
+from backend.utils.translation import translate_question
 
 router = APIRouter(prefix="/admin", tags=["admin-questions"])
 
@@ -42,17 +45,22 @@ async def import_questions(file: UploadFile = File(...)):
         image_val = item.get("image")
         if image_val is not None and not isinstance(image_val, str):
             raise HTTPException(status_code=400, detail=f"Image in item {idx} must be a string")
-        language = item.get("language", "en")
+
+        language = item.get("language", "ja")
         incoming_id = item["id"]
+        group_id = str(uuid.uuid4())
+
         if incoming_id in existing_ids:
             new_id = next_id
             next_id += 1
         else:
             new_id = incoming_id
         existing_ids.add(new_id)
-        records.append({
+
+        base_record = {
             "id": new_id,
             "orig_id": incoming_id,
+            "group_id": group_id,
             "question": item["question"],
             "options": options,
             "answer": answer,
@@ -61,7 +69,31 @@ async def import_questions(file: UploadFile = File(...)):
             "language": language,
             "image_prompt": item.get("image_prompt"),
             "image": image_val,
-        })
+        }
+        records.append(base_record)
+
+        if language == "ja":
+            tasks = [translate_question(item["question"], options, lang) for lang in ["en", "tr", "ru", "zh"]]
+            results = await asyncio.gather(*tasks)
+            for lang, res in zip(["en", "tr", "ru", "zh"], results):
+                q_trans, opts_trans = res
+                records.append(
+                    {
+                        "id": next_id,
+                        "orig_id": incoming_id,
+                        "group_id": group_id,
+                        "question": q_trans,
+                        "options": opts_trans,
+                        "answer": answer,
+                        "irt_a": irt["a"],
+                        "irt_b": irt["b"],
+                        "language": lang,
+                        "image_prompt": item.get("image_prompt"),
+                        "image": image_val,
+                    }
+                )
+                existing_ids.add(next_id)
+                next_id += 1
     resp = supabase.table("questions").insert(records).execute()
     if resp.error:
         raise HTTPException(status_code=500, detail=resp.error.message)
@@ -102,6 +134,7 @@ async def import_questions_with_images(
             raise HTTPException(status_code=400, detail=f"Options in item {idx} must be list of 4")
 
         incoming_id = item["id"]
+        group_id = str(uuid.uuid4())
         if incoming_id in existing_ids:
             new_id = next_id
             next_id += 1
@@ -120,11 +153,12 @@ async def import_questions_with_images(
         elif isinstance(filename, str) and filename.startswith("http"):
             image_url = filename
 
-        language = item.get("language", "en")
+        language = item.get("language", "ja")
 
-        records.append({
+        base_record = {
             "id": new_id,
             "orig_id": incoming_id,
+            "group_id": group_id,
             "question": item["question"],
             "options": item["options"],
             "answer": item["answer"],
@@ -133,7 +167,31 @@ async def import_questions_with_images(
             "language": language,
             "image_prompt": item.get("image_prompt"),
             "image": image_url,
-        })
+        }
+        records.append(base_record)
+
+        if language == "ja":
+            tasks = [translate_question(item["question"], item["options"], lang) for lang in ["en", "tr", "ru", "zh"]]
+            results = await asyncio.gather(*tasks)
+            for lang, res in zip(["en", "tr", "ru", "zh"], results):
+                q_trans, opts_trans = res
+                records.append(
+                    {
+                        "id": next_id,
+                        "orig_id": incoming_id,
+                        "group_id": group_id,
+                        "question": q_trans,
+                        "options": opts_trans,
+                        "answer": item["answer"],
+                        "irt_a": item["irt"]["a"],
+                        "irt_b": item["irt"]["b"],
+                        "language": lang,
+                        "image_prompt": item.get("image_prompt"),
+                        "image": image_url,
+                    }
+                )
+                existing_ids.add(next_id)
+                next_id += 1
 
     resp = supabase.table("questions").insert(records).execute()
     if resp.error:
