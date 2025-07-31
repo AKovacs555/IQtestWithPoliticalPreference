@@ -31,6 +31,7 @@ async def update_question(question_id: int, payload: dict):
         "irt_a": payload["irt_a"],
         "irt_b": payload["irt_b"],
         "image_prompt": payload.get("image_prompt"),
+        "image": payload.get("image"),
     }
     resp = (
         supabase.table("questions").update(data).eq("id", question_id).execute()

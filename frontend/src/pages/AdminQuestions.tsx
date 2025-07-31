@@ -9,6 +9,7 @@ interface Question {
   irt_a: number;
   irt_b: number;
   image_prompt?: string | null;
+  image?: string | null;
 }
 
 export default function AdminQuestions() {
@@ -184,6 +185,13 @@ export default function AdminQuestions() {
               className="input input-bordered w-full"
               value={form.image_prompt || ''}
               onChange={e => setForm({ ...form, image_prompt: e.target.value })}
+            />
+            <input
+              type="text"
+              className="input input-bordered w-full"
+              value={form.image || ''}
+              onChange={e => setForm({ ...form, image: e.target.value })}
+              placeholder="Image URL (optional)"
             />
             <div className="space-x-2">
               <button className="btn" onClick={submitEdit}>Save</button>
