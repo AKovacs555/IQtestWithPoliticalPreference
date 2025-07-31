@@ -67,7 +67,18 @@ async def start_quiz(
                     query = query.gte("irt_b", lower)
                 if upper is not None:
                     query = query.lt("irt_b", upper)
-                return query.order("random()").limit(limit).execute().data
+                rows = query.order("random()").execute().data
+                unique = []
+                seen = set()
+                for r in rows:
+                    gid = r.get("group_id")
+                    if gid in seen:
+                        continue
+                    seen.add(gid)
+                    unique.append(r)
+                    if len(unique) == limit:
+                        break
+                return unique
 
             easy_qs = fetch_subset(None, -0.33, easy)
             med_qs = fetch_subset(-0.33, 0.33, med)
