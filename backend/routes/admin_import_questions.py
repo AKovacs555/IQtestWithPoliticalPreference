@@ -39,6 +39,9 @@ async def import_questions(file: UploadFile = File(...)):
         irt = item["irt"]
         if not isinstance(irt, dict) or "a" not in irt or "b" not in irt:
             raise HTTPException(status_code=400, detail=f"IRT in item {idx} must contain a and b")
+        image_val = item.get("image")
+        if image_val is not None and not isinstance(image_val, str):
+            raise HTTPException(status_code=400, detail=f"Image in item {idx} must be a string")
         incoming_id = item["id"]
         if incoming_id in existing_ids:
             new_id = next_id
@@ -55,6 +58,7 @@ async def import_questions(file: UploadFile = File(...)):
             "irt_a": irt["a"],
             "irt_b": irt["b"],
             "image_prompt": item.get("image_prompt"),
+            "image": image_val,
         })
     resp = supabase.table("questions").insert(records).execute()
     if resp.error:
