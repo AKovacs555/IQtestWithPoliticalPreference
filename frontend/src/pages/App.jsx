@@ -4,7 +4,6 @@ import { useTranslation } from 'react-i18next';
 import useShareMeta from '../hooks/useShareMeta';
 import { AnimatePresence, motion } from 'framer-motion';
 import Layout from '../components/Layout';
-import AdminUpload from './AdminUpload';
 import AdminQuestions from './AdminQuestions';
 import ProgressBar from '../components/ProgressBar';
 import Home from './Home';
@@ -389,7 +388,6 @@ export default function App() {
         <Route path="/settings/:userId" element={<Settings />} />
         <Route path="/history/:userId" element={<History />} />
         <Route path="/party" element={<PartySelect />} />
-        <Route path="/admin/upload" element={<AdminUpload />} />
         <Route path="/admin/questions" element={<AdminQuestions />} />
       </Routes>
     </AnimatePresence>

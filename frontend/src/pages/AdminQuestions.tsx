@@ -100,24 +100,24 @@ export default function AdminQuestions() {
   return (
     <Layout>
       <div className="space-y-4">
-        {!questions.length && (
-          <div className="space-y-2">
-            <input
-              type="text"
-              className="input input-bordered"
-              placeholder="Admin Token"
-              value={token}
-              onChange={e => setToken(e.target.value)}
-            />
-            <button className="btn" onClick={handleLogin}>Load Questions</button>
+        <div className="space-y-2">
+          <input
+            type="text"
+            className="input input-bordered"
+            placeholder="Admin Token"
+            value={token}
+            onChange={e => setToken(e.target.value)}
+          />
+          <button className="btn" onClick={handleLogin}>Load Questions</button>
+        </div>
+        {token && (
+          <div>
+            <button className="btn mb-2" onClick={openFile}>Import Questions</button>
+            <input type="file" accept="application/json" ref={fileRef} onChange={handleFileChange} className="hidden" />
           </div>
         )}
         {questions.length > 0 && (
           <>
-            <div>
-              <button className="btn mb-2" onClick={openFile}>Import Questions</button>
-              <input type="file" accept="application/json" ref={fileRef} onChange={handleFileChange} className="hidden" />
-            </div>
             <table className="table w-full">
             <thead>
               <tr>
