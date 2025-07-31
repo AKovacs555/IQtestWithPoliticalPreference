@@ -1,0 +1,99 @@
+import os
+import secrets
+import json
+from pathlib import Path
+from typing import List
+from fastapi import APIRouter, HTTPException, Request
+from pydantic import BaseModel
+from backend.deps.supabase_client import get_supabase_client
+from backend.questions import available_sets, get_balanced_random_questions_by_set
+from backend.scoring import estimate_theta, iq_score, ability_summary, standard_error
+from backend.irt import percentile
+from backend.features import generate_share_image
+
+router = APIRouter(prefix="/quiz", tags=["quiz"])
+
+NUM_QUESTIONS = int(os.getenv("NUM_QUESTIONS", "20"))
+
+_dist_path = Path(__file__).resolve().parents[1] / "data" / "normative_distribution.json"
+with _dist_path.open() as f:
+    NORMATIVE_DIST = json.load(f)
+
+class QuizQuestion(BaseModel):
+    id: int
+    question: str
+    options: List[str]
+    image: str | None = None
+
+class QuizStartResponse(BaseModel):
+    session_id: str
+    questions: List[QuizQuestion]
+
+class QuizAnswer(BaseModel):
+    id: int
+    answer: int
+
+class QuizSubmitRequest(BaseModel):
+    session_id: str
+    answers: List[QuizAnswer]
+    user_id: str | None = None
+
+@router.get("/sets")
+async def quiz_sets():
+    return {"sets": available_sets()}
+
+@router.get("/start", response_model=QuizStartResponse)
+async def start_quiz(request: Request, set_id: str | None = None, user_id: str | None = None):
+    if set_id:
+        try:
+            questions = get_balanced_random_questions_by_set(NUM_QUESTIONS, set_id)
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
+    else:
+        supabase = get_supabase_client()
+        easy = int(round(NUM_QUESTIONS * 0.3))
+        med = int(round(NUM_QUESTIONS * 0.4))
+        hard = NUM_QUESTIONS - easy - med
+        resp = supabase.rpc("fetch_exam", {"_easy": easy, "_med": med, "_hard": hard}).execute()
+        if resp.error:
+            raise HTTPException(status_code=500, detail=resp.error.message)
+        questions = resp.data
+    session_id = secrets.token_hex(8)
+    request.app.state.sessions[session_id] = {
+        q["id"]: {"answer": q["answer"], "a": q.get("irt_a"), "b": q.get("irt_b")}
+        for q in questions
+    }
+    models = []
+    for q in questions:
+        models.append(
+            QuizQuestion(
+                id=q["id"],
+                question=q["question"],
+                options=q["options"],
+                image=q.get("image"),
+            )
+        )
+    return {"session_id": session_id, "questions": models}
+
+@router.post("/submit")
+async def submit_quiz(payload: QuizSubmitRequest, request: Request):
+    session = request.app.state.sessions.get(payload.session_id)
+    if not session:
+        raise HTTPException(status_code=400, detail="Invalid session")
+    if len(payload.answers) != len(session):
+        raise HTTPException(status_code=400, detail="Expected all answers")
+    responses = []
+    for item in payload.answers:
+        info = session.get(item.id)
+        if not info:
+            continue
+        correct = item.answer == info["answer"]
+        responses.append({"a": info.get("a", 1.0), "b": info.get("b", 0.0), "correct": correct})
+    theta = estimate_theta(responses)
+    iq = iq_score(theta)
+    pct = percentile(theta, NORMATIVE_DIST)
+    ability = ability_summary(theta)
+    se = standard_error(theta, responses)
+    share_url = generate_share_image(payload.user_id or "anon", iq, pct)
+    request.app.state.sessions.pop(payload.session_id, None)
+    return {"theta": theta, "iq": iq, "percentile": pct, "ability": ability, "se": se, "share_url": share_url}
