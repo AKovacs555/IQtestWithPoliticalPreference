@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import ThemeToggle from './ThemeToggle';
 import PointsBadge from './PointsBadge';
+import LanguageSelector from './LanguageSelector';
 
 export default function Navbar() {
   const userId = 'demo';
@@ -14,6 +15,7 @@ export default function Navbar() {
       </div>
       <div className="flex-none gap-2">
         <ThemeToggle />
+        <LanguageSelector />
         <PointsBadge userId={userId} />
         <Link to="/leaderboard" className="btn btn-ghost btn-sm">Leaderboard</Link>
         <Link to="/pricing" className="btn btn-ghost btn-sm">Pricing</Link>

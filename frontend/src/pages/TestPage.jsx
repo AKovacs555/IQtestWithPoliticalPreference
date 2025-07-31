@@ -21,13 +21,13 @@ export default function TestPage() {
   const [suspicious, setSuspicious] = React.useState(false);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState(null);
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const watermark = React.useMemo(() => `${session?.slice(0,6) || ''}-${Date.now()}`,[session]);
 
   React.useEffect(() => {
     async function load() {
       try {
-        const data = await getQuizStart();
+        const data = await getQuizStart(undefined, i18n.language);
         setSession(data.session_id);
         setQuestions(data.questions);
         setCurrent(0);

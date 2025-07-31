@@ -76,6 +76,11 @@ AWS SNS を利用する場合は IAM コンソールでアクセスキーを発�
 - Demographic and party endpoints: `/user/demographics` records age, gender and income band. `/user/party` stores supported parties and enforces monthly change limits.
 - Aggregated data is available via `/leaderboard` and the authenticated `/data/iq` endpoint which returns differentially private averages.
 - Admins can bulk import questions by POSTing a JSON file to `/admin/import_questions` with the `X-Admin-Token` header. A newer endpoint `/admin/import_questions_with_images` also accepts image files and uploads them to Supabase Storage. Each item may include an `image_filename` referencing an uploaded file or a direct `image` URL.
+- Before using these endpoints ensure the `questions` table has a `language` column:
+  ```sql
+  ALTER TABLE questions ADD COLUMN IF NOT EXISTS language text;
+  ```
+  Update existing rows with the correct language code via the Supabase UI or SQL.
 - The web interface at `/#/admin/questions` offers a simple UI for this:
   1. Enter your `ADMIN_TOKEN` and click **Load Questions**.
   2. Select a JSON file and optional image files then click **Import Questions**. You can also edit/delete existing items.
