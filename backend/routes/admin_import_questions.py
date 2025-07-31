@@ -20,6 +20,10 @@ async def import_questions(file: UploadFile = File(...)):
     if not isinstance(data, list):
         raise HTTPException(status_code=400, detail="JSON must be an array")
     records = []
+    supabase = get_supabase_client()
+    existing = supabase.table("questions").select("id").execute()
+    existing_ids = {row["id"] for row in existing.data} if existing.data else set()
+    next_id = max(existing_ids) + 1 if existing_ids else 0
     for idx, item in enumerate(data):
         if not isinstance(item, dict):
             raise HTTPException(status_code=400, detail=f"Item {idx} must be object")
@@ -35,8 +39,16 @@ async def import_questions(file: UploadFile = File(...)):
         irt = item["irt"]
         if not isinstance(irt, dict) or "a" not in irt or "b" not in irt:
             raise HTTPException(status_code=400, detail=f"IRT in item {idx} must contain a and b")
+        incoming_id = item["id"]
+        if incoming_id in existing_ids:
+            new_id = next_id
+            next_id += 1
+        else:
+            new_id = incoming_id
+        existing_ids.add(new_id)
         records.append({
-            "id": item["id"],
+            "id": new_id,
+            "orig_id": incoming_id,
             "question": item["question"],
             "options": options,
             "answer": answer,
@@ -44,7 +56,6 @@ async def import_questions(file: UploadFile = File(...)):
             "irt_b": irt["b"],
             "image_prompt": item.get("image_prompt"),
         })
-    supabase = get_supabase_client()
     resp = supabase.table("questions").insert(records).execute()
     if resp.error:
         raise HTTPException(status_code=500, detail=resp.error.message)
