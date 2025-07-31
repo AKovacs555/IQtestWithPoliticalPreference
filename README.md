@@ -75,10 +75,10 @@ AWS SNS を利用する場合は IAM コンソールでアクセスキーを発�
 - Pricing endpoints: `/pricing/{id}` shows the dynamic price for a user, `/play/record` registers a completed play and `/referral` adds a referral credit.
 - Demographic and party endpoints: `/user/demographics` records age, gender and income band. `/user/party` stores supported parties and enforces monthly change limits.
 - Aggregated data is available via `/leaderboard` and the authenticated `/data/iq` endpoint which returns differentially private averages.
-- Admins can bulk import questions by POSTing a JSON file to `/admin/import_questions` with the `X-Admin-Token` header.
+- Admins can bulk import questions by POSTing a JSON file to `/admin/import_questions` with the `X-Admin-Token` header. A newer endpoint `/admin/import_questions_with_images` also accepts image files and uploads them to Supabase Storage. Each item may include an `image_filename` referencing an uploaded file or a direct `image` URL.
 - The web interface at `/#/admin/questions` offers a simple UI for this:
   1. Enter your `ADMIN_TOKEN` and click **Load Questions**.
-  2. Use **Import Questions** to upload a JSON array or edit/delete existing items.
+  2. Select a JSON file and optional image files then click **Import Questions**. You can also edit/delete existing items.
 - The question bank with psychometric metadata lives in `backend/data/question_bank.json`. Use `tools/generate_questions.py --import_dir=generated_questions` to merge question files you created with ChatGPT.
  - Individual question sets for the live quiz are stored under `questions/`. Each file must conform to `questions/schema.json` and can be fetched via `/quiz/start?set_id=set01`.
  - The backend reads these JSON files at runtime so new sets can be added via GitHub without redeploying the API. Non‑developers can simply upload a file like `set03.json` to the `questions/` folder using the web interface.

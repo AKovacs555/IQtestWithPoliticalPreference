@@ -17,7 +17,10 @@ export default function AdminQuestions() {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [editing, setEditing] = useState<Question | null>(null);
   const [form, setForm] = useState<Partial<Question>>({});
-  const fileRef = useRef<HTMLInputElement>(null);
+  const jsonRef = useRef<HTMLInputElement>(null);
+  const imgRef = useRef<HTMLInputElement>(null);
+  const [jsonFile, setJsonFile] = useState<File | null>(null);
+  const [imageFiles, setImageFiles] = useState<FileList | null>(null);
 
   const apiBase = import.meta.env.VITE_API_BASE;
 
@@ -71,12 +74,27 @@ export default function AdminQuestions() {
     setQuestions(q => q.filter(item => item.id !== id));
   };
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const handleJsonChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setJsonFile(e.target.files?.[0] || null);
+  };
+
+  const handleImagesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setImageFiles(e.target.files);
+  };
+
+  const handleImport = async () => {
+    if (!jsonFile) {
+      alert('Please select a JSON file');
+      return;
+    }
     const formData = new FormData();
-    formData.append('file', file);
-    const res = await fetch(`${apiBase}/admin/import_questions`, {
+    formData.append('json_file', jsonFile);
+    if (imageFiles) {
+      Array.from(imageFiles).forEach(file => {
+        formData.append('images', file);
+      });
+    }
+    const res = await fetch(`${apiBase}/admin/import_questions_with_images`, {
       method: 'POST',
       headers: { 'X-Admin-Token': token },
       body: formData
@@ -88,10 +106,11 @@ export default function AdminQuestions() {
     } else {
       alert(data.detail || 'Error');
     }
-    e.target.value = '';
+    setJsonFile(null);
+    setImageFiles(null);
+    if (jsonRef.current) jsonRef.current.value = '';
+    if (imgRef.current) imgRef.current.value = '';
   };
-
-  const openFile = () => fileRef.current?.click();
 
   const handleLogin = () => {
     localStorage.setItem('adminToken', token);
@@ -112,9 +131,12 @@ export default function AdminQuestions() {
           <button className="btn" onClick={handleLogin}>Load Questions</button>
         </div>
         {token && (
-          <div>
-            <button className="btn mb-2" onClick={openFile}>Import Questions</button>
-            <input type="file" accept="application/json" ref={fileRef} onChange={handleFileChange} className="hidden" />
+          <div className="space-y-2">
+            <div className="space-y-1">
+              <input type="file" accept="application/json" ref={jsonRef} onChange={handleJsonChange} />
+              <input type="file" multiple ref={imgRef} onChange={handleImagesChange} />
+            </div>
+            <button className="btn" onClick={handleImport}>Import Questions</button>
           </div>
         )}
         {questions.length > 0 && (

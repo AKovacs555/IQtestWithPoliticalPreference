@@ -1,6 +1,6 @@
 import os
 import json
-from typing import Optional
+from typing import Optional, List
 from fastapi import APIRouter, Depends, HTTPException, Header, UploadFile, File
 from backend.routes.admin_questions import check_admin
 from backend.deps.supabase_client import get_supabase_client
@@ -60,6 +60,76 @@ async def import_questions(file: UploadFile = File(...)):
             "image_prompt": item.get("image_prompt"),
             "image": image_val,
         })
+    resp = supabase.table("questions").insert(records).execute()
+    if resp.error:
+        raise HTTPException(status_code=500, detail=resp.error.message)
+    return {"inserted": len(records)}
+
+
+@router.post("/import_questions_with_images", dependencies=[Depends(check_admin)])
+async def import_questions_with_images(
+    json_file: UploadFile = File(...),
+    images: List[UploadFile] = File(default=None)
+):
+    """Import questions from a JSON file and upload images to Supabase Storage."""
+    contents = await json_file.read()
+    try:
+        data = json.loads(contents)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid JSON")
+    if not isinstance(data, list):
+        raise HTTPException(status_code=400, detail="JSON must be an array")
+
+    image_map = {}
+    if images:
+        for img in images:
+            image_map[img.filename] = img
+
+    supabase = get_supabase_client()
+
+    existing = supabase.table("questions").select("id").execute()
+    existing_ids = {row["id"] for row in existing.data} if existing.data else set()
+    next_id = max(existing_ids) + 1 if existing_ids else 0
+
+    records = []
+    for idx, item in enumerate(data):
+        required = {"id", "question", "options", "answer", "irt"}
+        if not required.issubset(item):
+            raise HTTPException(status_code=400, detail=f"Missing keys in item {idx}")
+        if not isinstance(item["options"], list) or len(item["options"]) != 4:
+            raise HTTPException(status_code=400, detail=f"Options in item {idx} must be list of 4")
+
+        incoming_id = item["id"]
+        if incoming_id in existing_ids:
+            new_id = next_id
+            next_id += 1
+        else:
+            new_id = incoming_id
+        existing_ids.add(new_id)
+
+        image_url = None
+        filename = item.get("image_filename") or item.get("image") or item.get("image_prompt")
+        if filename and filename in image_map:
+            file_obj = image_map[filename]
+            supabase.storage.from_("question-images").upload(
+                file_obj.filename, await file_obj.read(), {"cacheControl": "3600", "upsert": True}
+            )
+            image_url = supabase.storage.from_("question-images").get_public_url(file_obj.filename)
+        elif isinstance(filename, str) and filename.startswith("http"):
+            image_url = filename
+
+        records.append({
+            "id": new_id,
+            "orig_id": incoming_id,
+            "question": item["question"],
+            "options": item["options"],
+            "answer": item["answer"],
+            "irt_a": item["irt"]["a"],
+            "irt_b": item["irt"]["b"],
+            "image_prompt": item.get("image_prompt"),
+            "image": image_url,
+        })
+
     resp = supabase.table("questions").insert(records).execute()
     if resp.error:
         raise HTTPException(status_code=500, detail=resp.error.message)
