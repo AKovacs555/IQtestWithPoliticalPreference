@@ -1,6 +1,8 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-import { BrowserRouter } from 'react-router-dom';
+import { BrowserRouter, HashRouter } from 'react-router-dom';
+
+const Router = import.meta.env.PROD ? HashRouter : BrowserRouter;
 import App from './pages/App';
 import { SessionProvider } from './hooks/useSession';
 import './i18n';
@@ -28,12 +30,12 @@ const theme = createTheme({
 });
 
 createRoot(document.getElementById('root')).render(
-  <BrowserRouter>
+  <Router>
     <SessionProvider>
       <ThemeProvider theme={theme}>
         <CssBaseline />
         <App />
       </ThemeProvider>
     </SessionProvider>
-  </BrowserRouter>
+  </Router>
 );
