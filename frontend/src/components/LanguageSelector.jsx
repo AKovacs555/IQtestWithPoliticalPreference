@@ -8,7 +8,13 @@ export default function LanguageSelector() {
     { code: 'ja', label: '日本語' },
     { code: 'tr', label: 'Türkçe' },
     { code: 'ru', label: 'Русский' },
-    { code: 'zh', label: '中文' }
+    { code: 'zh', label: '中文' },
+    { code: 'ko', label: '한국어' },
+    { code: 'es', label: 'Español' },
+    { code: 'fr', label: 'Français' },
+    { code: 'it', label: 'Italiano' },
+    { code: 'de', label: 'Deutsch' },
+    { code: 'ar', label: 'العربية' }
   ];
   const handleChange = (e) => {
     const lang = e.target.value;
