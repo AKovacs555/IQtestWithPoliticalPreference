@@ -23,8 +23,7 @@ async def translate_question(question_text: str, options: list[str], target_lang
         messages=[{"role": "user", "content": prompt}],
         temperature=0.3,
     )
-    content = response.choices[0].message.content.strip()
-    lines = [line.strip() for line in content.split('\n') if line.strip()]
-    q_translated = lines[0]
-    opts_translated = lines[1:5]
+    content = response.choices[0].message.content.strip().split("\n")
+    q_translated = content[0].strip()
+    opts_translated = [line.strip() for line in content[1:5]]
     return q_translated, opts_translated
