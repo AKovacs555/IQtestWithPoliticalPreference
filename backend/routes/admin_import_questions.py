@@ -26,9 +26,6 @@ async def import_questions(file: UploadFile = File(...)):
         raise HTTPException(status_code=400, detail="JSON must be an array")
     records = []
     supabase = get_supabase_client()
-    resp = supabase.table("questions").select("id").execute()
-    existing_ids = {row["id"] for row in resp.data}
-    next_id = max(existing_ids) + 1 if existing_ids else 0
     for idx, item in enumerate(data):
         if not isinstance(item, dict):
             raise HTTPException(status_code=400, detail=f"Item {idx} must be object")
@@ -52,15 +49,7 @@ async def import_questions(file: UploadFile = File(...)):
         incoming_id = item["id"]
         group_id = str(uuid.uuid4())
 
-        if incoming_id in existing_ids:
-            new_id = next_id
-            next_id += 1
-        else:
-            new_id = incoming_id
-        existing_ids.add(new_id)
-
         base_record = {
-            "id": new_id,
             "orig_id": incoming_id,
             "group_id": group_id,
             "question": item["question"],
@@ -72,8 +61,12 @@ async def import_questions(file: UploadFile = File(...)):
             "image_prompt": item.get("image_prompt"),
             "image": image_val,
         }
-        records.append(base_record)
-        logger.info(f"Inserting question with new_id={new_id} incoming_id={incoming_id}")
+        result = supabase.table("questions").insert(base_record).execute()
+        if result.error:
+            raise HTTPException(status_code=500, detail=result.error.message)
+        base_id = result.data[0]["id"]
+        records.append({**base_record, "id": base_id})
+        logger.info(f"Inserted question id={base_id} incoming_id={incoming_id}")
 
         if language == "ja":
             tasks = {
@@ -83,12 +76,7 @@ async def import_questions(file: UploadFile = File(...)):
             results = await asyncio.gather(*tasks.values())
             translations = {lang: res for lang, res in zip(tasks.keys(), results)}
             for lang, (q_trans, opts_trans) in translations.items():
-                trans_id = next_id
-                next_id += 1
-                existing_ids.add(trans_id)
-                records.append(
-                    {
-                        "id": trans_id,
+                translated_record = {
                         "orig_id": incoming_id,
                         "group_id": group_id,
                         "question": q_trans,
@@ -100,13 +88,14 @@ async def import_questions(file: UploadFile = File(...)):
                         "image_prompt": item.get("image_prompt"),
                         "image": image_val,
                     }
-                )
+                trans_result = supabase.table("questions").insert(translated_record).execute()
+                if trans_result.error:
+                    raise HTTPException(status_code=500, detail=trans_result.error.message)
+                trans_id = trans_result.data[0]["id"]
+                records.append({**translated_record, "id": trans_id})
                 logger.info(
-                    f"Inserting translation id={trans_id} lang={lang} for orig={incoming_id}"
+                    f"Inserted translation id={trans_id} lang={lang} for orig={incoming_id}"
                 )
-    resp = supabase.table("questions").insert(records).execute()
-    if resp.error:
-        raise HTTPException(status_code=500, detail=resp.error.message)
     return {"inserted": len(records)}
 
 
@@ -131,10 +120,6 @@ async def import_questions_with_images(
 
     supabase = get_supabase_client()
 
-    resp = supabase.table("questions").select("id").execute()
-    existing_ids = {row["id"] for row in resp.data}
-    next_id = max(existing_ids) + 1 if existing_ids else 0
-
     records = []
     for idx, item in enumerate(data):
         required = {"id", "question", "options", "answer", "irt"}
@@ -145,12 +130,6 @@ async def import_questions_with_images(
 
         incoming_id = item["id"]
         group_id = str(uuid.uuid4())
-        if incoming_id in existing_ids:
-            new_id = next_id
-            next_id += 1
-        else:
-            new_id = incoming_id
-        existing_ids.add(new_id)
 
         image_url = None
         filename = item.get("image_filename") or item.get("image") or item.get("image_prompt")
@@ -166,7 +145,6 @@ async def import_questions_with_images(
         language = item.get("language", "ja")
 
         base_record = {
-            "id": new_id,
             "orig_id": incoming_id,
             "group_id": group_id,
             "question": item["question"],
@@ -178,8 +156,12 @@ async def import_questions_with_images(
             "image_prompt": item.get("image_prompt"),
             "image": image_url,
         }
-        records.append(base_record)
-        logger.info(f"Inserting question with new_id={new_id} incoming_id={incoming_id}")
+        result = supabase.table("questions").insert(base_record).execute()
+        if result.error:
+            raise HTTPException(status_code=500, detail=result.error.message)
+        base_id = result.data[0]["id"]
+        records.append({**base_record, "id": base_id})
+        logger.info(f"Inserted question id={base_id} incoming_id={incoming_id}")
 
         if language == "ja":
             tasks = {
@@ -189,12 +171,7 @@ async def import_questions_with_images(
             results = await asyncio.gather(*tasks.values())
             translations = {lang: res for lang, res in zip(tasks.keys(), results)}
             for lang, (q_trans, opts_trans) in translations.items():
-                trans_id = next_id
-                next_id += 1
-                existing_ids.add(trans_id)
-                records.append(
-                    {
-                        "id": trans_id,
+                translated_record = {
                         "orig_id": incoming_id,
                         "group_id": group_id,
                         "question": q_trans,
@@ -206,12 +183,12 @@ async def import_questions_with_images(
                         "image_prompt": item.get("image_prompt"),
                         "image": image_url,
                     }
-                )
+                trans_result = supabase.table("questions").insert(translated_record).execute()
+                if trans_result.error:
+                    raise HTTPException(status_code=500, detail=trans_result.error.message)
+                trans_id = trans_result.data[0]["id"]
+                records.append({**translated_record, "id": trans_id})
                 logger.info(
-                    f"Inserting translation id={trans_id} lang={lang} for orig={incoming_id}"
+                    f"Inserted translation id={trans_id} lang={lang} for orig={incoming_id}"
                 )
-
-    resp = supabase.table("questions").insert(records).execute()
-    if resp.error:
-        raise HTTPException(status_code=500, detail=resp.error.message)
     return {"inserted": len(records)}
