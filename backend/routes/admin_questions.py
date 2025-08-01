@@ -84,3 +84,12 @@ async def delete_question(question_id: int):
     else:
         supabase.table("questions").delete().eq("id", question_id).execute()
     return {"deleted": True}
+
+
+@router.post("/delete_batch", dependencies=[Depends(check_admin)])
+async def delete_questions_batch(ids: list[int]):
+    if not isinstance(ids, list) or not all(isinstance(i, int) for i in ids):
+        raise HTTPException(status_code=400, detail="ids must be list of ints")
+    supabase = get_supabase_client()
+    supabase.table("questions").delete().in_("id", ids).execute()
+    return {"deleted": len(ids)}
