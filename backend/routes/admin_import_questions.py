@@ -1,14 +1,16 @@
-import os
 import json
 import uuid
 import asyncio
-from typing import Optional, List
-from fastapi import APIRouter, Depends, HTTPException, Header, UploadFile, File
+import logging
+from typing import List
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from backend.routes.admin_questions import check_admin
 from backend.deps.supabase_client import get_supabase_client
 from backend.utils.translation import translate_question
 
 router = APIRouter(prefix="/admin", tags=["admin-questions"])
+
+logger = logging.getLogger(__name__)
 
 
 @router.post("/import_questions", dependencies=[Depends(check_admin)])
@@ -24,8 +26,8 @@ async def import_questions(file: UploadFile = File(...)):
         raise HTTPException(status_code=400, detail="JSON must be an array")
     records = []
     supabase = get_supabase_client()
-    existing = supabase.table("questions").select("id").execute()
-    existing_ids = {row["id"] for row in existing.data} if existing.data else set()
+    resp = supabase.table("questions").select("id").execute()
+    existing_ids = {row["id"] for row in resp.data}
     next_id = max(existing_ids) + 1 if existing_ids else 0
     for idx, item in enumerate(data):
         if not isinstance(item, dict):
@@ -71,6 +73,7 @@ async def import_questions(file: UploadFile = File(...)):
             "image": image_val,
         }
         records.append(base_record)
+        logger.info(f"Inserting question with new_id={new_id} incoming_id={incoming_id}")
 
         if language == "ja":
             tasks = [translate_question(item["question"], options, lang) for lang in ["en", "tr", "ru", "zh"]]
@@ -94,6 +97,9 @@ async def import_questions(file: UploadFile = File(...)):
                         "image_prompt": item.get("image_prompt"),
                         "image": image_val,
                     }
+                )
+                logger.info(
+                    f"Inserting translation id={translated_id} lang={lang} for orig={incoming_id}"
                 )
     resp = supabase.table("questions").insert(records).execute()
     if resp.error:
@@ -122,8 +128,8 @@ async def import_questions_with_images(
 
     supabase = get_supabase_client()
 
-    existing = supabase.table("questions").select("id").execute()
-    existing_ids = {row["id"] for row in existing.data} if existing.data else set()
+    resp = supabase.table("questions").select("id").execute()
+    existing_ids = {row["id"] for row in resp.data}
     next_id = max(existing_ids) + 1 if existing_ids else 0
 
     records = []
@@ -170,6 +176,7 @@ async def import_questions_with_images(
             "image": image_url,
         }
         records.append(base_record)
+        logger.info(f"Inserting question with new_id={new_id} incoming_id={incoming_id}")
 
         if language == "ja":
             tasks = [translate_question(item["question"], item["options"], lang) for lang in ["en", "tr", "ru", "zh"]]
@@ -193,6 +200,9 @@ async def import_questions_with_images(
                         "image_prompt": item.get("image_prompt"),
                         "image": image_url,
                     }
+                )
+                logger.info(
+                    f"Inserting translation id={translated_id} lang={lang} for orig={incoming_id}"
                 )
 
     resp = supabase.table("questions").insert(records).execute()
