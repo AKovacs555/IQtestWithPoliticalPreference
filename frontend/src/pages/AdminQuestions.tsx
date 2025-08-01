@@ -25,10 +25,11 @@ interface QuestionGroup extends QuestionVariant {
 export default function AdminQuestions() {
   const [token, setToken] = useState<string>(() => localStorage.getItem('adminToken') || '');
   const [questions, setQuestions] = useState<QuestionGroup[]>([]);
-  const [editing, setEditing] = useState<QuestionGroup | null>(null);
-  const [editForms, setEditForms] = useState<Record<string, QuestionVariant>>({});
+  const [editingQuestion, setEditingQuestion] = useState<QuestionVariant | null>(null);
   const [status, setStatus] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<number>>(new Set());
+  const [expanded, setExpanded] = useState<string | null>(null);
+  const [filterLang, setFilterLang] = useState<string>('ja');
   const jsonRef = useRef<HTMLInputElement>(null);
   const imgRef = useRef<HTMLInputElement>(null);
   const [jsonFile, setJsonFile] = useState<File | null>(null);
@@ -66,31 +67,22 @@ export default function AdminQuestions() {
 
   useEffect(() => { fetchQuestions(); }, [token]);
 
-  const startEdit = (q: QuestionGroup) => {
-    const forms: Record<string, QuestionVariant> = {};
-    q.translations.forEach(tr => {
-      forms[tr.language] = { ...tr };
-    });
-    setEditing(q);
-    setEditForms(forms);
+  const handleEdit = (groupId: string, lang: string) => {
+    const group = questions.find(g => g.group_id === groupId);
+    if (!group) return;
+    const rec = group.translations.find(tr => tr.language === lang);
+    if (rec) setEditingQuestion({ ...rec });
   };
 
-  const submitEdit = async () => {
-    if (!editing) return;
+  const saveEdit = async () => {
+    if (!editingQuestion) return;
     setStatus('saving');
-    for (const lang of Object.keys(editForms)) {
-      const form = editForms[lang];
-      if (!Array.isArray(form.options) || form.options.length !== 4) continue;
-      await fetch(`${apiBase}/admin/questions/${form.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Admin-Token': token
-        },
-        body: JSON.stringify(form)
-      });
-    }
-    setEditing(null);
+    await fetch(`${apiBase}/admin/questions/${editingQuestion.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'X-Admin-Token': token },
+      body: JSON.stringify(editingQuestion)
+    });
+    setEditingQuestion(null);
     setStatus(null);
     await fetchQuestions();
   };
@@ -183,6 +175,9 @@ export default function AdminQuestions() {
           />
           <button className="btn" onClick={handleLogin}>Load Questions</button>
         </div>
+        {status && (
+          <div className="alert alert-info text-sm">{status}</div>
+        )}
         {token && (
           <div className="space-y-2">
             <div className="space-y-1">
@@ -199,7 +194,18 @@ export default function AdminQuestions() {
         )}
         {questions.length > 0 && (
           <>
-            <button className="btn btn-error btn-sm mb-2" onClick={removeSelected}>Delete Selected</button>
+            <div className="flex items-center space-x-2 mb-2">
+              <button className="btn btn-error btn-sm" onClick={removeSelected}>Delete Selected</button>
+              <select
+                className="select select-bordered select-sm"
+                value={filterLang}
+                onChange={e => setFilterLang(e.target.value)}
+              >
+                {LANGS.map(l => (
+                  <option key={l} value={l}>{l}</option>
+                ))}
+              </select>
+            </div>
             <table className="table w-full">
             <thead>
               <tr>
@@ -215,124 +221,115 @@ export default function AdminQuestions() {
               </tr>
             </thead>
             <tbody>
-              {questions.sort((a,b)=>a.id-b.id).map((q, idx) => (
-                <tr key={q.id}>
-                  <td><input type="checkbox" className="checkbox" checked={selected.has(q.id)} onChange={e => {
-                    const s = new Set(selected);
-                    if (e.target.checked) q.translations.forEach(t => s.add(t.id)); else q.translations.forEach(t => s.delete(t.id));
-                    setSelected(s);
-                  }} /></td>
-                  <td>{idx + 1}</td>
-                  <td className="truncate max-w-xs" title={q.question}>{q.question}</td>
-                  <td className="truncate max-w-xs" title={q.options[0]}>{q.options[0]}</td>
-                  <td className="truncate max-w-xs" title={q.options[1]}>{q.options[1]}</td>
-                  <td className="truncate max-w-xs" title={q.options[2]}>{q.options[2]}</td>
-                  <td className="truncate max-w-xs" title={q.options[3]}>{q.options[3]}</td>
-                  <td>{q.answer}</td>
-                  <td className="space-x-2">
-                    <button className="btn btn-sm" onClick={() => startEdit(q)}>Edit</button>
-                    <button className="btn btn-sm btn-error" onClick={() => remove(q.id)}>Delete</button>
-                  </td>
-                </tr>
-              ))}
+              {questions
+                .sort((a,b)=>a.id-b.id)
+                .filter(q => filterLang === 'ja' || q.translations.some(t => t.language === filterLang))
+                .map((q, idx) => {
+                  const variant = filterLang === 'ja' ? q : q.translations.find(t => t.language === filterLang)!;
+                  return (
+                    <React.Fragment key={q.group_id}>
+                      <tr>
+                        <td><input type="checkbox" className="checkbox" checked={selected.has(variant.id)} onChange={e => {
+                          const s = new Set(selected);
+                          if (e.target.checked) q.translations.forEach(t => s.add(t.id)); else q.translations.forEach(t => s.delete(t.id));
+                          setSelected(s);
+                        }} /></td>
+                        <td>{idx + 1}</td>
+                        <td className="truncate max-w-xs" title={variant.question}>{variant.question}</td>
+                        <td className="truncate max-w-xs" title={variant.options[0]}>{variant.options[0]}</td>
+                        <td className="truncate max-w-xs" title={variant.options[1]}>{variant.options[1]}</td>
+                        <td className="truncate max-w-xs" title={variant.options[2]}>{variant.options[2]}</td>
+                        <td className="truncate max-w-xs" title={variant.options[3]}>{variant.options[3]}</td>
+                        <td>{variant.answer}</td>
+                        <td className="space-x-2">
+                          <button className="btn btn-xs" onClick={() => setExpanded(expanded === q.group_id ? null : q.group_id)}>Langs</button>
+                          <button className="btn btn-xs" onClick={() => handleEdit(q.group_id, variant.language)}>Edit</button>
+                          <button className="btn btn-xs btn-error" onClick={() => remove(variant.id)}>Delete</button>
+                        </td>
+                      </tr>
+                      {expanded === q.group_id && (
+                        <tr className="bg-base-200">
+                          <td></td>
+                          <td colSpan={8}>
+                            <div className="flex flex-wrap gap-2 py-2">
+                              {q.translations.filter(t => t.language !== variant.language).map(tr => (
+                                <button
+                                  key={tr.language}
+                                  className="btn btn-xs"
+                                  onClick={() => handleEdit(q.group_id, tr.language)}
+                                >
+                                  {tr.language}: {tr.question.slice(0, 30)}
+                                </button>
+                              ))}
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
+                  );
+                })}
             </tbody>
             </table>
           </>
         )}
-        {editing && (
-          <div className="space-y-4 p-4 border rounded">
-            <h3 className="font-bold">Edit Question {editing.id}</h3>
-            {Object.values(editForms).map(form => (
-              <div key={form.language} className="space-y-2 border p-2">
-                <h4 className="font-semibold">{form.language}</h4>
-                <select
-                  className="select select-bordered"
-                  value={form.language}
-                  onChange={e => setEditForms({
-                    ...editForms,
-                    [form.language]: { ...form, language: e.target.value }
-                  })}
-                >
-                  {LANGS.map(l => (
-                    <option key={l} value={l}>{l}</option>
-                  ))}
-                </select>
-                <textarea
-                  className="textarea textarea-bordered w-full"
-                  value={form.question}
-                  onChange={e => setEditForms({
-                    ...editForms,
-                    [form.language]: { ...form, question: e.target.value }
-                  })}
-                />
-                {form.options.map((opt, idx) => (
-                  <input
-                    key={idx}
-                    className="input input-bordered w-full"
-                    value={opt}
-                    onChange={e => {
-                      const opts = form.options.slice();
-                      opts[idx] = e.target.value;
-                      setEditForms({
-                        ...editForms,
-                        [form.language]: { ...form, options: opts }
-                      });
-                    }}
-                  />
-                ))}
+        {editingQuestion && (
+          <dialog open className="modal">
+            <div className="modal-box space-y-2">
+              <h3 className="font-bold">Edit ({editingQuestion.language}) ID {editingQuestion.id}</h3>
+              <textarea
+                className="textarea textarea-bordered w-full"
+                value={editingQuestion.question}
+                onChange={e => setEditingQuestion({ ...editingQuestion, question: e.target.value })}
+              />
+              {editingQuestion.options.map((opt, idx) => (
                 <input
-                  type="number"
+                  key={idx}
                   className="input input-bordered w-full"
-                  value={form.answer}
-                  onChange={e => setEditForms({
-                    ...editForms,
-                    [form.language]: { ...form, answer: Number(e.target.value) }
-                  })}
+                  value={opt}
+                  onChange={e => {
+                    const opts = editingQuestion.options.slice();
+                    opts[idx] = e.target.value;
+                    setEditingQuestion({ ...editingQuestion, options: opts });
+                  }}
                 />
-                <input
-                  type="number"
-                  className="input input-bordered w-full"
-                  value={form.irt_a}
-                  onChange={e => setEditForms({
-                    ...editForms,
-                    [form.language]: { ...form, irt_a: Number(e.target.value) }
-                  })}
-                />
-                <input
-                  type="number"
-                  className="input input-bordered w-full"
-                  value={form.irt_b}
-                  onChange={e => setEditForms({
-                    ...editForms,
-                    [form.language]: { ...form, irt_b: Number(e.target.value) }
-                  })}
-                />
-                <input
-                  type="text"
-                  className="input input-bordered w-full"
-                  value={form.image_prompt || ''}
-                  onChange={e => setEditForms({
-                    ...editForms,
-                    [form.language]: { ...form, image_prompt: e.target.value }
-                  })}
-                />
-                <input
-                  type="text"
-                  className="input input-bordered w-full"
-                  value={form.image || ''}
-                  onChange={e => setEditForms({
-                    ...editForms,
-                    [form.language]: { ...form, image: e.target.value }
-                  })}
-                  placeholder="Image URL (optional)"
-                />
+              ))}
+              <input
+                type="number"
+                className="input input-bordered w-full"
+                value={editingQuestion.answer}
+                onChange={e => setEditingQuestion({ ...editingQuestion, answer: Number(e.target.value) })}
+              />
+              <input
+                type="number"
+                className="input input-bordered w-full"
+                value={editingQuestion.irt_a}
+                onChange={e => setEditingQuestion({ ...editingQuestion, irt_a: Number(e.target.value) })}
+              />
+              <input
+                type="number"
+                className="input input-bordered w-full"
+                value={editingQuestion.irt_b}
+                onChange={e => setEditingQuestion({ ...editingQuestion, irt_b: Number(e.target.value) })}
+              />
+              <input
+                type="text"
+                className="input input-bordered w-full"
+                value={editingQuestion.image_prompt || ''}
+                onChange={e => setEditingQuestion({ ...editingQuestion, image_prompt: e.target.value })}
+              />
+              <input
+                type="text"
+                className="input input-bordered w-full"
+                value={editingQuestion.image || ''}
+                onChange={e => setEditingQuestion({ ...editingQuestion, image: e.target.value })}
+                placeholder="Image URL (optional)"
+              />
+              <div className="modal-action">
+                <button className="btn" onClick={saveEdit} disabled={status==='saving'}>Save</button>
+                <button className="btn" onClick={() => setEditingQuestion(null)}>Cancel</button>
               </div>
-            ))}
-            <div className="space-x-2">
-              <button className="btn" onClick={submitEdit} disabled={status==='saving'}>Save</button>
-              <button className="btn" onClick={() => setEditing(null)}>Cancel</button>
             </div>
-          </div>
+          </dialog>
         )}
       </div>
     </Layout>
