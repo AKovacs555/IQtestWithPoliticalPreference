@@ -77,9 +77,12 @@ async def import_questions(file: UploadFile = File(...)):
             results = await asyncio.gather(*tasks)
             for lang, res in zip(["en", "tr", "ru", "zh"], results):
                 q_trans, opts_trans = res
+                translated_id = next_id
+                next_id += 1
+                existing_ids.add(translated_id)
                 records.append(
                     {
-                        "id": next_id,
+                        "id": translated_id,
                         "orig_id": incoming_id,
                         "group_id": group_id,
                         "question": q_trans,
@@ -92,8 +95,6 @@ async def import_questions(file: UploadFile = File(...)):
                         "image": image_val,
                     }
                 )
-                existing_ids.add(next_id)
-                next_id += 1
     resp = supabase.table("questions").insert(records).execute()
     if resp.error:
         raise HTTPException(status_code=500, detail=resp.error.message)
@@ -175,9 +176,12 @@ async def import_questions_with_images(
             results = await asyncio.gather(*tasks)
             for lang, res in zip(["en", "tr", "ru", "zh"], results):
                 q_trans, opts_trans = res
+                translated_id = next_id
+                next_id += 1
+                existing_ids.add(translated_id)
                 records.append(
                     {
-                        "id": next_id,
+                        "id": translated_id,
                         "orig_id": incoming_id,
                         "group_id": group_id,
                         "question": q_trans,
@@ -190,8 +194,6 @@ async def import_questions_with_images(
                         "image": image_url,
                     }
                 )
-                existing_ids.add(next_id)
-                next_id += 1
 
     resp = supabase.table("questions").insert(records).execute()
     if resp.error:
