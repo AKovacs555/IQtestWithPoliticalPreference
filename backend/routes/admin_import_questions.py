@@ -55,7 +55,7 @@ async def import_questions(file: UploadFile = File(...)):
 
         language = item.get("language", "ja")
         incoming_id = item["id"]
-        group_id = uuid.uuid4()
+        group_id = str(uuid.uuid4())
 
         base_record = {
             "orig_id": incoming_id,
@@ -144,7 +144,7 @@ async def import_questions_with_images(
             )
 
         incoming_id = item["id"]
-        group_id = uuid.uuid4()
+        group_id = str(uuid.uuid4())
 
         image_url = None
         filename = (
