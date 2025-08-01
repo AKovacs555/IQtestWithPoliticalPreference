@@ -34,20 +34,28 @@ async def import_questions(file: UploadFile = File(...)):
             raise HTTPException(status_code=400, detail=f"Missing keys in item {idx}")
         options = item["options"]
         if not isinstance(options, list) or len(options) != 4:
-            raise HTTPException(status_code=400, detail=f"Options in item {idx} must be list of 4")
+            raise HTTPException(
+                status_code=400, detail=f"Options in item {idx} must be list of 4"
+            )
         answer = item["answer"]
         if not isinstance(answer, int) or answer < 0 or answer > 3:
-            raise HTTPException(status_code=400, detail=f"Answer in item {idx} must be 0-3")
+            raise HTTPException(
+                status_code=400, detail=f"Answer in item {idx} must be 0-3"
+            )
         irt = item["irt"]
         if not isinstance(irt, dict) or "a" not in irt or "b" not in irt:
-            raise HTTPException(status_code=400, detail=f"IRT in item {idx} must contain a and b")
+            raise HTTPException(
+                status_code=400, detail=f"IRT in item {idx} must contain a and b"
+            )
         image_val = item.get("image")
         if image_val is not None and not isinstance(image_val, str):
-            raise HTTPException(status_code=400, detail=f"Image in item {idx} must be a string")
+            raise HTTPException(
+                status_code=400, detail=f"Image in item {idx} must be a string"
+            )
 
         language = item.get("language", "ja")
         incoming_id = item["id"]
-        group_id = str(uuid.uuid4())
+        group_id = uuid.uuid4()
 
         base_record = {
             "orig_id": incoming_id,
@@ -61,9 +69,11 @@ async def import_questions(file: UploadFile = File(...)):
             "image_prompt": item.get("image_prompt"),
             "image": image_val,
         }
-        result = supabase.table("questions").insert(base_record).execute()
-        if result.error:
-            raise HTTPException(status_code=500, detail=result.error.message)
+        try:
+            result = supabase.table("questions").insert(base_record).execute()
+        except Exception as exc:
+            logger.error(f"Failed to insert question: {exc}")
+            raise HTTPException(status_code=500, detail=str(exc))
         base_id = result.data[0]["id"]
         records.append({**base_record, "id": base_id})
         logger.info(f"Inserted question id={base_id} incoming_id={incoming_id}")
@@ -77,20 +87,24 @@ async def import_questions(file: UploadFile = File(...)):
             translations = {lang: res for lang, res in zip(tasks.keys(), results)}
             for lang, (q_trans, opts_trans) in translations.items():
                 translated_record = {
-                        "orig_id": incoming_id,
-                        "group_id": group_id,
-                        "question": q_trans,
-                        "options": opts_trans,
-                        "answer": answer,
-                        "irt_a": irt["a"],
-                        "irt_b": irt["b"],
-                        "language": lang,
-                        "image_prompt": item.get("image_prompt"),
-                        "image": image_val,
-                    }
-                trans_result = supabase.table("questions").insert(translated_record).execute()
-                if trans_result.error:
-                    raise HTTPException(status_code=500, detail=trans_result.error.message)
+                    "orig_id": incoming_id,
+                    "group_id": group_id,
+                    "question": q_trans,
+                    "options": opts_trans,
+                    "answer": answer,
+                    "irt_a": irt["a"],
+                    "irt_b": irt["b"],
+                    "language": lang,
+                    "image_prompt": item.get("image_prompt"),
+                    "image": image_val,
+                }
+                try:
+                    trans_result = (
+                        supabase.table("questions").insert(translated_record).execute()
+                    )
+                except Exception as exc:
+                    logger.error(f"Failed to insert translation: {exc}")
+                    raise HTTPException(status_code=500, detail=str(exc))
                 trans_id = trans_result.data[0]["id"]
                 records.append({**translated_record, "id": trans_id})
                 logger.info(
@@ -101,8 +115,7 @@ async def import_questions(file: UploadFile = File(...)):
 
 @router.post("/import_questions_with_images", dependencies=[Depends(check_admin)])
 async def import_questions_with_images(
-    json_file: UploadFile = File(...),
-    images: List[UploadFile] = File(default=None)
+    json_file: UploadFile = File(...), images: List[UploadFile] = File(default=None)
 ):
     """Import questions from a JSON file and upload images to Supabase Storage."""
     contents = await json_file.read()
@@ -126,19 +139,27 @@ async def import_questions_with_images(
         if not required.issubset(item):
             raise HTTPException(status_code=400, detail=f"Missing keys in item {idx}")
         if not isinstance(item["options"], list) or len(item["options"]) != 4:
-            raise HTTPException(status_code=400, detail=f"Options in item {idx} must be list of 4")
+            raise HTTPException(
+                status_code=400, detail=f"Options in item {idx} must be list of 4"
+            )
 
         incoming_id = item["id"]
-        group_id = str(uuid.uuid4())
+        group_id = uuid.uuid4()
 
         image_url = None
-        filename = item.get("image_filename") or item.get("image") or item.get("image_prompt")
+        filename = (
+            item.get("image_filename") or item.get("image") or item.get("image_prompt")
+        )
         if filename and filename in image_map:
             file_obj = image_map[filename]
             supabase.storage.from_("question-images").upload(
-                file_obj.filename, await file_obj.read(), {"cacheControl": "3600", "upsert": True}
+                file_obj.filename,
+                await file_obj.read(),
+                {"cacheControl": "3600", "upsert": True},
             )
-            image_url = supabase.storage.from_("question-images").get_public_url(file_obj.filename)
+            image_url = supabase.storage.from_("question-images").get_public_url(
+                file_obj.filename
+            )
         elif isinstance(filename, str) and filename.startswith("http"):
             image_url = filename
 
@@ -156,9 +177,11 @@ async def import_questions_with_images(
             "image_prompt": item.get("image_prompt"),
             "image": image_url,
         }
-        result = supabase.table("questions").insert(base_record).execute()
-        if result.error:
-            raise HTTPException(status_code=500, detail=result.error.message)
+        try:
+            result = supabase.table("questions").insert(base_record).execute()
+        except Exception as exc:
+            logger.error(f"Failed to insert question: {exc}")
+            raise HTTPException(status_code=500, detail=str(exc))
         base_id = result.data[0]["id"]
         records.append({**base_record, "id": base_id})
         logger.info(f"Inserted question id={base_id} incoming_id={incoming_id}")
@@ -172,20 +195,24 @@ async def import_questions_with_images(
             translations = {lang: res for lang, res in zip(tasks.keys(), results)}
             for lang, (q_trans, opts_trans) in translations.items():
                 translated_record = {
-                        "orig_id": incoming_id,
-                        "group_id": group_id,
-                        "question": q_trans,
-                        "options": opts_trans,
-                        "answer": item["answer"],
-                        "irt_a": item["irt"]["a"],
-                        "irt_b": item["irt"]["b"],
-                        "language": lang,
-                        "image_prompt": item.get("image_prompt"),
-                        "image": image_url,
-                    }
-                trans_result = supabase.table("questions").insert(translated_record).execute()
-                if trans_result.error:
-                    raise HTTPException(status_code=500, detail=trans_result.error.message)
+                    "orig_id": incoming_id,
+                    "group_id": group_id,
+                    "question": q_trans,
+                    "options": opts_trans,
+                    "answer": item["answer"],
+                    "irt_a": item["irt"]["a"],
+                    "irt_b": item["irt"]["b"],
+                    "language": lang,
+                    "image_prompt": item.get("image_prompt"),
+                    "image": image_url,
+                }
+                try:
+                    trans_result = (
+                        supabase.table("questions").insert(translated_record).execute()
+                    )
+                except Exception as exc:
+                    logger.error(f"Failed to insert translation: {exc}")
+                    raise HTTPException(status_code=500, detail=str(exc))
                 trans_id = trans_result.data[0]["id"]
                 records.append({**translated_record, "id": trans_id})
                 logger.info(
