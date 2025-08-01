@@ -21,5 +21,9 @@
   "pricing.retry": "Paid retries",
   "pricing.subscribe": "Pro Pass Subscription",
   "share.button": "Share",
-  "points": "Points"
+  "points": "Points",
+  "upload.status.uploading": "Uploading file…",
+  "upload.status.translating": "Translating…",
+  "upload.status.saving": "Saving to database…",
+  "warning.screenshot_detected": "Suspicious activity detected. The test will end."
 }

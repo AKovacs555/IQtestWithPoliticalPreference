@@ -21,5 +21,9 @@
   "pricing.retry": "有料リトライ",
   "pricing.subscribe": "プロパス・サブスクリプション",
   "share.button": "シェア",
-  "points": "ポイント"
+  "points": "ポイント",
+  "upload.status.uploading": "ファイルをアップロードしています…",
+  "upload.status.translating": "翻訳処理中です…",
+  "upload.status.saving": "データベースに保存しています…",
+  "warning.screenshot_detected": "不正行為が検出されました。テストが終了します。"
 }

@@ -21,5 +21,9 @@
   "pricing.retry": "Ritenta a pagamento",
   "pricing.subscribe": "Abbonamento Pro Pass",
   "share.button": "Condividi",
-  "points": "Punti"
+  "points": "Punti",
+  "upload.status.uploading": "Caricamento del file…",
+  "upload.status.translating": "Traduzione in corso…",
+  "upload.status.saving": "Salvataggio nel database…",
+  "warning.screenshot_detected": "Rilevata attività sospetta. Il test terminerà."
 }

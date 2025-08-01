@@ -21,5 +21,9 @@
   "pricing.retry": "Платные попытки",
   "pricing.subscribe": "Подписка Pro Pass",
   "share.button": "Поделиться",
-  "points": "Баллы"
+  "points": "Баллы",
+  "upload.status.uploading": "Загрузка файла…",
+  "upload.status.translating": "Перевод…",
+  "upload.status.saving": "Сохранение в базу данных…",
+  "warning.screenshot_detected": "Обнаружена подозрительная активность. Тест будет завершён."
 }
