@@ -76,16 +76,19 @@ async def import_questions(file: UploadFile = File(...)):
         logger.info(f"Inserting question with new_id={new_id} incoming_id={incoming_id}")
 
         if language == "ja":
-            tasks = [translate_question(item["question"], options, lang) for lang in ["en", "tr", "ru", "zh"]]
-            results = await asyncio.gather(*tasks)
-            for lang, res in zip(["en", "tr", "ru", "zh"], results):
-                q_trans, opts_trans = res
-                translated_id = next_id
+            tasks = {
+                lang: translate_question(item["question"], options, lang)
+                for lang in ["en", "tr", "ru", "zh"]
+            }
+            results = await asyncio.gather(*tasks.values())
+            translations = {lang: res for lang, res in zip(tasks.keys(), results)}
+            for lang, (q_trans, opts_trans) in translations.items():
+                trans_id = next_id
                 next_id += 1
-                existing_ids.add(translated_id)
+                existing_ids.add(trans_id)
                 records.append(
                     {
-                        "id": translated_id,
+                        "id": trans_id,
                         "orig_id": incoming_id,
                         "group_id": group_id,
                         "question": q_trans,
@@ -99,7 +102,7 @@ async def import_questions(file: UploadFile = File(...)):
                     }
                 )
                 logger.info(
-                    f"Inserting translation id={translated_id} lang={lang} for orig={incoming_id}"
+                    f"Inserting translation id={trans_id} lang={lang} for orig={incoming_id}"
                 )
     resp = supabase.table("questions").insert(records).execute()
     if resp.error:
@@ -179,16 +182,19 @@ async def import_questions_with_images(
         logger.info(f"Inserting question with new_id={new_id} incoming_id={incoming_id}")
 
         if language == "ja":
-            tasks = [translate_question(item["question"], item["options"], lang) for lang in ["en", "tr", "ru", "zh"]]
-            results = await asyncio.gather(*tasks)
-            for lang, res in zip(["en", "tr", "ru", "zh"], results):
-                q_trans, opts_trans = res
-                translated_id = next_id
+            tasks = {
+                lang: translate_question(item["question"], item["options"], lang)
+                for lang in ["en", "tr", "ru", "zh"]
+            }
+            results = await asyncio.gather(*tasks.values())
+            translations = {lang: res for lang, res in zip(tasks.keys(), results)}
+            for lang, (q_trans, opts_trans) in translations.items():
+                trans_id = next_id
                 next_id += 1
-                existing_ids.add(translated_id)
+                existing_ids.add(trans_id)
                 records.append(
                     {
-                        "id": translated_id,
+                        "id": trans_id,
                         "orig_id": incoming_id,
                         "group_id": group_id,
                         "question": q_trans,
@@ -202,7 +208,7 @@ async def import_questions_with_images(
                     }
                 )
                 logger.info(
-                    f"Inserting translation id={translated_id} lang={lang} for orig={incoming_id}"
+                    f"Inserting translation id={trans_id} lang={lang} for orig={incoming_id}"
                 )
 
     resp = supabase.table("questions").insert(records).execute()

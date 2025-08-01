@@ -16,6 +16,7 @@ def get_supabase() -> Client:
 
 
 def get_user(hashed_id: str) -> Optional[Dict[str, Any]]:
+    """Return the user record for the given hash or ``None`` if missing."""
     supabase = get_supabase()
     resp = (
         supabase.from_("users")
