@@ -9,4 +9,4 @@ pillow
 jsonschema
 pytest
 requests
-openai
+openai>=1.0,<2.0
