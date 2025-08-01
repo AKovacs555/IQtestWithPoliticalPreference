@@ -21,5 +21,9 @@
   "pricing.retry": "Reintentos de pago",
   "pricing.subscribe": "Suscripción Pro Pass",
   "share.button": "Compartir",
-  "points": "Puntos"
+  "points": "Puntos",
+  "upload.status.uploading": "Subiendo archivo…",
+  "upload.status.translating": "Traduciendo…",
+  "upload.status.saving": "Guardando en la base de datos…",
+  "warning.screenshot_detected": "Se detectó actividad sospechosa. La prueba finalizará."
 }

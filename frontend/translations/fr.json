@@ -21,5 +21,9 @@
   "pricing.retry": "Essais payants",
   "pricing.subscribe": "Abonnement Pro Pass",
   "share.button": "Partager",
-  "points": "Points"
+  "points": "Points",
+  "upload.status.uploading": "Envoi du fichier…",
+  "upload.status.translating": "Traduction…",
+  "upload.status.saving": "Enregistrement dans la base de données…",
+  "warning.screenshot_detected": "Une activité suspecte a été détectée. Le test va se terminer."
 }

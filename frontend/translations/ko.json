@@ -21,5 +21,9 @@
   "pricing.retry": "유료 재도전",
   "pricing.subscribe": "프로 패스 구독",
   "share.button": "공유",
-  "points": "포인트"
+  "points": "포인트",
+  "upload.status.uploading": "파일 업로드 중…",
+  "upload.status.translating": "번역 중…",
+  "upload.status.saving": "데이터베이스에 저장하는 중…",
+  "warning.screenshot_detected": "이상 행위가 감지되었습니다. 테스트가 종료됩니다."
 }

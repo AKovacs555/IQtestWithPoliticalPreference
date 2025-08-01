@@ -21,5 +21,9 @@
   "pricing.retry": "付费重试",
   "pricing.subscribe": "Pro Pass 订阅",
   "share.button": "分享",
-  "points": "积分"
+  "points": "积分",
+  "upload.status.uploading": "正在上传文件…",
+  "upload.status.translating": "正在翻译…",
+  "upload.status.saving": "正在保存到数据库…",
+  "warning.screenshot_detected": "检测到可疑操作，测试将结束。"
 }

@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import Layout from '../components/Layout';
+import { useTranslation } from 'react-i18next';
 
 interface Question {
   id: number;
@@ -21,6 +22,9 @@ export default function AdminQuestions() {
   const imgRef = useRef<HTMLInputElement>(null);
   const [jsonFile, setJsonFile] = useState<File | null>(null);
   const [imageFiles, setImageFiles] = useState<FileList | null>(null);
+  const [uploadStatus, setUploadStatus] = useState<string | null>(null);
+  const [isImporting, setIsImporting] = useState(false);
+  const { t } = useTranslation();
 
   const apiBase = import.meta.env.VITE_API_BASE;
 
@@ -87,6 +91,8 @@ export default function AdminQuestions() {
       alert('Please select a JSON file');
       return;
     }
+    setIsImporting(true);
+    setUploadStatus('uploading');
     const formData = new FormData();
     formData.append('json_file', jsonFile);
     if (imageFiles) {
@@ -99,11 +105,17 @@ export default function AdminQuestions() {
       headers: { 'X-Admin-Token': token },
       body: formData
     });
+    setUploadStatus('translating');
     const data = await res.json();
     if (res.ok) {
+      setUploadStatus('saving');
+      await fetchQuestions();
+      setUploadStatus(null);
+      setIsImporting(false);
       alert(`Imported ${data.inserted}`);
-      fetchQuestions();
     } else {
+      setUploadStatus(null);
+      setIsImporting(false);
       alert(data.detail || 'Error');
     }
     setJsonFile(null);
@@ -136,7 +148,12 @@ export default function AdminQuestions() {
               <input type="file" accept="application/json" ref={jsonRef} onChange={handleJsonChange} />
               <input type="file" multiple ref={imgRef} onChange={handleImagesChange} />
             </div>
-            <button className="btn" onClick={handleImport}>Import Questions</button>
+            <button className="btn" onClick={handleImport} disabled={isImporting}>Import Questions</button>
+            {isImporting && uploadStatus && (
+              <div className="alert alert-info text-sm">
+                {t(`upload.status.${uploadStatus}`)}
+              </div>
+            )}
           </div>
         )}
         {questions.length > 0 && (

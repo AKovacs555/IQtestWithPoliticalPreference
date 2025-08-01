@@ -21,5 +21,9 @@
   "pricing.retry": "محاولات مدفوعة",
   "pricing.subscribe": "اشتراك برو باس",
   "share.button": "شارك",
-  "points": "نقاط"
+  "points": "نقاط",
+  "upload.status.uploading": "جاري رفع الملف…",
+  "upload.status.translating": "جاري الترجمة…",
+  "upload.status.saving": "جاري الحفظ في قاعدة البيانات…",
+  "warning.screenshot_detected": "تم اكتشاف نشاط مشبوه. سيتم إنهاء الاختبار."
 }

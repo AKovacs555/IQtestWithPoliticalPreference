@@ -21,5 +21,9 @@
   "pricing.retry": "Bezahlte Versuche",
   "pricing.subscribe": "Pro-Pass-Abonnement",
   "share.button": "Teilen",
-  "points": "Punkte"
+  "points": "Punkte",
+  "upload.status.uploading": "Datei wird hochgeladen…",
+  "upload.status.translating": "Übersetzen…",
+  "upload.status.saving": "Speichern in der Datenbank…",
+  "warning.screenshot_detected": "Verdächtige Aktivität erkannt. Der Test wird beendet."
 }

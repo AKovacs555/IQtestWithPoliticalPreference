@@ -19,6 +19,7 @@ export default function TestPage() {
   const [current, setCurrent] = React.useState(0);
   const [timeLeft, setTimeLeft] = React.useState(300);
   const [suspicious, setSuspicious] = React.useState(false);
+  const [blackout, setBlackout] = React.useState(false);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState(null);
   const { t, i18n } = useTranslation();
@@ -38,6 +39,36 @@ export default function TestPage() {
       }
     }
     load();
+  }, []);
+
+  React.useEffect(() => {
+    if (questions.length > 0 && document.fullscreenElement == null) {
+      document.documentElement.requestFullscreen().catch(() => {});
+    }
+  }, [questions.length]);
+
+  React.useEffect(() => {
+    const handleFs = () => {
+      if (document.fullscreenElement == null) setBlackout(true);
+    };
+    document.addEventListener('fullscreenchange', handleFs);
+    return () => document.removeEventListener('fullscreenchange', handleFs);
+  }, []);
+
+  React.useEffect(() => {
+    const handleVis = () => {
+      if (document.visibilityState === 'hidden') setBlackout(true);
+    };
+    document.addEventListener('visibilitychange', handleVis);
+    return () => document.removeEventListener('visibilitychange', handleVis);
+  }, []);
+
+  React.useEffect(() => {
+    const handleKey = (e) => {
+      if (e.key === 'PrintScreen') setBlackout(true);
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
   }, []);
 
   React.useEffect(() => {
@@ -121,6 +152,16 @@ export default function TestPage() {
   return (
     <PageTransition>
       <Layout>
+        <div
+          className="watermark fixed inset-0 pointer-events-none opacity-10 text-xs z-40 flex items-end justify-end p-2 select-none"
+        >
+          {session && `${session.slice(0,6)} ${new Date().toLocaleString()}`}
+        </div>
+        {blackout && (
+          <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center text-white text-center z-50">
+            {t('warning.screenshot_detected')}
+          </div>
+        )}
         <div className="space-y-4 max-w-lg mx-auto quiz-container">
           {loading && <p>Loading...</p>}
           {error && <p className="text-error">{error}</p>}

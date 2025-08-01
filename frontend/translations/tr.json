@@ -21,5 +21,9 @@
   "pricing.retry": "Ücretli tekrarlar",
   "pricing.subscribe": "Pro Pass Aboneliği",
   "share.button": "Paylaş",
-  "points": "Puanlar"
+  "points": "Puanlar",
+  "upload.status.uploading": "Dosya yükleniyor…",
+  "upload.status.translating": "Çevriliyor…",
+  "upload.status.saving": "Veritabanına kaydediliyor…",
+  "warning.screenshot_detected": "Şüpheli etkinlik tespit edildi. Test sonlandırılacak."
 }
