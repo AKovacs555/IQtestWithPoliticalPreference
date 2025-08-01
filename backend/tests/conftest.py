@@ -14,6 +14,7 @@ class DummyTable:
         self._eq_column = None
         self._eq_value = None
         self._single = False
+        self._limit = None
 
     def select(self, *_):
         self._select = True
@@ -30,6 +31,10 @@ class DummyTable:
     def eq(self, column, value):
         self._eq_column = column
         self._eq_value = value
+        return self
+
+    def limit(self, n):
+        self._limit = n
         return self
 
     def single(self):
@@ -53,6 +58,8 @@ class DummyTable:
             res = [r for r in self.rows if r.get(self._eq_column) == self._eq_value] if self._eq_column else self.rows
             if self._single:
                 res = res[0] if res else None
+            if self._limit is not None and isinstance(res, list):
+                res = res[: self._limit]
             return DummyResponse(res)
         return DummyResponse(None)
 

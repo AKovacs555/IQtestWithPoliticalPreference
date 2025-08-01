@@ -21,10 +21,11 @@ def get_user(hashed_id: str) -> Optional[Dict[str, Any]]:
         supabase.from_("users")
         .select("*")
         .eq("hashed_id", hashed_id)
-        .single()
+        .limit(1)
         .execute()
     )
-    return resp.data if resp.data else None
+    data = resp.data or []
+    return data[0] if data else None
 
 
 def create_user(user_data: Dict[str, Any]) -> Dict[str, Any]:

@@ -2,7 +2,7 @@ import os
 import openai
 
 api_key = os.environ.get("OPENAI_API_KEY")
-client = openai.OpenAI(api_key=api_key) if api_key else None
+client = openai.AsyncClient(api_key=api_key) if api_key else None
 
 async def translate_question(question_text: str, options: list[str], target_lang: str) -> tuple[str, list[str]]:
     """Translate a Japanese IQ question and its options into ``target_lang``."""
@@ -26,5 +26,5 @@ async def translate_question(question_text: str, options: list[str], target_lang
     content = response.choices[0].message.content.strip()
     lines = [line.strip() for line in content.split('\n') if line.strip()]
     q_translated = lines[0]
-    opts_translated = [lines[i] for i in range(1, 5)]
+    opts_translated = lines[1:5]
     return q_translated, opts_translated
