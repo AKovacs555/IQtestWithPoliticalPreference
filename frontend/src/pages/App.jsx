@@ -11,6 +11,8 @@ import Pricing from './Pricing';
 import Leaderboard from './Leaderboard';
 import SelectSet from './SelectSet';
 import PartySelect from './PartySelect';
+import SelectNationality from './SelectNationality';
+import SelectParty from './SelectParty';
 import { Chart } from 'chart.js/auto';
 import QuestionCard from '../components/QuestionCard';
 import Settings from './Settings.jsx';
@@ -390,6 +392,8 @@ export default function App() {
         <Route path="/settings/:userId" element={<Settings />} />
         <Route path="/history/:userId" element={<History />} />
         <Route path="/party" element={<PartySelect />} />
+        <Route path="/select-nationality" element={<SelectNationality />} />
+        <Route path="/select-party" element={<SelectParty />} />
         <Route path="/admin/questions" element={<AdminQuestions />} />
       </Routes>
     </AnimatePresence>

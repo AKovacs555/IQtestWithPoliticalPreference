@@ -62,6 +62,7 @@ from routes.exam import router as exam_router
 from routes.admin_questions import router as admin_questions_router
 from routes.admin_import_questions import router as admin_import_router
 from routes.quiz import router as quiz_router
+from routes.user import router as user_router
 import json
 
 app = FastAPI()
@@ -81,6 +82,7 @@ app.include_router(exam_router)
 app.include_router(admin_questions_router)
 app.include_router(admin_import_router)
 app.include_router(quiz_router)
+app.include_router(user_router)
 
 # SMS provider handled by sms_service module
 
