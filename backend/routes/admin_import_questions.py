@@ -1,6 +1,7 @@
 import json
 import uuid
 import logging
+import asyncio
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from backend.routes.admin_questions import check_admin
@@ -82,16 +83,18 @@ async def import_questions(file: UploadFile = File(...)):
         logger.info(f"Inserted question id={base_id} incoming_id={incoming_id}")
 
         if language == "ja":
-            for target_lang in target_languages:
-                try:
-                    translated_q, translated_opts = await translate_question(
-                        item["question"], options, target_lang
-                    )
-                except Exception as exc:
+            tasks = [
+                translate_question(item["question"], options, lang)
+                for lang in target_languages
+            ]
+            results = await asyncio.gather(*tasks, return_exceptions=True)
+            for target_lang, result in zip(target_languages, results):
+                if isinstance(result, Exception):
                     logger.error(
-                        f"Translation {target_lang} failed for {incoming_id}: {exc}"
+                        f"Translation {target_lang} failed for {incoming_id}: {result}"
                     )
                     continue
+                translated_q, translated_opts = result
 
                 translated_record = {
                     "orig_id": incoming_id,
@@ -111,9 +114,7 @@ async def import_questions(file: UploadFile = File(...)):
                         supabase.table("questions").insert(translated_record).execute()
                     )
                 except Exception as exc:
-                    logger.error(
-                        f"Failed to insert translation {target_lang}: {exc}"
-                    )
+                    logger.error(f"Failed to insert translation {target_lang}: {exc}")
                     continue
 
                 trans_id = trans_result.data[0]["id"]
@@ -200,16 +201,18 @@ async def import_questions_with_images(
         logger.info(f"Inserted question id={base_id} incoming_id={incoming_id}")
 
         if language == "ja":
-            for target_lang in target_languages:
-                try:
-                    translated_q, translated_opts = await translate_question(
-                        item["question"], item["options"], target_lang
-                    )
-                except Exception as exc:
+            tasks = [
+                translate_question(item["question"], item["options"], lang)
+                for lang in target_languages
+            ]
+            results = await asyncio.gather(*tasks, return_exceptions=True)
+            for target_lang, result in zip(target_languages, results):
+                if isinstance(result, Exception):
                     logger.error(
-                        f"Translation {target_lang} failed for {incoming_id}: {exc}"
+                        f"Translation {target_lang} failed for {incoming_id}: {result}"
                     )
                     continue
+                translated_q, translated_opts = result
 
                 translated_record = {
                     "orig_id": incoming_id,
@@ -229,9 +232,7 @@ async def import_questions_with_images(
                         supabase.table("questions").insert(translated_record).execute()
                     )
                 except Exception as exc:
-                    logger.error(
-                        f"Failed to insert translation {target_lang}: {exc}"
-                    )
+                    logger.error(f"Failed to insert translation {target_lang}: {exc}")
                     continue
 
                 trans_id = trans_result.data[0]["id"]
