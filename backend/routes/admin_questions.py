@@ -93,3 +93,10 @@ async def delete_questions_batch(ids: list[int]):
     supabase = get_supabase_client()
     supabase.table("questions").delete().in_("id", ids).execute()
     return {"deleted": len(ids)}
+
+
+@router.post("/delete_all", dependencies=[Depends(check_admin)])
+async def delete_all_questions():
+    supabase = get_supabase_client()
+    supabase.table("questions").delete().neq("id", 0).execute()
+    return {"deleted_all": True}
