@@ -76,9 +76,6 @@ async def import_questions(file: UploadFile = File(...)):
         except Exception as exc:
             logger.error(f"Failed to insert question: {exc}")
             raise HTTPException(status_code=500, detail=str(exc))
-        if result.status_code >= 400:
-            logger.error(f"Insert error: {result.data}")
-            raise HTTPException(status_code=500, detail=str(result.data))
         base_id = result.data[0]["id"]
         records.append({**base_record, "id": base_id})
         logger.info(f"Inserted question id={base_id} incoming_id={incoming_id}")
@@ -110,9 +107,6 @@ async def import_questions(file: UploadFile = File(...)):
                 except Exception as exc:
                     logger.error(f"Failed to insert translation: {exc}")
                     raise HTTPException(status_code=500, detail=str(exc))
-                if trans_result.status_code >= 400:
-                    logger.error(f"Insert error: {trans_result.data}")
-                    raise HTTPException(status_code=500, detail=str(trans_result.data))
                 trans_id = trans_result.data[0]["id"]
                 records.append({**translated_record, "id": trans_id})
                 logger.info(
@@ -192,9 +186,6 @@ async def import_questions_with_images(
         except Exception as exc:
             logger.error(f"Failed to insert question: {exc}")
             raise HTTPException(status_code=500, detail=str(exc))
-        if result.status_code >= 400:
-            logger.error(f"Insert error: {result.data}")
-            raise HTTPException(status_code=500, detail=str(result.data))
         base_id = result.data[0]["id"]
         records.append({**base_record, "id": base_id})
         logger.info(f"Inserted question id={base_id} incoming_id={incoming_id}")
@@ -226,9 +217,6 @@ async def import_questions_with_images(
                 except Exception as exc:
                     logger.error(f"Failed to insert translation: {exc}")
                     raise HTTPException(status_code=500, detail=str(exc))
-                if trans_result.status_code >= 400:
-                    logger.error(f"Insert error: {trans_result.data}")
-                    raise HTTPException(status_code=500, detail=str(trans_result.data))
                 trans_id = trans_result.data[0]["id"]
                 records.append({**translated_record, "id": trans_id})
                 logger.info(
