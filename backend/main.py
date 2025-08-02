@@ -85,10 +85,14 @@ app.add_middleware(
 )
 
 app.include_router(exam_router)
+
+# Admin routers
 app.include_router(admin_questions_router)
 app.include_router(admin_import_router)
 app.include_router(admin_surveys_router)
 app.include_router(admin_users_router)
+
+# Public routers
 app.include_router(quiz_router)
 app.include_router(user_router)
 
