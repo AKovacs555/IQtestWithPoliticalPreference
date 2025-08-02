@@ -27,6 +27,7 @@ stable identifiers.
 
 import json
 import random
+import logging
 from pathlib import Path
 from typing import List, Dict, Any, Tuple
 from jsonschema import validate, ValidationError
@@ -36,6 +37,8 @@ from jsonschema import validate, ValidationError
 POOL_PATH = Path(__file__).resolve().parents[1] / "questions"
 SCHEMA_PATH = POOL_PATH / "schema.json"
 BANK_PATH = Path(__file__).resolve().parent / "data" / "question_bank.json"
+
+logger = logging.getLogger(__name__)
 
 
 def available_sets() -> List[str]:
@@ -110,7 +113,7 @@ try:
     validate_questions()
     DEFAULT_QUESTIONS = load_questions()
 except Exception as e:
-    print(f"Question validation failed: {e}")
+    logger.error(f"Question validation failed: {e}")
 
 # Load full question bank for balanced sampling
 def _load_bank() -> List[Dict[str, Any]]:
