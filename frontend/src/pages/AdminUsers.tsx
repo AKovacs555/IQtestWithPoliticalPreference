@@ -25,8 +25,8 @@ export default function AdminUsers() {
     if (!u) return;
     setMsg('');
     try {
-      const res = await fetch(`${apiBase}/admin/user/free_attempts`, {
-        method: 'PUT',
+      const res = await fetch(`${apiBase}/admin/users/free_attempts`, {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-Admin-Api-Key': token },
         body: JSON.stringify({ user_id: id, free_attempts: u.free_attempts })
       });
