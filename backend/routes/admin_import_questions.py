@@ -1,7 +1,6 @@
 import json
 import uuid
 import logging
-import asyncio
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from backend.routes.admin_questions import check_admin
@@ -17,6 +16,7 @@ logger = logging.getLogger(__name__)
 
 @router.post("/import_questions", dependencies=[Depends(check_admin)])
 async def import_questions(file: UploadFile = File(...)):
+    group_id = str(uuid.uuid4())
     if not file:
         raise HTTPException(status_code=400, detail="File required")
     contents = await file.read()
@@ -26,8 +26,9 @@ async def import_questions(file: UploadFile = File(...)):
         raise HTTPException(status_code=400, detail="Invalid JSON")
     if not isinstance(data, list):
         raise HTTPException(status_code=400, detail="JSON must be an array")
-    records = []
+
     supabase = get_supabase_client()
+    inserted = 0
     for idx, item in enumerate(data):
         if not isinstance(item, dict):
             raise HTTPException(status_code=400, detail=f"Item {idx} must be object")
@@ -59,11 +60,10 @@ async def import_questions(file: UploadFile = File(...)):
         incoming_id = item["id"]
         if not isinstance(incoming_id, (int, str)):
             incoming_id = str(incoming_id)
-        group_id_str = str(uuid.uuid4())
 
-        base_record = {
+        record = {
             "orig_id": incoming_id,
-            "group_id": group_id_str,
+            "group_id": group_id,
             "question": item["question"],
             "options": options,
             "answer": answer,
@@ -74,55 +74,46 @@ async def import_questions(file: UploadFile = File(...)):
             "image": image_val,
         }
         try:
-            result = supabase.table("questions").insert(base_record).execute()
+            supabase.table("questions").insert(record).execute()
+            inserted += 1
         except Exception as exc:
-            logger.error(f"Failed to insert question: {exc}")
-            raise HTTPException(status_code=500, detail=str(exc))
-        base_id = result.data[0]["id"]
-        records.append({**base_record, "id": base_id})
-        logger.info(f"Inserted question id={base_id} incoming_id={incoming_id}")
+            logger.error(
+                f"Failed to insert record (lang={record['language']}, orig_id={record['orig_id']}): {exc}"
+            )
+            continue
 
         if language == "ja":
-            tasks = [
-                translate_question(item["question"], options, lang)
-                for lang in target_languages
-            ]
-            results = await asyncio.gather(*tasks, return_exceptions=True)
-            for target_lang, result in zip(target_languages, results):
-                if isinstance(result, Exception):
+            for lang in target_languages:
+                try:
+                    q_trans, opts_trans = await translate_question(
+                        item["question"], options, lang
+                    )
+                except Exception as exc:
                     logger.error(
-                        f"Translation {target_lang} failed for {incoming_id}: {result}"
+                        f"Translation {lang} failed for orig_id {incoming_id}: {exc}"
                     )
                     continue
-                translated_q, translated_opts = result
-
-                translated_record = {
+                trans_record = {
                     "orig_id": incoming_id,
-                    "group_id": group_id_str,
-                    "question": translated_q,
-                    "options": translated_opts,
+                    "group_id": group_id,
+                    "question": q_trans,
+                    "options": opts_trans,
                     "answer": answer,
                     "irt_a": irt["a"],
                     "irt_b": irt["b"],
-                    "language": target_lang,
+                    "language": lang,
                     "image_prompt": item.get("image_prompt"),
                     "image": image_val,
                 }
-
                 try:
-                    trans_result = (
-                        supabase.table("questions").insert(translated_record).execute()
-                    )
+                    supabase.table("questions").insert(trans_record).execute()
+                    inserted += 1
                 except Exception as exc:
-                    logger.error(f"Failed to insert translation {target_lang}: {exc}")
+                    logger.error(
+                        f"Failed to insert record (lang={trans_record['language']}, orig_id={trans_record['orig_id']}): {exc}"
+                    )
                     continue
-
-                trans_id = trans_result.data[0]["id"]
-                records.append({**translated_record, "id": trans_id})
-                logger.info(
-                    f"Inserted translation id={trans_id} lang={target_lang} for orig={incoming_id}"
-                )
-    return {"inserted": len(records)}
+    return {"inserted": inserted}
 
 
 @router.post("/import_questions_with_images", dependencies=[Depends(check_admin)])
@@ -130,6 +121,7 @@ async def import_questions_with_images(
     json_file: UploadFile = File(...), images: List[UploadFile] = File(default=None)
 ):
     """Import questions from a JSON file and upload images to Supabase Storage."""
+    group_id = str(uuid.uuid4())
     contents = await json_file.read()
     try:
         data = json.loads(contents)
@@ -145,7 +137,7 @@ async def import_questions_with_images(
 
     supabase = get_supabase_client()
 
-    records = []
+    inserted = 0
     for idx, item in enumerate(data):
         required = {"id", "question", "options", "answer", "irt"}
         if not required.issubset(item):
@@ -158,7 +150,6 @@ async def import_questions_with_images(
         incoming_id = item["id"]
         if not isinstance(incoming_id, (int, str)):
             incoming_id = str(incoming_id)
-        group_id_str = str(uuid.uuid4())
 
         image_url = None
         filename = (
@@ -179,9 +170,9 @@ async def import_questions_with_images(
 
         language = item.get("language", "ja")
 
-        base_record = {
+        record = {
             "orig_id": incoming_id,
-            "group_id": group_id_str,
+            "group_id": group_id,
             "question": item["question"],
             "options": item["options"],
             "answer": item["answer"],
@@ -192,52 +183,42 @@ async def import_questions_with_images(
             "image": image_url,
         }
         try:
-            result = supabase.table("questions").insert(base_record).execute()
+            supabase.table("questions").insert(record).execute()
+            inserted += 1
         except Exception as exc:
-            logger.error(f"Failed to insert question: {exc}")
-            raise HTTPException(status_code=500, detail=str(exc))
-        base_id = result.data[0]["id"]
-        records.append({**base_record, "id": base_id})
-        logger.info(f"Inserted question id={base_id} incoming_id={incoming_id}")
-
-        if language == "ja":
-            tasks = [
-                translate_question(item["question"], item["options"], lang)
-                for lang in target_languages
-            ]
-            results = await asyncio.gather(*tasks, return_exceptions=True)
-            for target_lang, result in zip(target_languages, results):
-                if isinstance(result, Exception):
-                    logger.error(
-                        f"Translation {target_lang} failed for {incoming_id}: {result}"
-                    )
-                    continue
-                translated_q, translated_opts = result
-
-                translated_record = {
-                    "orig_id": incoming_id,
-                    "group_id": group_id_str,
-                    "question": translated_q,
-                    "options": translated_opts,
-                    "answer": item["answer"],
-                    "irt_a": item["irt"]["a"],
-                    "irt_b": item["irt"]["b"],
-                    "language": target_lang,
-                    "image_prompt": item.get("image_prompt"),
-                    "image": image_url,
-                }
-
-                try:
-                    trans_result = (
-                        supabase.table("questions").insert(translated_record).execute()
-                    )
-                except Exception as exc:
-                    logger.error(f"Failed to insert translation {target_lang}: {exc}")
-                    continue
-
-                trans_id = trans_result.data[0]["id"]
-                records.append({**translated_record, "id": trans_id})
-                logger.info(
-                    f"Inserted translation id={trans_id} lang={target_lang} for orig={incoming_id}"
-                )
-    return {"inserted": len(records)}
+            logger.error(
+                f"Failed to insert record (lang={record['language']}, orig_id={record['orig_id']}): {exc}"
+            )
+        else:
+            if language == "ja":
+                for lang in target_languages:
+                    try:
+                        q_trans, opts_trans = await translate_question(
+                            item["question"], item["options"], lang
+                        )
+                    except Exception as exc:
+                        logger.error(
+                            f"Translation {lang} failed for orig_id {incoming_id}: {exc}"
+                        )
+                        continue
+                    trans_record = {
+                        "orig_id": incoming_id,
+                        "group_id": group_id,
+                        "question": q_trans,
+                        "options": opts_trans,
+                        "answer": item["answer"],
+                        "irt_a": item["irt"]["a"],
+                        "irt_b": item["irt"]["b"],
+                        "language": lang,
+                        "image_prompt": item.get("image_prompt"),
+                        "image": image_url,
+                    }
+                    try:
+                        supabase.table("questions").insert(trans_record).execute()
+                        inserted += 1
+                    except Exception as exc:
+                        logger.error(
+                            f"Failed to insert record (lang={trans_record['language']}, orig_id={trans_record['orig_id']}): {exc}"
+                        )
+                        continue
+    return {"inserted": inserted}

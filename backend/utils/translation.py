@@ -1,9 +1,12 @@
 import os
 import json
+import logging
 import openai
 
 api_key = os.environ.get("OPENAI_API_KEY")
 client = openai.AsyncClient(api_key=api_key) if api_key else None
+
+logger = logging.getLogger(__name__)
 
 
 async def translate_question(
@@ -28,13 +31,14 @@ async def translate_question(
         temperature=0.3,
     )
 
-    json_text = response.choices[0].message.content.strip()
-    cleaned = json_text.replace("```", "").strip()
-    if cleaned.lower().startswith("json"):
-        cleaned = cleaned[4:].strip()
+    content = response.choices[0].message.content.strip()
+    if content.startswith("```"):
+        content = content.split("```", 2)[1].strip()
+        if content.lower().startswith("json"):
+            content = content[4:].strip()
     try:
-        data = json.loads(cleaned)
-    except Exception:
-        raise RuntimeError(f"Failed to parse JSON translation: {json_text}")
-
-    return data["question"], data["options"]
+        data = json.loads(content)
+        return data["question"], data["options"]
+    except Exception as exc:
+        logger.error(f"Failed to parse JSON translation: {content}")
+        raise
