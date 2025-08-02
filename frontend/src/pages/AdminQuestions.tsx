@@ -25,13 +25,14 @@ interface QuestionGroup {
 
 export default function AdminQuestions() {
   const [token, setToken] = useState<string>(() => localStorage.getItem('adminToken') || '');
-  const [questions, setQuestions] = useState<QuestionVariant[]>([]);
+  const [allQuestions, setAllQuestions] = useState<QuestionVariant[]>([]);
+  const [filteredQuestions, setFilteredQuestions] = useState<QuestionVariant[]>([]);
+  const [selectedLang, setSelectedLang] = useState<string>('ja');
   const [editingQuestion, setEditingQuestion] = useState<QuestionVariant | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [expanded, setExpanded] = useState<string | null>(null);
-  const [filterLang, setFilterLang] = useState<string>('ja');
   const jsonRef = useRef<HTMLInputElement>(null);
   const imgRef = useRef<HTMLInputElement>(null);
   const [jsonFile, setJsonFile] = useState<File | null>(null);
@@ -50,15 +51,26 @@ export default function AdminQuestions() {
     });
     if (res.ok) {
       const data = await res.json();
-      setQuestions(data.sort((a: any, b: any) => a.id - b.id));
+      const sorted = data.sort((a: any, b: any) => a.id - b.id);
+      setAllQuestions(sorted);
+      setFilteredQuestions(
+        selectedLang === 'ja' ? sorted : sorted.filter((q: any) => q.language === selectedLang)
+      );
     }
     setStatus(null);
   };
 
   useEffect(() => { fetchQuestions(); }, [token]);
 
+  const handleLangChange = (lang: string) => {
+    setSelectedLang(lang);
+    setFilteredQuestions(
+      lang === 'ja' ? allQuestions : allQuestions.filter(q => q.language === lang)
+    );
+  };
+
   const grouped = Object.values(
-    questions.reduce<Record<string, QuestionGroup>>((acc, q) => {
+    filteredQuestions.reduce<Record<string, QuestionGroup>>((acc, q) => {
       acc[q.group_id] = acc[q.group_id] || { base: null, translations: [] };
       if (q.language === 'ja') acc[q.group_id].base = q;
       else acc[q.group_id].translations.push(q);
@@ -67,7 +79,7 @@ export default function AdminQuestions() {
   );
 
   const handleEdit = (groupId: string, lang: string = 'ja') => {
-    const record = questions.find(q => q.group_id === groupId && q.language === lang);
+    const record = allQuestions.find(q => q.group_id === groupId && q.language === lang);
     if (record) {
       setEditingQuestion({ ...record });
       setIsEditModalOpen(true);
@@ -208,15 +220,15 @@ export default function AdminQuestions() {
             )}
           </div>
         )}
-        {questions.length > 0 && (
+        {allQuestions.length > 0 && (
           <>
             <div className="flex items-center space-x-2 mb-2">
               <button className="btn btn-error btn-sm" onClick={removeSelected}>Delete Selected</button>
               <button className="btn btn-error btn-sm" onClick={removeAll}>Delete All Questions</button>
               <select
                 className="select select-bordered select-sm"
-                value={filterLang}
-                onChange={e => setFilterLang(e.target.value)}
+                value={selectedLang}
+                onChange={e => handleLangChange(e.target.value)}
               >
                 {languageOptions.map(l => (
                   <option key={l} value={l}>{l}</option>
@@ -238,84 +250,80 @@ export default function AdminQuestions() {
               </tr>
             </thead>
             <tbody>
-              {grouped
-                .filter(g =>
-                  filterLang === 'ja'
-                    ? g.base
-                    : g.translations.some(t => t.language === filterLang)
-                )
-                .map((g, idx) => {
-                  const variant =
-                    filterLang === 'ja'
-                      ? g.base!
-                      : g.translations.find(t => t.language === filterLang)!;
-                  const ids = [g.base?.id, ...g.translations.map(t => t.id)].filter(
-                    Boolean
-                  ) as number[];
-                  const checked = ids.every(id => selected.has(id));
-                  return (
-                    <React.Fragment key={g.base?.group_id || idx}>
-                      <tr>
-                        <td>
-                          <input
-                            type="checkbox"
-                            className="checkbox"
-                            checked={checked}
-                            onChange={e => {
-                              const s = new Set(selected);
-                              ids.forEach(id => {
-                                if (e.target.checked) s.add(id);
-                                else s.delete(id);
-                              });
-                              setSelected(s);
-                            }}
-                          />
-                        </td>
-                        <td>{idx + 1}</td>
-                        <td className="truncate max-w-xs" title={variant.question}>{variant.question}</td>
-                        <td className="truncate max-w-xs" title={variant.options[0]}>{variant.options[0]}</td>
-                        <td className="truncate max-w-xs" title={variant.options[1]}>{variant.options[1]}</td>
-                        <td className="truncate max-w-xs" title={variant.options[2]}>{variant.options[2]}</td>
-                        <td className="truncate max-w-xs" title={variant.options[3]}>{variant.options[3]}</td>
-                        <td>{variant.answer}</td>
-                        <td className="space-x-2">
-                          <button
-                            className="btn btn-xs"
-                            onClick={() =>
-                              setExpanded(expanded === (g.base?.group_id || '') ? null : g.base?.group_id || null)
-                            }
-                          >
-                            Other Languages ▼
-                          </button>
-                          <button className="btn btn-xs" onClick={() => handleEdit(g.base?.group_id || '', variant.language)}>
-                            Edit
-                          </button>
-                          <button className="btn btn-xs btn-error" onClick={() => remove(variant.id)}>
-                            Delete
-                          </button>
+              {grouped.map((g, idx) => {
+                const variant =
+                  selectedLang === 'ja'
+                    ? g.base!
+                    : g.translations.find(t => t.language === selectedLang)!;
+                const groupRecords = allQuestions.filter(
+                  q => q.group_id === (g.base?.group_id || g.translations[0].group_id)
+                );
+                const ids = groupRecords.map(r => r.id);
+                const checked = ids.every(id => selected.has(id));
+                const otherLangs = groupRecords.filter(r => r.language !== variant.language);
+                return (
+                  <React.Fragment key={variant.group_id}>
+                    <tr>
+                      <td>
+                        <input
+                          type="checkbox"
+                          className="checkbox"
+                          checked={checked}
+                          onChange={e => {
+                            const s = new Set(selected);
+                            ids.forEach(id => {
+                              if (e.target.checked) s.add(id);
+                              else s.delete(id);
+                            });
+                            setSelected(s);
+                          }}
+                        />
+                      </td>
+                      <td>{idx + 1}</td>
+                      <td className="truncate max-w-xs" title={variant.question}>{variant.question}</td>
+                      <td className="truncate max-w-xs" title={variant.options[0]}>{variant.options[0]}</td>
+                      <td className="truncate max-w-xs" title={variant.options[1]}>{variant.options[1]}</td>
+                      <td className="truncate max-w-xs" title={variant.options[2]}>{variant.options[2]}</td>
+                      <td className="truncate max-w-xs" title={variant.options[3]}>{variant.options[3]}</td>
+                      <td>{variant.answer}</td>
+                      <td className="space-x-2">
+                        <button
+                          className="btn btn-xs"
+                          onClick={() =>
+                            setExpanded(expanded === variant.group_id ? null : variant.group_id)
+                          }
+                        >
+                          Other Languages ▼
+                        </button>
+                        <button className="btn btn-xs" onClick={() => handleEdit(variant.group_id, variant.language)}>
+                          Edit
+                        </button>
+                        <button className="btn btn-xs btn-error" onClick={() => remove(variant.id)}>
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                    {expanded === variant.group_id && otherLangs.length > 0 && (
+                      <tr className="bg-base-200">
+                        <td></td>
+                        <td colSpan={8}>
+                          <div className="flex flex-wrap gap-2 py-2">
+                            {otherLangs.map(tr => (
+                              <button
+                                key={tr.language}
+                                className="btn btn-xs"
+                                onClick={() => handleEdit(variant.group_id, tr.language)}
+                              >
+                                {tr.language}
+                              </button>
+                            ))}
+                          </div>
                         </td>
                       </tr>
-                      {expanded === g.base?.group_id && (
-                        <tr className="bg-base-200">
-                          <td></td>
-                          <td colSpan={8}>
-                            <div className="flex flex-wrap gap-2 py-2">
-                              {g.translations.map(tr => (
-                                <button
-                                  key={tr.language}
-                                  className="btn btn-xs"
-                                  onClick={() => handleEdit(g.base?.group_id || '', tr.language)}
-                                >
-                                  {tr.language}
-                                </button>
-                              ))}
-                            </div>
-                          </td>
-                        </tr>
-                      )}
-                    </React.Fragment>
-                  );
-                })}
+                    )}
+                  </React.Fragment>
+                );
+              })}
             </tbody>
             </table>
           </>
