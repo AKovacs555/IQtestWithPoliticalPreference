@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import Layout from '../components/Layout';
+import { Link } from 'react-router-dom';
 
 export default function AdminSurvey() {
   const [token, setToken] = useState(() => localStorage.getItem('adminToken') || '');
@@ -53,9 +54,9 @@ export default function AdminSurvey() {
     <Layout>
       <div className="max-w-xl mx-auto space-y-4">
         <nav className="tabs">
-          <a href="/admin/questions" className="tab tab-bordered">Questions</a>
-          <a className="tab tab-bordered tab-active">Surveys</a>
-          <a href="/admin/users" className="tab tab-bordered">Users</a>
+          <Link to="/admin/questions" className="tab tab-bordered">Questions</Link>
+          <Link to="/admin/surveys" className="tab tab-bordered tab-active">Surveys</Link>
+          <Link to="/admin/users" className="tab tab-bordered">Users</Link>
         </nav>
         <input
           value={token}
