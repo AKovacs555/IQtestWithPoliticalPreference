@@ -75,10 +75,11 @@ app = FastAPI()
 app.state.sessions = {}
 
 # CORS for SPA
-origins = [os.getenv("VITE_API_BASE", "*")]
+frontend_origins = os.getenv("FRONTEND_ORIGINS", "").split(",")
+frontend_origins = [o.strip() for o in frontend_origins if o.strip()] or ["*"]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=frontend_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

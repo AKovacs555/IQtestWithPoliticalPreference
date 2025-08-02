@@ -33,9 +33,10 @@ This project provides an IQ quiz and political preference survey using a respons
   - `DP_EPSILON` – epsilon used when adding Laplace noise to aggregated data.
   - `DP_MIN_COUNT` – minimum records required before an aggregate is reported.
   - `DATA_API_KEY` – authentication token for the paid differential‑privacy API.
-  - `SUPABASE_SHARE_BUCKET` – bucket name for storing generated share images.
-  - `ADMIN_API_KEY` – token for admin endpoints such as normative updates.
-  - `AD_UNIT_ID_ANDROID`, `AD_UNIT_ID_IOS`, `ADMOB_APP_ID` – Google AdMob ad identifiers.
+    - `SUPABASE_SHARE_BUCKET` – bucket name for storing generated share images.
+    - `ADMIN_API_KEY` – token for admin endpoints such as normative updates.
+    - `FRONTEND_ORIGINS` – comma-separated list of allowed origins for CORS.
+    - `AD_UNIT_ID_ANDROID`, `AD_UNIT_ID_IOS`, `ADMOB_APP_ID` – Google AdMob ad identifiers.
   - `AD_REWARD_POINTS` – points awarded per ad view.
   - `RETRY_POINT_COST` – points required for an extra attempt.
   - `VITE_API_BASE` – base URL of the backend API for the React app.
@@ -75,7 +76,7 @@ AWS SNS を利用する場合は IAM コンソールでアクセスキーを発�
 - Pricing endpoints: `/pricing/{id}` shows the dynamic price for a user, `/play/record` registers a completed play and `/referral` adds a referral credit.
 - Demographic and party endpoints: `/user/demographics` records age, gender and income band. `/user/party` stores supported parties and enforces monthly change limits.
 - Aggregated data is available via `/leaderboard` and the authenticated `/data/iq` endpoint which returns differentially private averages.
-- Admins can bulk import questions by POSTing a JSON file to `/admin/import_questions` with the `X-Admin-Token` header. A newer endpoint `/admin/import_questions_with_images` also accepts image files and uploads them to Supabase Storage. Each item may include an `image_filename` referencing an uploaded file or a direct `image` URL.
+- Admins can bulk import questions by POSTing a JSON file to `/admin/import_questions` with the `X-Admin-Api-Key` header. A newer endpoint `/admin/import_questions_with_images` also accepts image files and uploads them to Supabase Storage. Each item may include an `image_filename` referencing an uploaded file or a direct `image` URL.
 - Before using these endpoints ensure the `questions` table has `language` and `group_id` columns:
 ```sql
 ALTER TABLE questions ADD COLUMN IF NOT EXISTS language text;
@@ -83,7 +84,7 @@ ALTER TABLE questions ADD COLUMN IF NOT EXISTS group_id uuid;
 ```
 Update existing rows with the correct language code via the Supabase UI or SQL. Questions uploaded without a `language` field default to `ja` and will be automatically translated into English, Turkish, Russian and Chinese. All translations share the same `group_id` so edits and deletions propagate.
 - The web interface at `/#/admin/questions` offers a simple UI for this:
-  1. Enter your `ADMIN_TOKEN` and click **Load Questions**.
+  1. Enter your `ADMIN_API_KEY` and click **Load Questions**.
   2. Select a JSON file and optional image files then click **Import Questions**. You can also edit/delete existing items.
 - The question bank with psychometric metadata lives in `backend/data/question_bank.json`. Use `tools/generate_questions.py --import_dir=generated_questions` to merge question files you created with ChatGPT.
  - Individual question sets for the live quiz are stored under `questions/`. Each file must conform to `questions/schema.json` and can be fetched via `/quiz/start?set_id=set01`.
