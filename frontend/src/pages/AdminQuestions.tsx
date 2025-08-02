@@ -49,7 +49,7 @@ export default function AdminQuestions() {
     if (!token) return [];
     setStatus('loading');
     const res = await fetch(`${apiBase}/admin/questions?lang=${lang}`, {
-      headers: { 'X-Admin-Token': token }
+      headers: { 'X-Admin-Api-Key': token }
     });
     let sorted: QuestionVariant[] = [];
     if (res.ok) {
@@ -90,7 +90,7 @@ export default function AdminQuestions() {
     setStatus('saving');
     await fetch(`${apiBase}/admin/questions/${editingQuestion.id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json', 'X-Admin-Token': token },
+      headers: { 'Content-Type': 'application/json', 'X-Admin-Api-Key': token },
       body: JSON.stringify(editingQuestion)
     });
     setEditingQuestion(null);
@@ -103,7 +103,7 @@ export default function AdminQuestions() {
     if (!confirm('Delete this question?')) return;
     await fetch(`${apiBase}/admin/questions/${id}`, {
       method: 'DELETE',
-      headers: { 'X-Admin-Token': token }
+      headers: { 'X-Admin-Api-Key': token }
     });
     await fetchQuestions(selectedLang);
   };
@@ -115,7 +115,7 @@ export default function AdminQuestions() {
     setStatus('deleting');
     await fetch(`${apiBase}/admin/questions/delete_batch`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Admin-Token': token },
+      headers: { 'Content-Type': 'application/json', 'X-Admin-Api-Key': token },
       body: JSON.stringify(ids)
     });
     setSelected(new Set());
@@ -126,7 +126,7 @@ export default function AdminQuestions() {
   const toggleApprove = async (groupId: string) => {
     const res = await fetch(`${apiBase}/admin/questions/${groupId}/toggle_approved`, {
       method: 'POST',
-      headers: { 'X-Admin-Token': token }
+      headers: { 'X-Admin-Api-Key': token }
     });
     if (res.ok) {
       const data = await res.json();
@@ -146,7 +146,7 @@ export default function AdminQuestions() {
       setStatus('deleting');
       await fetch(`${apiBase}/admin/questions/delete_all`, {
         method: 'POST',
-        headers: { 'X-Admin-Token': token },
+        headers: { 'X-Admin-Api-Key': token },
       });
       setStatus(null);
       await fetchQuestions(selectedLang);
@@ -177,7 +177,7 @@ export default function AdminQuestions() {
     }
     const res = await fetch(`${apiBase}/admin/import_questions_with_images`, {
       method: 'POST',
-      headers: { 'X-Admin-Token': token },
+      headers: { 'X-Admin-Api-Key': token },
       body: formData
     });
     setUploadStatus('translating');

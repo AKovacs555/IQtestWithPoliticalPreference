@@ -11,9 +11,9 @@ TARGET_LANGS = ["en", "tr", "ru", "zh", "ko", "es", "fr", "it", "de", "ar"]
 router = APIRouter(prefix="/admin/questions", tags=["admin-questions"])
 
 
-def check_admin(admin_token: Optional[str] = Header(None, alias="X-Admin-Token")):
-    expected = os.environ.get("ADMIN_TOKEN")
-    if expected is None or admin_token != expected:
+def check_admin(admin_key: Optional[str] = Header(None, alias="X-Admin-Api-Key")):
+    expected = os.environ.get("ADMIN_API_KEY")
+    if expected is None or admin_key != expected:
         raise HTTPException(status_code=401, detail="Unauthorized")
 
 
