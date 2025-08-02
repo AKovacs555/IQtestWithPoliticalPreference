@@ -5,6 +5,8 @@ import useShareMeta from '../hooks/useShareMeta';
 import { AnimatePresence, motion } from 'framer-motion';
 import Layout from '../components/Layout';
 import AdminQuestions from './AdminQuestions';
+import AdminSurvey from './AdminSurvey';
+import AdminUsers from './AdminUsers';
 import ProgressBar from '../components/ProgressBar';
 import Home from './Home';
 import Pricing from './Pricing';
@@ -13,13 +15,15 @@ import SelectSet from './SelectSet';
 import PartySelect from './PartySelect';
 import SelectNationality from './SelectNationality';
 import SelectParty from './SelectParty';
+import SurveyPage from './SurveyPage';
+import Dashboard from './Dashboard';
 import { Chart } from 'chart.js/auto';
 import QuestionCard from '../components/QuestionCard';
 import Settings from './Settings.jsx';
 import DemographicsForm from './DemographicsForm.jsx';
 import History from './History.jsx';
 import confetti from 'canvas-confetti';
-import { getQuizStart, submitQuiz, getSurvey, submitSurvey } from '../api';
+import { getQuizStart, submitQuiz } from '../api';
 import TestPage from './TestPage.jsx';
 
 const PageTransition = ({ children }) => (
@@ -178,113 +182,7 @@ const Quiz = () => {
   );
 };
 
-const Survey = () => {
-  const [items, setItems] = useState([]);
-  const [index, setIndex] = useState(0);
-  const [answers, setAnswers] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
-    async function load() {
-      try {
-        const data = await getSurvey();
-        setItems(data.items);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    }
-    load();
-  }, []);
-
-  const back = () => setIndex(i => Math.max(i - 1, 0));
-  const next = async (v) => {
-    const a = [...answers];
-    a[index] = { id: items[index].id, value: v };
-    setAnswers(a);
-    if (index + 1 < items.length) {
-      setIndex(index + 1);
-    } else {
-      try {
-        const data = await submitSurvey(a);
-        const params = new URLSearchParams({
-          lr: data.left_right,
-          auth: data.libertarian_authoritarian,
-          cat: data.category,
-          desc: data.description,
-        });
-        window.location.href = '/survey-result?' + params.toString();
-      } catch (err) {
-        setError(err.message);
-      }
-    }
-  };
-
-  const item = items[index];
-  return (
-    <PageTransition>
-      <Layout>
-        <div className="space-y-4 max-w-lg mx-auto">
-          {loading && <p>Loading...</p>}
-          {error && <p className="text-error">{error}</p>}
-          {!loading && item && (
-            <div className="card bg-base-100 shadow-md p-4 space-y-2">
-              <p className="mb-2 font-semibold">{item.statement}</p>
-              <div className="grid grid-cols-5 gap-2">
-                {[1,2,3,4,5].map(v => (
-                  <button key={v} onClick={() => next(v)} className="btn btn-primary">
-                    {v}
-                  </button>
-                ))}
-              </div>
-              {index > 0 && <button onClick={back} className="mt-2 underline text-sm">Back</button>}
-            </div>
-          )}
-          {!loading && <ProgressBar value={(index / items.length) * 100} />}
-        </div>
-      </Layout>
-    </PageTransition>
-  );
-};
-
-const SurveyResult = () => {
-  const params = new URLSearchParams(window.location.search);
-  const lr = parseFloat(params.get('lr'));
-  const auth = parseFloat(params.get('auth'));
-  const cat = params.get('cat');
-  const desc = params.get('desc');
-
-  useEffect(() => {
-    const ctx = document.getElementById('chart');
-    new Chart(ctx, {
-      type: 'radar',
-      data: {
-        labels: ['Left/Right', 'Libertarian/Authoritarian'],
-        datasets: [{
-          data: [lr, auth],
-          backgroundColor: 'rgba(54,162,235,0.2)',
-          borderColor: 'rgb(54,162,235)'
-        }]
-      },
-      options: { scales: { r: { min: -1, max: 1 } } }
-    });
-  }, []);
-
-  return (
-    <PageTransition>
-      <Layout>
-        <div className="text-center space-y-2">
-          <h2 className="text-xl font-bold">{cat}</h2>
-          <p>{desc}</p>
-          <canvas id="chart" height="200"></canvas>
-          <Link to="/" className="underline">Home</Link>
-        </div>
-      </Layout>
-    </PageTransition>
-  );
-};
+// Survey component moved to SurveyPage.jsx
 
 const Result = () => {
   const params = new URLSearchParams(window.location.search);
@@ -384,17 +282,19 @@ export default function App() {
         <Route path="/start" element={<DemographicsForm />} />
         <Route path="/quiz" element={<Quiz />} />
         <Route path="/test" element={<TestPage />} />
-        <Route path="/survey" element={<Survey />} />
+        <Route path="/survey" element={<SurveyPage />} />
         <Route path="/pricing" element={<Pricing />} />
-        <Route path="/survey-result" element={<SurveyResult />} />
         <Route path="/result" element={<Result />} />
         <Route path="/leaderboard" element={<Leaderboard />} />
+        <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/settings/:userId" element={<Settings />} />
         <Route path="/history/:userId" element={<History />} />
         <Route path="/party" element={<PartySelect />} />
         <Route path="/select-nationality" element={<SelectNationality />} />
         <Route path="/select-party" element={<SelectParty />} />
         <Route path="/admin/questions" element={<AdminQuestions />} />
+        <Route path="/admin/surveys" element={<AdminSurvey />} />
+        <Route path="/admin/users" element={<AdminUsers />} />
       </Routes>
     </AnimatePresence>
   );

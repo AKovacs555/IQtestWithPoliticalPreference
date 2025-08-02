@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import Layout from '../components/Layout';
+import { useTranslation } from 'react-i18next';
 
 export default function SelectParty() {
   const [parties, setParties] = useState([]);
@@ -7,6 +8,7 @@ export default function SelectParty() {
   const apiBase = import.meta.env.VITE_API_BASE;
   const userId = localStorage.getItem('user_id') || 'demo';
   const nationality = localStorage.getItem('nationality') || 'US';
+  const { t } = useTranslation();
 
   useEffect(() => {
     fetch(`${apiBase}/user/parties/${nationality}`)
@@ -15,7 +17,13 @@ export default function SelectParty() {
   }, []);
 
   const toggle = (id) => {
-    setSelected(s => s.includes(id) ? s.filter(i => i!==id) : [...s, id]);
+    setSelected(s => {
+      if (id === 12) {
+        return s.includes(12) ? [] : [12];
+      }
+      const withoutNo = s.filter(i => i !== 12);
+      return withoutNo.includes(id) ? withoutNo.filter(i => i !== id) : [...withoutNo, id];
+    });
   };
 
   const save = async () => {
@@ -24,19 +32,29 @@ export default function SelectParty() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ user_id: userId, party_ids: selected })
     });
-    alert('Saved');
+    alert(t('select_party.saved'));
   };
 
   return (
     <Layout>
       <div className="space-y-2 max-w-md mx-auto">
-        {parties.map(p => (
-          <label key={p.id} className="flex items-center space-x-2">
-            <input type="checkbox" checked={selected.includes(p.id)} onChange={() => toggle(p.id)} />
-            <span>{p.name}</span>
-          </label>
-        ))}
-        <button className="btn" onClick={save}>Save</button>
+        <h2 className="text-xl font-bold mb-2">{t('select_party.title')}</h2>
+        {parties.map(p => {
+          const noAff = selected.includes(12);
+          const disabled = (noAff && p.id !== 12) || (!noAff && selected.length > 0 && p.id === 12);
+          return (
+            <label key={p.id} className={`flex items-center space-x-2 ${disabled ? 'opacity-50' : ''}`}>
+              <input
+                type="checkbox"
+                checked={selected.includes(p.id)}
+                disabled={disabled}
+                onChange={() => toggle(p.id)}
+              />
+              <span>{p.name}</span>
+            </label>
+          );
+        })}
+        <button className="btn" onClick={save}>{t('select_party.save')}</button>
       </div>
     </Layout>
   );

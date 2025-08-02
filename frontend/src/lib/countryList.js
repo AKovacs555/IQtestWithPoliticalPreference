@@ -1,14 +1,4 @@
-// Minimal ISO country list
-export default [
-  { code: 'US', name: 'United States' },
-  { code: 'JP', name: 'Japan' },
-  { code: 'TR', name: 'Turkey' },
-  { code: 'RU', name: 'Russia' },
-  { code: 'CN', name: 'China' },
-  { code: 'KR', name: 'Korea' },
-  { code: 'ES', name: 'Spain' },
-  { code: 'FR', name: 'France' },
-  { code: 'IT', name: 'Italy' },
-  { code: 'DE', name: 'Germany' },
-  { code: 'AR', name: 'Argentina' }
-];
+import data from 'country-json/src/country-by-abbreviation.json';
+
+// Map the external JSON into code/name pairs
+export default data.map((c) => ({ code: c.abbreviation, name: c.country }));

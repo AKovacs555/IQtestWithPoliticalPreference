@@ -32,9 +32,9 @@ from pathlib import Path
 from typing import List, Dict, Any, Tuple
 from jsonschema import validate, ValidationError
 
-# Question sets are stored under the repository level ``questions`` directory
-# so that new sets can be added without modifying the code base.
-POOL_PATH = Path(__file__).resolve().parents[1] / "questions"
+# Question sets are stored under ``backend/questions`` to allow tests to
+# create temporary files without touching the repository root.
+POOL_PATH = Path(__file__).resolve().parent / "questions"
 SCHEMA_PATH = POOL_PATH / "schema.json"
 BANK_PATH = Path(__file__).resolve().parent / "data" / "question_bank.json"
 

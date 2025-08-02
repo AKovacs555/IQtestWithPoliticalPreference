@@ -207,7 +207,12 @@ export default function AdminQuestions() {
 
   return (
     <Layout>
-      <div className="space-y-4">
+      <div className="space-y-4 max-w-xl mx-auto">
+        <nav className="tabs">
+          <a className="tab tab-bordered tab-active">Questions</a>
+          <a href="/admin/surveys" className="tab tab-bordered">Surveys</a>
+          <a href="/admin/users" className="tab tab-bordered">Users</a>
+        </nav>
         <div className="space-y-2">
           <input
             type="text"
