@@ -19,7 +19,7 @@ async def translate_question(
 
     prompt = (
         f"Translate the following Japanese IQ test question and its four options into {target_lang}. "
-        "Return a JSON object with keys 'question' and 'options'. "
+        "Return a JSON object with keys 'question' and 'options' (array of 4 translated strings). "
         "Do not include any markdown or code fences."
         f"\n\nQuestion: {question_text}\nOptions: {options}"
     )

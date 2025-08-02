@@ -62,7 +62,12 @@ async def start_quiz(
 
         if lang:
             def fetch_subset(lower, upper, limit):
-                query = supabase.table("questions").select("*").eq("language", lang)
+                query = (
+                    supabase.table("questions")
+                    .select("*")
+                    .eq("language", lang)
+                    .eq("approved", True)
+                )
                 if lower is not None:
                     query = query.gte("irt_b", lower)
                 if upper is not None:
@@ -91,7 +96,7 @@ async def start_quiz(
             ).execute()
             if resp.error:
                 raise HTTPException(status_code=500, detail=resp.error.message)
-            questions = resp.data
+            questions = [q for q in resp.data if q.get("approved")]
     session_id = secrets.token_hex(8)
     request.app.state.sessions[session_id] = {
         q["id"]: {"answer": q["answer"], "a": q.get("irt_a"), "b": q.get("irt_b")}
