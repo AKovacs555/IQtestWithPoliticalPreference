@@ -25,7 +25,7 @@ interface QuestionGroup {
 export default function AdminQuestions() {
   const [token, setToken] = useState<string>(() => localStorage.getItem('adminToken') || '');
   const [allQuestions, setAllQuestions] = useState<QuestionVariant[]>([]);
-  const [filteredQuestions, setFilteredQuestions] = useState<QuestionVariant[]>([]);
+  const [displayedQuestions, setDisplayedQuestions] = useState<QuestionVariant[]>([]);
   const [selectedLang, setSelectedLang] = useState<string>('ja');
   const [editingQuestion, setEditingQuestion] = useState<QuestionVariant | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -42,10 +42,13 @@ export default function AdminQuestions() {
 
   const apiBase = import.meta.env.VITE_API_BASE;
 
-  const fetchQuestions = async (): Promise<QuestionVariant[]> => {
+  const filterByLanguage = (data: QuestionVariant[], lang: string) =>
+    lang === 'ja' ? data : data.filter(q => q.language === lang);
+
+  const fetchQuestions = async (lang: string): Promise<QuestionVariant[]> => {
     if (!token) return [];
     setStatus('loading');
-    const res = await fetch(`${apiBase}/admin/questions`, {
+    const res = await fetch(`${apiBase}/admin/questions?lang=${lang}`, {
       headers: { 'X-Admin-Token': token }
     });
     let sorted: QuestionVariant[] = [];
@@ -53,22 +56,20 @@ export default function AdminQuestions() {
       const data = await res.json();
       sorted = data.sort((a: any, b: any) => a.id - b.id);
       setAllQuestions(sorted);
-      handleLangChange(selectedLang, sorted);
+      setDisplayedQuestions(filterByLanguage(sorted, lang));
     }
     setStatus(null);
     return sorted;
   };
 
-  useEffect(() => { fetchQuestions(); }, [token]);
+  useEffect(() => { if (token) fetchQuestions(selectedLang); }, [token, selectedLang]);
 
-  const handleLangChange = (lang: string, source?: QuestionVariant[]) => {
+  const handleLangChange = (lang: string) => {
     setSelectedLang(lang);
-    const base = source || allQuestions;
-    setFilteredQuestions(lang === 'ja' ? base : base.filter(q => q.language === lang));
   };
 
   const grouped = Object.values(
-    filteredQuestions.reduce<Record<string, QuestionGroup>>((acc, q) => {
+    displayedQuestions.reduce<Record<string, QuestionGroup>>((acc, q) => {
       acc[q.group_id] = acc[q.group_id] || { base: null, translations: [] };
       if (q.language === 'ja') acc[q.group_id].base = q;
       else acc[q.group_id].translations.push(q);
@@ -95,7 +96,7 @@ export default function AdminQuestions() {
     setEditingQuestion(null);
     setIsEditModalOpen(false);
     setStatus(null);
-    await fetchQuestions();
+    await fetchQuestions(selectedLang);
   };
 
   const remove = async (id: number) => {
@@ -104,7 +105,7 @@ export default function AdminQuestions() {
       method: 'DELETE',
       headers: { 'X-Admin-Token': token }
     });
-    await fetchQuestions();
+    await fetchQuestions(selectedLang);
   };
 
   const removeSelected = async () => {
@@ -119,7 +120,7 @@ export default function AdminQuestions() {
     });
     setSelected(new Set());
     setStatus(null);
-    await fetchQuestions();
+    await fetchQuestions(selectedLang);
   };
 
   const toggleApprove = async (groupId: string) => {
@@ -133,7 +134,7 @@ export default function AdminQuestions() {
         q.group_id === groupId ? { ...q, approved: data.approved } : q
       );
       setAllQuestions(updated);
-      handleLangChange(selectedLang, updated);
+      setDisplayedQuestions(filterByLanguage(updated, selectedLang));
     }
   };
 
@@ -148,7 +149,7 @@ export default function AdminQuestions() {
         headers: { 'X-Admin-Token': token },
       });
       setStatus(null);
-      await fetchQuestions();
+      await fetchQuestions(selectedLang);
     }
   };
 
@@ -183,8 +184,8 @@ export default function AdminQuestions() {
     const data = await res.json();
     if (res.ok) {
       setUploadStatus('saving');
-      const dataList = await fetchQuestions();
-      handleLangChange('ja', dataList);
+      await fetchQuestions('ja');
+      setSelectedLang('ja');
       setUploadStatus(null);
       setIsImporting(false);
       alert(`Imported ${data.inserted}`);
@@ -201,7 +202,7 @@ export default function AdminQuestions() {
 
   const handleLogin = () => {
     localStorage.setItem('adminToken', token);
-    fetchQuestions();
+    fetchQuestions(selectedLang);
   };
 
   return (

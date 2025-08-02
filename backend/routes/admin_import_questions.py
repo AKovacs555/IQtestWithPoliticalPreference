@@ -7,6 +7,7 @@ from backend.routes.admin_questions import check_admin
 from backend.deps.supabase_client import get_supabase_client
 from backend.utils.translation import translate_question
 
+# Supported languages for automatic translation, including Turkish and Italian
 target_languages = ["en", "tr", "ru", "zh", "ko", "es", "fr", "it", "de", "ar"]
 
 router = APIRouter(prefix="/admin", tags=["admin-questions"])
