@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 from typing import List
 from fastapi import APIRouter, HTTPException, Request
+import random
 from pydantic import BaseModel
 from backend.deps.supabase_client import get_supabase_client
 from backend.questions import available_sets, get_balanced_random_questions_by_set
@@ -46,7 +47,7 @@ async def quiz_sets():
 async def start_quiz(
     request: Request,
     set_id: str | None = None,
-    lang: str | None = None,
+    lang: str = "ja",
     user_id: str | None = None,
 ):
     if set_id:
@@ -89,6 +90,7 @@ async def start_quiz(
             med_qs = fetch_subset(-0.33, 0.33, med)
             hard_qs = fetch_subset(0.33, None, hard)
             questions = easy_qs + med_qs + hard_qs
+            random.shuffle(questions)
         else:
             resp = supabase.rpc(
                 "fetch_exam",

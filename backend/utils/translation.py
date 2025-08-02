@@ -31,14 +31,19 @@ async def translate_question(
         response_format={"type": "json_object"},
     )
 
-    data = response.choices[0].message.content
+    content = response.choices[0].message.content.strip()
+    if content.startswith("```"):
+        content = content.split("```", 2)[1].strip()
+        if content.lower().startswith("json"):
+            content = content[4:].strip()
     try:
-        parsed = json.loads(data)
-    except json.JSONDecodeError:
-        content = data.strip()
-        if content.startswith("```"):
-            content = content.split("```", 2)[1].strip()
-            if content.lower().startswith("json"):
-                content = content[4:].strip()
-        parsed = json.loads(content)
-    return parsed["question"], parsed["options"]
+        data = json.loads(content)
+    except Exception as exc:
+        logger.error(
+            "Failed to parse translation for %s: %s\nRaw content: %s",
+            target_lang,
+            exc,
+            content,
+        )
+        raise
+    return data["question"], data["options"]
