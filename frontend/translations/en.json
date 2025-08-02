@@ -25,5 +25,20 @@
   "upload.status.uploading": "Uploading file…",
   "upload.status.translating": "Translating…",
   "upload.status.saving": "Saving to database…",
-  "warning.screenshot_detected": "Suspicious activity detected. The test will end."
+  "warning.screenshot_detected": "Suspicious activity detected. The test will end.",
+  "select_country.title": "Select nationality",
+  "select_country.select": "Select country",
+  "select_country.save": "Save",
+  "select_country.search": "Search country",
+  "select_country.saved": "Saved",
+  "select_party.title": "Select party",
+  "select_party.save": "Save",
+  "select_party.saved": "Saved",
+  "survey.title": "Survey",
+  "survey.submit": "Submit",
+  "survey.thank_you": "Thank you for participating!",
+  "survey.loading": "Loading...",
+  "dashboard.title": "Dashboard",
+  "dashboard.no_data": "Not enough data",
+  "dashboard.percentile": "You are at the {{pct}} percentile"
 }

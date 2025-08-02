@@ -65,6 +65,7 @@ from tools.dif_analysis import dif_report
 from routes.exam import router as exam_router
 from routes.admin_questions import router as admin_questions_router
 from routes.admin_import_questions import router as admin_import_router
+from routes.admin_surveys import router as admin_surveys_router
 from routes.quiz import router as quiz_router
 from routes.user import router as user_router
 import json
@@ -85,6 +86,7 @@ app.add_middleware(
 app.include_router(exam_router)
 app.include_router(admin_questions_router)
 app.include_router(admin_import_router)
+app.include_router(admin_surveys_router)
 app.include_router(quiz_router)
 app.include_router(user_router)
 
@@ -418,19 +420,26 @@ async def record_play(action: UserAction):
                 "scores": [],
                 "party_log": [],
                 "demographic": {},
+                "free_attempts": MAX_FREE_ATTEMPTS,
             }
         )
     paid = False
-    if user.get("plays", 0) >= MAX_FREE_ATTEMPTS:
+    if user.get("free_attempts", MAX_FREE_ATTEMPTS) > 0:
+        user["free_attempts"] = user.get("free_attempts", MAX_FREE_ATTEMPTS) - 1
+    else:
         if user.get("points", 0) >= RETRY_POINT_COST:
             user["points"] -= RETRY_POINT_COST
             paid = True
         else:
             raise HTTPException(status_code=402, detail="Payment required")
     user["plays"] = user.get("plays", 0) + 1
-    db_update_user(action.user_id, {"plays": user["plays"], "points": user.get("points", 0)})
+    db_update_user(action.user_id, {
+        "plays": user["plays"],
+        "points": user.get("points", 0),
+        "free_attempts": user.get("free_attempts", 0),
+    })
     log_event({"event": "play_record", "user_id": action.user_id, "paid": paid})
-    return {"plays": user["plays"], "points": user.get("points", 0)}
+    return {"plays": user["plays"], "points": user.get("points", 0), "free_attempts": user.get("free_attempts", 0)}
 
 
 @app.post("/referral")
@@ -722,6 +731,42 @@ async def leaderboard():
     return {"leaderboard": data}
 
 
+@app.get("/stats/distribution")
+async def stats_distribution(user_id: str, epsilon: float = 1.0):
+    """Return histogram of top IQ scores and user's percentile."""
+    users = get_all_users()
+    scores = []
+    user_score = None
+    for u in users:
+        uscores = [s.get("iq") for s in (u.get("scores") or [])]
+        if not uscores:
+            continue
+        top = max(uscores)
+        scores.append(top)
+        if u.get("hashed_id") == user_id:
+            user_score = top
+
+    scores.sort()
+    buckets: dict[int, int] = {}
+    for s in scores:
+        b = int(s // 5 * 5)
+        buckets[b] = buckets.get(b, 0) + 1
+    histogram = [{"bin": k, "count": v} for k, v in sorted(buckets.items())]
+    mean = dp_average(scores, epsilon, min_count=MIN_BUCKET_SIZE)
+    percentile = None
+    if user_score is not None and scores:
+        rank = sum(1 for s in scores if s <= user_score)
+        percentile = rank / len(scores) * 100
+    party_means = await leaderboard_by_party(epsilon)
+    return {
+        "histogram": histogram,
+        "mean": mean,
+        "user_score": user_score,
+        "percentile": percentile,
+        "party_means": party_means,
+    }
+
+
 @app.get("/data/iq")
 async def dp_data_api(
     api_key: str,
@@ -826,3 +871,30 @@ async def admin_question_bank_info(x_admin_api_key: str = Header(...)):
         return {"count": len(data)}
     except FileNotFoundError:
         return {"count": 0}
+
+
+class FreeAttemptsPayload(BaseModel):
+    user_id: str
+    free_attempts: int
+
+
+@app.post("/admin/user/free_attempts")
+async def admin_set_free_attempts(
+    payload: FreeAttemptsPayload, x_admin_api_key: str = Header(...)
+):
+    if x_admin_api_key != os.getenv("ADMIN_API_KEY", ""):
+        raise HTTPException(status_code=401, detail="Invalid API key")
+    db_update_user(payload.user_id, {"free_attempts": payload.free_attempts})
+    return {"status": "ok"}
+
+
+@app.get("/admin/users")
+async def admin_list_users(x_admin_api_key: str = Header(...)):
+    if x_admin_api_key != os.getenv("ADMIN_API_KEY", ""):
+        raise HTTPException(status_code=401, detail="Invalid API key")
+    users = get_all_users()
+    data = [
+        {"hashed_id": u.get("hashed_id"), "free_attempts": u.get("free_attempts", 0)}
+        for u in users
+    ]
+    return {"users": data}
