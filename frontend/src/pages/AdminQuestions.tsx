@@ -16,6 +16,7 @@ interface QuestionVariant {
   irt_b: number;
   image_prompt?: string | null;
   image?: string | null;
+  approved: boolean;
 }
 
 interface QuestionGroup {
@@ -26,7 +27,7 @@ interface QuestionGroup {
 export default function AdminQuestions() {
   const [token, setToken] = useState<string>(() => localStorage.getItem('adminToken') || '');
   const [allQuestions, setAllQuestions] = useState<QuestionVariant[]>([]);
-  const [filteredQuestions, setFilteredQuestions] = useState<QuestionVariant[]>([]);
+  const [displayedQuestions, setDisplayedQuestions] = useState<QuestionVariant[]>([]);
   const [selectedLang, setSelectedLang] = useState<string>('ja');
   const [editingQuestion, setEditingQuestion] = useState<QuestionVariant | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -43,34 +44,34 @@ export default function AdminQuestions() {
 
   const apiBase = import.meta.env.VITE_API_BASE;
 
-  const fetchQuestions = async () => {
-    if (!token) return;
+  const fetchQuestions = async (): Promise<QuestionVariant[]> => {
+    if (!token) return [];
     setStatus('loading');
     const res = await fetch(`${apiBase}/admin/questions`, {
       headers: { 'X-Admin-Token': token }
     });
+    let sorted: QuestionVariant[] = [];
     if (res.ok) {
       const data = await res.json();
-      const sorted = data.sort((a: any, b: any) => a.id - b.id);
+      sorted = data.sort((a: any, b: any) => a.id - b.id);
       setAllQuestions(sorted);
-      setFilteredQuestions(
-        selectedLang === 'ja' ? sorted : sorted.filter((q: any) => q.language === selectedLang)
-      );
+      handleLangChange(selectedLang, sorted);
     }
     setStatus(null);
+    return sorted;
   };
 
   useEffect(() => { fetchQuestions(); }, [token]);
 
-  const handleLangChange = (lang: string) => {
+  const handleLangChange = (lang: string, source?: QuestionVariant[]) => {
     setSelectedLang(lang);
-    setFilteredQuestions(
-      lang === 'ja' ? allQuestions : allQuestions.filter(q => q.language === lang)
-    );
+    const base = source || allQuestions;
+    const filtered = lang === 'ja' ? base : base.filter(q => q.language === lang);
+    setDisplayedQuestions(filtered);
   };
 
   const grouped = Object.values(
-    filteredQuestions.reduce<Record<string, QuestionGroup>>((acc, q) => {
+    displayedQuestions.reduce<Record<string, QuestionGroup>>((acc, q) => {
       acc[q.group_id] = acc[q.group_id] || { base: null, translations: [] };
       if (q.language === 'ja') acc[q.group_id].base = q;
       else acc[q.group_id].translations.push(q);
@@ -124,6 +125,14 @@ export default function AdminQuestions() {
     await fetchQuestions();
   };
 
+  const toggleApprove = async (groupId: string) => {
+    await fetch(`${apiBase}/admin/questions/${groupId}/toggle_approved`, {
+      method: 'POST',
+      headers: { 'X-Admin-Token': token }
+    });
+    await fetchQuestions();
+  };
+
   const removeAll = async () => {
     if (
       window.confirm('Delete ALL questions? This cannot be undone.') &&
@@ -170,7 +179,8 @@ export default function AdminQuestions() {
     const data = await res.json();
     if (res.ok) {
       setUploadStatus('saving');
-      await fetchQuestions();
+      const dataList = await fetchQuestions();
+      handleLangChange('ja', dataList);
       setUploadStatus(null);
       setIsImporting(false);
       alert(`Imported ${data.inserted}`);
@@ -222,19 +232,19 @@ export default function AdminQuestions() {
         )}
         {allQuestions.length > 0 && (
           <>
-            <div className="flex items-center space-x-2 mb-2">
-              <button className="btn btn-error btn-sm" onClick={removeSelected}>Delete Selected</button>
-              <button className="btn btn-error btn-sm" onClick={removeAll}>Delete All Questions</button>
-              <select
-                className="select select-bordered select-sm"
-                value={selectedLang}
-                onChange={e => handleLangChange(e.target.value)}
-              >
-                {languageOptions.map(l => (
-                  <option key={l} value={l}>{l}</option>
-                ))}
-              </select>
-            </div>
+        <div className="flex items-center space-x-2 mb-2">
+          <button className="btn btn-error btn-sm" onClick={removeSelected}>Delete Selected</button>
+          <button className="btn btn-error btn-sm" onClick={removeAll}>Delete All Questions</button>
+          <select
+            className="select select-bordered select-sm"
+            value={selectedLang}
+            onChange={e => handleLangChange(e.target.value)}
+          >
+            {languageOptions.map(l => (
+              <option key={l} value={l}>{l}</option>
+            ))}
+          </select>
+        </div>
             <table className="table w-full">
             <thead>
               <tr>
@@ -246,6 +256,7 @@ export default function AdminQuestions() {
                 <th>A3</th>
                 <th>A4</th>
                 <th>Ans</th>
+                <th>Approved</th>
                 <th></th>
               </tr>
             </thead>
@@ -261,6 +272,7 @@ export default function AdminQuestions() {
                 const ids = groupRecords.map(r => r.id);
                 const checked = ids.every(id => selected.has(id));
                 const otherLangs = groupRecords.filter(r => r.language !== variant.language);
+                const approved = groupRecords[0]?.approved;
                 return (
                   <React.Fragment key={variant.group_id}>
                     <tr>
@@ -286,6 +298,7 @@ export default function AdminQuestions() {
                       <td className="truncate max-w-xs" title={variant.options[2]}>{variant.options[2]}</td>
                       <td className="truncate max-w-xs" title={variant.options[3]}>{variant.options[3]}</td>
                       <td>{variant.answer}</td>
+                      <td>{approved ? '✓' : ''}</td>
                       <td className="space-x-2">
                         <button
                           className="btn btn-xs"
@@ -298,6 +311,9 @@ export default function AdminQuestions() {
                         <button className="btn btn-xs" onClick={() => handleEdit(variant.group_id, variant.language)}>
                           Edit
                         </button>
+                        <button className="btn btn-xs" onClick={() => toggleApprove(variant.group_id)}>
+                          {approved ? 'Unapprove' : 'Approve'}
+                        </button>
                         <button className="btn btn-xs btn-error" onClick={() => remove(variant.id)}>
                           Delete
                         </button>
@@ -306,7 +322,7 @@ export default function AdminQuestions() {
                     {expanded === variant.group_id && otherLangs.length > 0 && (
                       <tr className="bg-base-200">
                         <td></td>
-                        <td colSpan={8}>
+                        <td colSpan={9}>
                           <div className="flex flex-wrap gap-2 py-2">
                             {otherLangs.map(tr => (
                               <button

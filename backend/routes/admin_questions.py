@@ -21,6 +21,17 @@ async def list_questions():
     return resp.data
 
 
+@router.post("/{group_id}/toggle_approved", dependencies=[Depends(check_admin)])
+async def toggle_approved(group_id: str):
+    supabase = get_supabase_client()
+    records = (
+        supabase.table("questions").select("approved").eq("group_id", group_id).execute().data
+    )
+    new_status = not records[0]["approved"] if records else True
+    supabase.table("questions").update({"approved": new_status}).eq("group_id", group_id).execute()
+    return {"group_id": group_id, "approved": new_status}
+
+
 @router.put("/{question_id}", dependencies=[Depends(check_admin)])
 async def update_question(question_id: int, payload: dict):
     if not isinstance(payload.get("options"), list) or len(payload["options"]) != 4:
