@@ -16,7 +16,6 @@ logger = logging.getLogger(__name__)
 
 @router.post("/import_questions", dependencies=[Depends(check_admin)])
 async def import_questions(file: UploadFile = File(...)):
-    group_id = str(uuid.uuid4())
     if not file:
         raise HTTPException(status_code=400, detail="File required")
     contents = await file.read()
@@ -30,6 +29,7 @@ async def import_questions(file: UploadFile = File(...)):
     supabase = get_supabase_client()
     inserted = 0
     for idx, item in enumerate(data):
+        group_id = str(uuid.uuid4())
         if not isinstance(item, dict):
             raise HTTPException(status_code=400, detail=f"Item {idx} must be object")
         required = {"id", "question", "options", "answer", "irt"}
@@ -121,7 +121,6 @@ async def import_questions_with_images(
     json_file: UploadFile = File(...), images: List[UploadFile] = File(default=None)
 ):
     """Import questions from a JSON file and upload images to Supabase Storage."""
-    group_id = str(uuid.uuid4())
     contents = await json_file.read()
     try:
         data = json.loads(contents)
@@ -139,6 +138,7 @@ async def import_questions_with_images(
 
     inserted = 0
     for idx, item in enumerate(data):
+        group_id = str(uuid.uuid4())
         required = {"id", "question", "options", "answer", "irt"}
         if not required.issubset(item):
             raise HTTPException(status_code=400, detail=f"Missing keys in item {idx}")

@@ -19,26 +19,30 @@ async def translate_question(
 
     prompt = (
         f"Translate the following Japanese IQ test question and its four options into {target_lang}. "
-        "Return a JSON object with keys 'question' and 'options' (an array of 4 translated options). "
-        "Do not include any other keys. Do not wrap your response in code fences.\n\n"
-        f"Question: {question_text}\n"
-        f"Options: {options}"
+        "Return a JSON object with keys 'question' and 'options'. "
+        "Do not include any markdown or code fences."
+        f"\n\nQuestion: {question_text}\nOptions: {options}"
     )
 
     response = await client.chat.completions.create(
         model="gpt-4o",
         messages=[{"role": "user", "content": prompt}],
         temperature=0.3,
+        response_format={"type": "json_object"},
     )
 
-    content = response.choices[0].message.content.strip()
-    if content.startswith("```"):
-        content = content.split("```", 2)[1].strip()
-        if content.lower().startswith("json"):
-            content = content[4:].strip()
+    data = response.choices[0].message.content
     try:
-        data = json.loads(content)
-        return data["question"], data["options"]
-    except Exception as exc:
-        logger.error(f"Failed to parse JSON translation: {content}")
-        raise
+        parsed = json.loads(data)
+    except json.JSONDecodeError:
+        content = data.strip()
+        if content.startswith("```"):
+            content = content.split("```", 2)[1].strip()
+            if content.lower().startswith("json"):
+                content = content[4:].strip()
+        try:
+            parsed = json.loads(content)
+        except Exception:
+            logger.error(f"Failed to parse JSON translation: {data}")
+            raise
+    return parsed["question"], parsed["options"]
