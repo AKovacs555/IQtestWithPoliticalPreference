@@ -19,7 +19,7 @@ async def translate_question(
 
     prompt = (
         f"Translate the following Japanese IQ test question and its four options into {target_lang}. "
-        "Return a JSON object with keys 'question' and 'options' (array of 4 translated strings). "
+        "Return a JSON object with keys 'question' and 'options' (array of 4 strings). "
         "Do not include any markdown or code fences."
         f"\n\nQuestion: {question_text}\nOptions: {options}"
     )
@@ -40,9 +40,5 @@ async def translate_question(
             content = content.split("```", 2)[1].strip()
             if content.lower().startswith("json"):
                 content = content[4:].strip()
-        try:
-            parsed = json.loads(content)
-        except Exception:
-            logger.error(f"Failed to parse JSON translation: {data}")
-            raise
+        parsed = json.loads(content)
     return parsed["question"], parsed["options"]

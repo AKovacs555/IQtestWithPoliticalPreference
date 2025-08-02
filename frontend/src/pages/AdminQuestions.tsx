@@ -1,9 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import Layout from '../components/Layout';
 import { useTranslation } from 'react-i18next';
-import i18n, { resources } from '../i18n';
-
-const languageOptions = Object.keys(resources);
+const languageOptions = ['ja', 'en', 'tr', 'ru', 'zh', 'ko', 'es', 'fr', 'it', 'de', 'ar'];
 
 interface QuestionVariant {
   id: number;
@@ -27,7 +25,7 @@ interface QuestionGroup {
 export default function AdminQuestions() {
   const [token, setToken] = useState<string>(() => localStorage.getItem('adminToken') || '');
   const [allQuestions, setAllQuestions] = useState<QuestionVariant[]>([]);
-  const [displayedQuestions, setDisplayedQuestions] = useState<QuestionVariant[]>([]);
+  const [filteredQuestions, setFilteredQuestions] = useState<QuestionVariant[]>([]);
   const [selectedLang, setSelectedLang] = useState<string>('ja');
   const [editingQuestion, setEditingQuestion] = useState<QuestionVariant | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -66,12 +64,11 @@ export default function AdminQuestions() {
   const handleLangChange = (lang: string, source?: QuestionVariant[]) => {
     setSelectedLang(lang);
     const base = source || allQuestions;
-    const filtered = lang === 'ja' ? base : base.filter(q => q.language === lang);
-    setDisplayedQuestions(filtered);
+    setFilteredQuestions(lang === 'ja' ? base : base.filter(q => q.language === lang));
   };
 
   const grouped = Object.values(
-    displayedQuestions.reduce<Record<string, QuestionGroup>>((acc, q) => {
+    filteredQuestions.reduce<Record<string, QuestionGroup>>((acc, q) => {
       acc[q.group_id] = acc[q.group_id] || { base: null, translations: [] };
       if (q.language === 'ja') acc[q.group_id].base = q;
       else acc[q.group_id].translations.push(q);
@@ -126,11 +123,18 @@ export default function AdminQuestions() {
   };
 
   const toggleApprove = async (groupId: string) => {
-    await fetch(`${apiBase}/admin/questions/${groupId}/toggle_approved`, {
+    const res = await fetch(`${apiBase}/admin/questions/${groupId}/toggle_approved`, {
       method: 'POST',
       headers: { 'X-Admin-Token': token }
     });
-    await fetchQuestions();
+    if (res.ok) {
+      const data = await res.json();
+      const updated = allQuestions.map(q =>
+        q.group_id === groupId ? { ...q, approved: data.approved } : q
+      );
+      setAllQuestions(updated);
+      handleLangChange(selectedLang, updated);
+    }
   };
 
   const removeAll = async () => {
