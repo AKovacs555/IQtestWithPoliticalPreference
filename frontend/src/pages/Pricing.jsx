@@ -13,6 +13,7 @@ export default function Pricing() {
   const [proPrice, setProPrice] = useState(0);
   const [progress, setProgress] = useState(0);
   const [crypto, setCrypto] = useState('usdt');
+  const [freeAttempts, setFreeAttempts] = useState(0);
 
   const watchAd = () => {
     setProgress(0);
@@ -35,6 +36,7 @@ export default function Pricing() {
       .then(data => {
         setPrice(data.price);
         setProPrice(data.pro_price);
+        setFreeAttempts(data.free_attempts ?? 0);
       });
   }, []);
 
@@ -45,7 +47,7 @@ export default function Pricing() {
         <div className="grid md:grid-cols-3 gap-4">
           <div className="card bg-base-100 shadow-md p-4">
             <h3 className="font-semibold mb-2">{t('pricing.free')}</h3>
-            <p className="mb-4">1</p>
+            <p className="mb-4">{freeAttempts}</p>
             <button className="btn btn-primary" disabled>Current</button>
           </div>
           <div className="card bg-base-100 shadow-md p-4">

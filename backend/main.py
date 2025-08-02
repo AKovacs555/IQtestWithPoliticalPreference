@@ -242,6 +242,7 @@ class PricingResponse(BaseModel):
     price: int
     retry_price: int
     plays: int
+    free_attempts: int
     processor: str
     pro_price: int
     variant: int
@@ -259,6 +260,7 @@ class UserStats(BaseModel):
     referrals: int
     scores: list[ScoreEntry]
     party_log: list
+    free_attempts: int
 
 
 class HistoryResponse(BaseModel):
@@ -363,8 +365,12 @@ async def pricing(user_id: str, region: str = "US"):
                 "scores": [],
                 "party_log": [],
                 "demographic": {},
+                "free_attempts": MAX_FREE_ATTEMPTS,
             }
         )
+    elif "free_attempts" not in user:
+        user["free_attempts"] = MAX_FREE_ATTEMPTS
+        db_update_user(user_id, {"free_attempts": MAX_FREE_ATTEMPTS})
     processor = select_processor(region)
     variant_idx = _assign_variant(user)
     log_event({"event": "pricing_shown", "user_id": user_id, "variant": variant_idx})
@@ -374,6 +380,7 @@ async def pricing(user_id: str, region: str = "US"):
         "price": price,
         "retry_price": retry_price,
         "plays": user.get("plays", 0),
+        "free_attempts": user.get("free_attempts", MAX_FREE_ATTEMPTS),
         "processor": processor,
         "pro_price": PRO_PRICE_MONTHLY,
         "variant": variant_idx,
@@ -687,6 +694,7 @@ async def user_stats(user_id: str):
         "referrals": user.get("referrals", 0),
         "scores": user.get("scores") or [],
         "party_log": user.get("party_log") or [],
+        "free_attempts": user.get("free_attempts", MAX_FREE_ATTEMPTS),
     }
 
 
@@ -878,7 +886,7 @@ class FreeAttemptsPayload(BaseModel):
     free_attempts: int
 
 
-@app.post("/admin/user/free_attempts")
+@app.put("/admin/user/free_attempts")
 async def admin_set_free_attempts(
     payload: FreeAttemptsPayload, x_admin_api_key: str = Header(...)
 ):

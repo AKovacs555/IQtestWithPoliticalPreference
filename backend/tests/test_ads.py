@@ -32,7 +32,7 @@ def test_pricing_variant():
 
 
 def test_question_validation():
-    tmp = Path('questions/bad.json')
+    tmp = Path(__file__).resolve().parent.parent / 'questions' / 'bad.json'
     tmp.write_text('{"id": "bad", "language": "en", "title": "Bad", "questions": [{"id": 0}]}')
     try:
         with TestClient(app) as client:
