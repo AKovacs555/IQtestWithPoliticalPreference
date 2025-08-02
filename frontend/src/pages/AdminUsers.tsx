@@ -4,6 +4,7 @@ import Layout from '../components/Layout';
 export default function AdminUsers() {
   const [token, setToken] = useState(() => localStorage.getItem('adminToken') || '');
   const [users, setUsers] = useState<any[]>([]);
+  const [msg, setMsg] = useState('');
   const apiBase = import.meta.env.VITE_API_BASE || '';
 
   const load = async () => {
@@ -19,13 +20,21 @@ export default function AdminUsers() {
 
   useEffect(() => { load(); }, [token]);
 
-  const update = async (id: string, val: number) => {
-    await fetch(`${apiBase}/admin/user/free_attempts`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Admin-Api-Key': token },
-      body: JSON.stringify({ user_id: id, free_attempts: val })
-    });
-    setUsers(u => u.map(us => us.hashed_id === id ? { ...us, free_attempts: val } : us));
+  const update = async (id: string) => {
+    const u = users.find(us => us.hashed_id === id);
+    if (!u) return;
+    setMsg('');
+    try {
+      const res = await fetch(`${apiBase}/admin/user/free_attempts`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'X-Admin-Api-Key': token },
+        body: JSON.stringify({ user_id: id, free_attempts: u.free_attempts })
+      });
+      if (!res.ok) throw new Error();
+      setMsg('Saved');
+    } catch {
+      setMsg('Error saving');
+    }
   };
 
   return (
@@ -44,7 +53,7 @@ export default function AdminUsers() {
         />
         <table className="table w-full">
           <thead>
-            <tr><th>ID</th><th>Free attempts</th></tr>
+            <tr><th>ID</th><th>Free attempts</th><th></th></tr>
           </thead>
           <tbody>
             {users.map(u => (
@@ -55,13 +64,17 @@ export default function AdminUsers() {
                     type="number"
                     className="input input-bordered w-24"
                     value={u.free_attempts ?? 0}
-                    onChange={e => update(u.hashed_id, parseInt(e.target.value, 10))}
+                    onChange={e => setUsers(us => us.map(x => x.hashed_id === u.hashed_id ? { ...x, free_attempts: parseInt(e.target.value, 10) } : x))}
                   />
+                </td>
+                <td>
+                  <button className="btn btn-sm" onClick={() => update(u.hashed_id)}>Save</button>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
+        {msg && <div className="text-sm">{msg}</div>}
       </div>
     </Layout>
   );
