@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import Layout from '../components/Layout';
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
 const languageOptions = ['ja', 'en', 'tr', 'ru', 'zh', 'ko', 'es', 'fr', 'it', 'de', 'ar'];
 
 interface QuestionVariant {
@@ -40,7 +41,7 @@ export default function AdminQuestions() {
   const [isImporting, setIsImporting] = useState(false);
   const { t } = useTranslation();
 
-  const apiBase = import.meta.env.VITE_API_BASE;
+  const apiBase = import.meta.env.VITE_API_BASE || '';
 
   const filterByLanguage = (data: QuestionVariant[], lang: string) =>
     lang === 'ja' ? data : data.filter(q => q.language === lang);
@@ -209,9 +210,9 @@ export default function AdminQuestions() {
     <Layout>
       <div className="space-y-4 max-w-xl mx-auto">
         <nav className="tabs">
-          <a className="tab tab-bordered tab-active">Questions</a>
-          <a href="/admin/surveys" className="tab tab-bordered">Surveys</a>
-          <a href="/admin/users" className="tab tab-bordered">Users</a>
+          <Link to="/admin/questions" className="tab tab-bordered tab-active">Questions</Link>
+          <Link to="/admin/surveys" className="tab tab-bordered">Surveys</Link>
+          <Link to="/admin/users" className="tab tab-bordered">Users</Link>
         </nav>
         <div className="space-y-2">
           <input
