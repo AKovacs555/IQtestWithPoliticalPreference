@@ -5,6 +5,9 @@ from fastapi import APIRouter, Depends, HTTPException, Header
 from backend.deps.supabase_client import get_supabase_client
 from backend.utils.translation import translate_question
 
+# Supported languages for translating questions from Japanese
+TARGET_LANGS = ["en", "tr", "ru", "zh", "ko", "es", "fr", "it", "de", "ar"]
+
 router = APIRouter(prefix="/admin/questions", tags=["admin-questions"])
 
 
@@ -61,10 +64,10 @@ async def update_question(question_id: int, payload: dict):
     if record.get("language") == "ja":
         tasks = [
             translate_question(payload["question"], payload["options"], lang)
-            for lang in ["en", "tr", "ru", "zh"]
+            for lang in TARGET_LANGS
         ]
         results = await asyncio.gather(*tasks)
-        for lang, res in zip(["en", "tr", "ru", "zh"], results):
+        for lang, res in zip(TARGET_LANGS, results):
             q_trans, opts_trans = res
             update = {
                 "question": q_trans,
