@@ -883,28 +883,3 @@ async def admin_question_bank_info(x_admin_api_key: str = Header(...)):
         return {"count": 0}
 
 
-class FreeAttemptsPayload(BaseModel):
-    user_id: str
-    free_attempts: int
-
-
-@app.put("/admin/user/free_attempts")
-async def admin_set_free_attempts(
-    payload: FreeAttemptsPayload, x_admin_api_key: str = Header(...)
-):
-    if x_admin_api_key != os.getenv("ADMIN_API_KEY", ""):
-        raise HTTPException(status_code=401, detail="Invalid API key")
-    db_update_user(payload.user_id, {"free_attempts": payload.free_attempts})
-    return {"status": "ok"}
-
-
-@app.get("/admin/users")
-async def admin_list_users(x_admin_api_key: str = Header(...)):
-    if x_admin_api_key != os.getenv("ADMIN_API_KEY", ""):
-        raise HTTPException(status_code=401, detail="Invalid API key")
-    users = get_all_users()
-    data = [
-        {"hashed_id": u.get("hashed_id"), "free_attempts": u.get("free_attempts", 0)}
-        for u in users
-    ]
-    return {"users": data}
