@@ -111,6 +111,8 @@ from db import (
     update_user as db_update_user,
     get_all_users,
     get_supabase,
+    get_surveys,
+    get_parties,
 )
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
 SUPABASE_API_KEY = os.environ.get("SUPABASE_API_KEY", "")
@@ -145,17 +147,6 @@ _dist_path = os.path.join(
 with open(_dist_path) as f:
     NORMATIVE_DIST = json.load(f)
 
-# Load political survey items (multi-language)
-_survey_path = os.path.join(os.path.dirname(__file__), "data", "surveys.json")
-
-
-def _load_survey_data():
-    with open(_survey_path) as f:
-        _survey_data = json.load(f)
-    return _survey_data.get("questions", []), _survey_data.get("parties", [])
-
-
-SURVEY_QUESTIONS, PARTIES = _load_survey_data()
 
 
 class OTPRequest(BaseModel):
@@ -210,7 +201,7 @@ class AdaptiveAnswerResponse(BaseModel):
 
 
 class SurveyItem(BaseModel):
-    id: int
+    id: str
     statement: str
     options: list[str]
     type: str
@@ -228,7 +219,7 @@ class SurveyStartResponse(BaseModel):
 
 
 class SurveyAnswer(BaseModel):
-    id: int
+    id: str
     selections: List[int]
 
 
@@ -632,13 +623,13 @@ async def adaptive_answer(payload: AdaptiveAnswerRequest):
 
 @app.get("/survey/start", response_model=SurveyStartResponse)
 async def survey_start(lang: str = "en"):
-    questions, parties_data = _load_survey_data()
-    items_raw = [q for q in questions if q.get("lang") == lang]
-    if not items_raw:  # fallback to English if requested lang missing
-        items_raw = [q for q in questions if q.get("lang") == "en"]
+    items_raw = get_surveys(lang)
+    if not items_raw and lang != "en":
+        items_raw = get_surveys("en")
+    parties_data = get_parties()
     items = [
         SurveyItem(
-            id=i["id"],
+            id=str(i["id"]),
             statement=i["statement"],
             options=i.get("options", []),
             type=i.get("type", "sa"),
@@ -655,31 +646,29 @@ async def survey_submit(payload: SurveySubmitRequest):
     if not payload.answers:
         raise HTTPException(status_code=400, detail="No answers provided")
 
-    questions, _ = _load_survey_data()
+    questions = {str(q["id"]): q for q in get_surveys()}
     lr_score = 0.0
     auth_score = 0.0
 
     for ans in payload.answers:
-        matching = [q for q in questions if q.get("id") == ans.id]
-        if not matching:
+        item = questions.get(ans.id)
+        if not item:
             raise HTTPException(status_code=400, detail=f"Invalid question id {ans.id}")
-        item = matching[0]
 
         selections = ans.selections
         if item.get("type") == "sa":
             if len(selections) != 1:
                 raise HTTPException(status_code=400, detail="Exactly one option required")
             choice = selections[0]
-        else:  # multi-answer
+        else:
             if not selections:
                 raise HTTPException(status_code=400, detail="At least one option required")
-            # Exclusive option logic
             if any(
                 idx in item.get("exclusive_options", []) and len(selections) > 1
                 for idx in selections
             ):
                 raise HTTPException(status_code=400, detail="Exclusive option selected with others")
-            choice = selections[0]  # scoring uses first selection
+            choice = selections[0]
 
         if choice < 0 or choice >= len(item.get("options", [])):
             raise HTTPException(status_code=400, detail=f"Invalid option index {choice}")
@@ -688,7 +677,7 @@ async def survey_submit(payload: SurveySubmitRequest):
         lr_score += weight * item.get("lr", 0)
         auth_score += weight * item.get("auth", 0)
 
-    n = len(questions)
+    n = len(payload.answers)
     if n:
         lr_score /= n
         auth_score /= n

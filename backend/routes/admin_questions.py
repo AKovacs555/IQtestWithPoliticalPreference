@@ -41,10 +41,13 @@ async def list_questions_no_slash():
 
 
 @router.get("/", dependencies=[Depends(check_admin)])
-async def list_questions():
+async def list_questions(lang: Optional[str] = None):
     supabase = get_supabase_client()
     try:
-        resp = supabase.table("questions").select("*").execute()
+        query = supabase.table("questions").select("*")
+        if lang:
+            query = query.eq("lang", lang)
+        resp = query.execute()
         return resp.data
     except Exception as e:
         logger.error("Error fetching questions from Supabase: %s", e)
@@ -69,7 +72,7 @@ async def update_question(question_id: int, payload: dict):
     supabase = get_supabase_client()
     record = (
         supabase.table("questions")
-        .select("group_id,language")
+        .select("group_id,lang")
         .eq("id", question_id)
         .single()
         .execute()
@@ -88,7 +91,7 @@ async def update_question(question_id: int, payload: dict):
     }
     supabase.table("questions").update(data).eq("id", question_id).execute()
 
-    if record.get("language") == "ja":
+    if record.get("lang") == "ja":
         tasks = [
             translate_question(payload["question"], payload["options"], lang)
             for lang in TARGET_LANGS
@@ -105,7 +108,7 @@ async def update_question(question_id: int, payload: dict):
                 "image_prompt": payload.get("image_prompt"),
                 "image": payload.get("image"),
             }
-            supabase.table("questions").update(update).eq("group_id", record["group_id"]).eq("language", lang).execute()
+            supabase.table("questions").update(update).eq("group_id", record["group_id"]).eq("lang", lang).execute()
 
     return {"updated": True}
 
