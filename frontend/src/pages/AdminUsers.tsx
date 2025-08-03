@@ -16,6 +16,11 @@ export default function AdminUsers() {
     const res = await fetch(`${apiBase}/admin/users`, {
       headers: { 'X-Admin-Api-Key': token }
     });
+    if (res.status === 401) {
+      setMsg('Invalid admin API key. Please check your settings.');
+      setUsers([]);
+      return;
+    }
     if (res.ok) {
       const data = await res.json();
       setUsers(data.users || []);
@@ -34,6 +39,10 @@ export default function AdminUsers() {
         headers: { 'Content-Type': 'application/json', 'X-Admin-Api-Key': token },
         body: JSON.stringify({ user_id: id, free_attempts: u.free_attempts })
       });
+      if (res.status === 401) {
+        setMsg('Invalid admin API key. Please check your settings.');
+        return;
+      }
       if (!res.ok) throw new Error();
       setMsg('Saved');
     } catch {

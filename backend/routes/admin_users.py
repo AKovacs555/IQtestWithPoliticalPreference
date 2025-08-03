@@ -1,14 +1,29 @@
 import os
+import logging
 from fastapi import APIRouter, Depends, Header, HTTPException
 from db import get_supabase
 
 router = APIRouter(prefix="/admin", tags=["admin-users"])
 
 
-def check_admin(x_admin_api_key: str | None = Header(None, alias="X-Admin-Api-Key")):
-    """Validate the provided admin API key."""
-    expected = os.getenv("ADMIN_API_KEY")
-    if x_admin_api_key != expected:
+def check_admin(admin_key: str | None = Header(None, alias="X-Admin-Api-Key")):
+    """
+    Validate the provided admin API key against environment variables.
+    Accepts either ADMIN_API_KEY or (for backward compatibility) ADMIN_TOKEN.
+    Raises 500 if neither is configured, and 401 if the key is wrong.
+    """
+    expected_new = os.environ.get("ADMIN_API_KEY")
+    expected_old = os.environ.get("ADMIN_TOKEN")
+    expected = expected_new or expected_old
+    if expected is None:
+        logging.error("No ADMIN_API_KEY or ADMIN_TOKEN is set in the environment.")
+        raise HTTPException(
+            status_code=500, detail="Server misconfigured: missing admin key"
+        )
+    if admin_key != expected:
+        logging.warning(
+            f"Invalid admin key provided: {admin_key[:4]}… (expected length {len(expected)})"
+        )
         raise HTTPException(status_code=401, detail="Unauthorized")
 
 

@@ -56,6 +56,10 @@ export default function AdminQuestions() {
       headers: { 'X-Admin-Api-Key': token },
       redirect: 'manual'
     });
+    if (res.status === 401) {
+      setStatus('Invalid admin API key. Please check your settings.');
+      return [];
+    }
     let sorted: QuestionVariant[] = [];
     if (res.ok) {
       const data = await res.json();
@@ -93,11 +97,15 @@ export default function AdminQuestions() {
   const saveEdit = async () => {
     if (!editingQuestion) return;
     setStatus('saving');
-    await fetch(`${apiBase}/admin/questions/${editingQuestion.id}`, {
+    const res = await fetch(`${apiBase}/admin/questions/${editingQuestion.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json', 'X-Admin-Api-Key': token },
       body: JSON.stringify(editingQuestion)
     });
+    if (res.status === 401) {
+      setStatus('Invalid admin API key. Please check your settings.');
+      return;
+    }
     setEditingQuestion(null);
     setIsEditModalOpen(false);
     setStatus(null);
@@ -106,10 +114,14 @@ export default function AdminQuestions() {
 
   const remove = async (id: number) => {
     if (!confirm('Delete this question?')) return;
-    await fetch(`${apiBase}/admin/questions/${id}`, {
+    const res = await fetch(`${apiBase}/admin/questions/${id}`, {
       method: 'DELETE',
       headers: { 'X-Admin-Api-Key': token }
     });
+    if (res.status === 401) {
+      setStatus('Invalid admin API key. Please check your settings.');
+      return;
+    }
     await fetchQuestions(selectedLang);
   };
 
@@ -118,11 +130,15 @@ export default function AdminQuestions() {
     if (!ids.length) return;
     if (!confirm('Delete selected questions?')) return;
     setStatus('deleting');
-    await fetch(`${apiBase}/admin/questions/delete_batch`, {
+    const res = await fetch(`${apiBase}/admin/questions/delete_batch`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-Admin-Api-Key': token },
       body: JSON.stringify(ids)
     });
+    if (res.status === 401) {
+      setStatus('Invalid admin API key. Please check your settings.');
+      return;
+    }
     setSelected(new Set());
     setStatus(null);
     await fetchQuestions(selectedLang);
@@ -133,6 +149,10 @@ export default function AdminQuestions() {
       method: 'POST',
       headers: { 'X-Admin-Api-Key': token }
     });
+    if (res.status === 401) {
+      setStatus('Invalid admin API key. Please check your settings.');
+      return;
+    }
     if (res.ok) {
       const data = await res.json();
       const updated = allQuestions.map(q =>
@@ -149,10 +169,14 @@ export default function AdminQuestions() {
       window.confirm('Are you absolutely sure?')
     ) {
       setStatus('deleting');
-      await fetch(`${apiBase}/admin/questions/delete_all`, {
+      const res = await fetch(`${apiBase}/admin/questions/delete_all`, {
         method: 'POST',
         headers: { 'X-Admin-Api-Key': token },
       });
+      if (res.status === 401) {
+        setStatus('Invalid admin API key. Please check your settings.');
+        return;
+      }
       setStatus(null);
       await fetchQuestions(selectedLang);
     }
@@ -185,6 +209,12 @@ export default function AdminQuestions() {
       headers: { 'X-Admin-Api-Key': token },
       body: formData
     });
+    if (res.status === 401) {
+      setStatus('Invalid admin API key. Please check your settings.');
+      setUploadStatus(null);
+      setIsImporting(false);
+      return;
+    }
     setUploadStatus('translating');
     const data = await res.json();
     if (res.ok) {

@@ -15,8 +15,23 @@ router = APIRouter(prefix="/admin/questions", tags=["admin-questions"])
 
 
 def check_admin(admin_key: Optional[str] = Header(None, alias="X-Admin-Api-Key")):
-    expected = os.environ.get("ADMIN_API_KEY")
-    if expected is None or admin_key != expected:
+    """
+    Validate the provided admin API key against environment variables.
+    Accepts either ADMIN_API_KEY or (for backward compatibility) ADMIN_TOKEN.
+    Raises 500 if neither is configured, and 401 if the key is wrong.
+    """
+    expected_new = os.environ.get("ADMIN_API_KEY")
+    expected_old = os.environ.get("ADMIN_TOKEN")
+    expected = expected_new or expected_old
+    if expected is None:
+        logging.error("No ADMIN_API_KEY or ADMIN_TOKEN is set in the environment.")
+        raise HTTPException(
+            status_code=500, detail="Server misconfigured: missing admin key"
+        )
+    if admin_key != expected:
+        logging.warning(
+            f"Invalid admin key provided: {admin_key[:4]}… (expected length {len(expected)})"
+        )
         raise HTTPException(status_code=401, detail="Unauthorized")
 
 
