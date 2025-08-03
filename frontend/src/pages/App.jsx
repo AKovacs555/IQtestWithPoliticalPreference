@@ -224,7 +224,7 @@ const Result = () => {
   useEffect(() => {
     const uid = localStorage.getItem('user_id') || 'testuser';
     Promise.all([
-      fetch(`${API_BASE}/survey/start`).then(r => r.json()),
+      fetch(`${API_BASE}/survey/start?user_id=${uid}`).then(r => r.json()),
       fetch(`${API_BASE}/user/stats/${uid}`).then(r => r.ok ? r.json() : { party_log: [] })
     ]).then(([p, s]) => {
       const latest = s.party_log && s.party_log.length ? s.party_log[s.party_log.length-1].party_ids[0] : null;

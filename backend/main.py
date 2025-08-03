@@ -545,8 +545,18 @@ def _to_model(q) -> QuizQuestion:
 
 
 @app.get("/adaptive/start", response_model=AdaptiveStartResponse)
-async def adaptive_start(set_id: str | None = None):
+async def adaptive_start(set_id: str | None = None, user_id: str | None = None):
     """Begin an adaptive quiz session."""
+    if user_id:
+        user = get_user(user_id)
+        if user and not user.get("survey_completed"):
+            raise HTTPException(
+                status_code=400,
+                detail={
+                    "error": "survey_required",
+                    "message": "Please complete the survey before taking the IQ test.",
+                },
+            )
     theta = 0.0
     session_id = secrets.token_hex(8)
     questions = get_random_questions(NUM_QUESTIONS, set_id)
@@ -622,10 +632,19 @@ async def adaptive_answer(payload: AdaptiveAnswerRequest):
 
 
 @app.get("/survey/start", response_model=SurveyStartResponse)
-async def survey_start(lang: str = "en"):
-    items_raw = get_surveys(lang)
-    if not items_raw and lang != "en":
-        items_raw = get_surveys("en")
+async def survey_start(lang: str = "en", user_id: str | None = None):
+    surveys = get_surveys(lang)
+    if not surveys and lang != "en":
+        surveys = get_surveys("en")
+    user = get_user(user_id) if user_id else None
+    nationality = user.get("nationality") if user else None
+    items_raw = [
+        q
+        for q in surveys
+        if not q.get("target_countries")
+        or not nationality
+        or nationality in q.get("target_countries")
+    ]
     parties_data = get_parties()
     items = [
         SurveyItem(
@@ -700,6 +719,16 @@ async def survey_submit(payload: SurveySubmitRequest):
         "category": category,
         "description": description,
     }
+
+
+class UserAction(BaseModel):
+    user_id: str
+
+
+@app.post("/survey/complete")
+async def survey_complete(action: UserAction):
+    db_update_user(action.user_id, {"survey_completed": True})
+    return {"status": "ok"}
 
 
 @app.post("/user/demographics")

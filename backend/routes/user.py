@@ -15,12 +15,9 @@ class PartyPayload(BaseModel):
 @router.post('/nationality')
 async def set_nationality(payload: NationalityPayload):
     supabase = get_supabase_client()
-    data = {
-        'user_id': payload.user_id,
-        'nationality': payload.nationality,
-    }
+    data = {'nationality': payload.nationality}
     try:
-        supabase.table('profiles').upsert(data, on_conflict='user_id').execute()
+        supabase.table('users').update(data).eq('hashed_id', payload.user_id).execute()
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     return {'status': 'ok'}

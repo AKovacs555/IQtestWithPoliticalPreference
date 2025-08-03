@@ -25,7 +25,7 @@ export default function Dashboard() {
         setUserScore(d.user_score);
         setParty(d.party_means || []);
       });
-    fetch(`${API_BASE}/survey/start`).then(r => r.json()).then(res => {
+    fetch(`${API_BASE}/survey/start?user_id=${userId}`).then(r => r.json()).then(res => {
       const map = {};
       (res.parties || []).forEach(p => { map[p.id] = p.name; });
       setPartyNames(map);

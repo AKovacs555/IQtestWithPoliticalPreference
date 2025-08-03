@@ -30,11 +30,13 @@ export async function submitQuiz(sessionId, answers) {
   return handleJson(res);
 }
 
-export async function getSurvey(lang) {
+export async function getSurvey(lang, userId) {
   let url = `${API_BASE}/survey/start`;
-  if (lang) {
-    url += `?lang=${lang}`;
-  }
+  const params = [];
+  if (lang) params.push(`lang=${lang}`);
+  const uid = userId || (typeof localStorage !== 'undefined' ? localStorage.getItem('user_id') : null);
+  if (uid) params.push(`user_id=${uid}`);
+  if (params.length) url += `?${params.join('&')}`;
   const res = await fetch(url);
   return handleJson(res);
 }
@@ -44,6 +46,15 @@ export async function submitSurvey(answers) {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ answers })
+  });
+  return handleJson(res);
+}
+
+export async function completeSurvey(userId) {
+  const res = await fetch(`${API_BASE}/survey/complete`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ user_id: userId })
   });
   return handleJson(res);
 }

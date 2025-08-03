@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import Layout from '../components/Layout';
 import LanguageSelector from '../components/LanguageSelector';
-import { getSurvey, submitSurvey } from '../api';
+import { getSurvey, submitSurvey, completeSurvey } from '../api';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 
@@ -20,7 +20,8 @@ export default function SurveyPage() {
       navigate('/select-nationality');
       return;
     }
-    getSurvey(i18n.language)
+    const uid = localStorage.getItem('user_id');
+    getSurvey(i18n.language, uid)
       .then(d => setItems(d.items || []))
       .catch(e => setError(e.message))
       .finally(() => setLoading(false));
@@ -54,6 +55,10 @@ export default function SurveyPage() {
     const payload = Object.entries(answers).map(([id, sel]) => ({ id: Number(id), selections: sel }));
     try {
       await submitSurvey(payload);
+      const uid = localStorage.getItem('user_id');
+      if (uid) {
+        await completeSurvey(uid);
+      }
       setSubmitted(true);
     } catch (e) {
       setError(e.message);

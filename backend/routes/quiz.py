@@ -11,6 +11,7 @@ from backend.questions import available_sets, get_balanced_random_questions_by_s
 from backend.scoring import estimate_theta, iq_score, ability_summary, standard_error
 from backend.irt import percentile
 from backend.features import generate_share_image
+from backend.db import get_user
 
 router = APIRouter(prefix="/quiz", tags=["quiz"])
 
@@ -50,6 +51,16 @@ async def start_quiz(
     lang: str = "ja",
     user_id: str | None = None,
 ):
+    if user_id:
+        user = get_user(user_id)
+        if user and not user.get("survey_completed"):
+            raise HTTPException(
+                status_code=400,
+                detail={
+                    "error": "survey_required",
+                    "message": "Please complete the survey before taking the IQ test.",
+                },
+            )
     if set_id:
         try:
             questions = get_balanced_random_questions_by_set(NUM_QUESTIONS, set_id)
