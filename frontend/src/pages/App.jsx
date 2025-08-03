@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import useShareMeta from '../hooks/useShareMeta';
-import { AnimatePresence, motion } from 'framer-motion';
 import Layout from '../components/Layout';
 import AdminQuestions from './AdminQuestions';
 import AdminSurvey from './AdminSurvey';
@@ -26,11 +25,7 @@ import confetti from 'canvas-confetti';
 import { getQuizStart, submitQuiz } from '../api';
 import TestPage from './TestPage.jsx';
 
-const PageTransition = ({ children }) => (
-  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-    {children}
-  </motion.div>
-);
+const PageTransition = ({ children }) => <>{children}</>;
 
 
 const Quiz = () => {
@@ -152,7 +147,7 @@ const Quiz = () => {
       <Layout>
         <div className="space-y-4 max-w-lg mx-auto quiz-container">
           {loading && <p>Loading...</p>}
-          {error && <p className="text-error">{error}</p>}
+          {error && <p className="text-red-600">{error}</p>}
           {!loading && !error && (
             <>
               <div className="flex justify-between items-center">
@@ -174,7 +169,7 @@ const Quiz = () => {
             </>
           )}
           {suspicious && (
-            <p className="text-error text-sm">Session flagged for leaving the page.</p>
+            <p className="text-red-600 text-sm">Session flagged for leaving the page.</p>
           )}
         </div>
       </Layout>
@@ -254,15 +249,39 @@ const Result = () => {
           {share && <img src={share} alt="IQ share card" className="mx-auto rounded" />}
           {share && (
             <div className="space-x-2">
-              <a href={`https://twitter.com/intent/tweet?url=${url}&text=${text}`} target="_blank" rel="noreferrer" className="btn btn-sm">Share on X</a>
-              <a href={`https://social-plugins.line.me/lineit/share?url=${url}`} target="_blank" rel="noreferrer" className="btn btn-sm">LINE</a>
+              <a
+                href={`https://twitter.com/intent/tweet?url=${url}&text=${text}`}
+                target="_blank"
+                rel="noreferrer"
+                className="px-4 py-2 rounded-md bg-primary text-white text-sm"
+              >
+                Share on X
+              </a>
+              <a
+                href={`https://social-plugins.line.me/lineit/share?url=${url}`}
+                target="_blank"
+                rel="noreferrer"
+                className="px-4 py-2 rounded-md bg-primary text-white text-sm"
+              >
+                LINE
+              </a>
               {navigator.share && (
-                <button onClick={() => navigator.share({ url, text })} className="btn btn-sm">{t('share.button')}</button>
+                <button
+                  onClick={() => navigator.share({ url, text })}
+                  className="px-4 py-2 rounded-md bg-primary text-white text-sm"
+                >
+                  {t('share.button')}
+                </button>
               )}
             </div>
           )}
           <div className="mt-4">
-            <a href="/premium.html" className="btn btn-primary btn-sm">Upgrade to Pro Pass</a>
+            <a
+              href="/premium.html"
+              className="px-4 py-2 rounded-md bg-primary text-white text-sm"
+            >
+              Upgrade to Pro Pass
+            </a>
           </div>
           <p className="text-sm text-gray-600">This test is for research and entertainment.</p>
           <Link to="/" className="underline">Home</Link>
@@ -275,8 +294,7 @@ const Result = () => {
 export default function App() {
   const location = useLocation();
   return (
-    <AnimatePresence mode="wait">
-      <Routes location={location} key={location.pathname}>
+    <Routes location={location} key={location.pathname}>
         <Route path="/" element={<Home />} />
         <Route path="/select-set" element={<SelectSet />} />
         <Route path="/start" element={<DemographicsForm />} />
@@ -296,6 +314,5 @@ export default function App() {
         <Route path="/admin/surveys" element={<AdminSurvey />} />
         <Route path="/admin/users" element={<AdminUsers />} />
       </Routes>
-    </AnimatePresence>
   );
 }

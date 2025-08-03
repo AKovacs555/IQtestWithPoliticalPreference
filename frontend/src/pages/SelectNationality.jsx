@@ -52,19 +52,24 @@ export default function SelectNationality() {
           value={search}
           onChange={e => setSearch(e.target.value)}
           placeholder={t('select_country.search')}
-          className="input input-bordered w-full"
+          className="w-full border rounded-md px-3 py-2"
         />
         <select
           value={country}
           onChange={e => setCountry(e.target.value)}
-          className="select select-bordered w-full"
+          className="w-full border rounded-md px-3 py-2"
         >
           <option value="" disabled>{t('select_country.select')}</option>
           {filtered.map(c => (
             <option key={c.code} value={c.code}>{c.name}</option>
           ))}
         </select>
-        <button className="btn" onClick={save}>{t('select_country.save')}</button>
+        <button
+          className="px-4 py-2 rounded-md bg-primary text-white"
+          onClick={save}
+        >
+          {t('select_country.save')}
+        </button>
       </div>
     </Layout>
   );

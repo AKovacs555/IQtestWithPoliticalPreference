@@ -4,14 +4,7 @@ import Layout from '../components/Layout';
 import { getQuizStart, submitQuiz } from '../api';
 import ProgressBar from '../components/ProgressBar';
 import QuestionCard from '../components/QuestionCard';
-import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-
-const PageTransition = ({ children }) => (
-  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-    {children}
-  </motion.div>
-);
 
 export default function TestPage() {
   const [session, setSession] = React.useState(null);
@@ -157,46 +150,44 @@ export default function TestPage() {
   };
 
   return (
-    <PageTransition>
-      <Layout>
-        <div
-          className="watermark fixed inset-0 pointer-events-none opacity-10 text-xs z-40 flex items-end justify-end p-2 select-none"
-        >
-          {session && `${session.slice(0,6)} ${new Date().toLocaleString()}`}
+    <Layout>
+      <div
+        className="watermark fixed inset-0 pointer-events-none opacity-10 text-xs z-40 flex items-end justify-end p-2 select-none"
+      >
+        {session && `${session.slice(0,6)} ${new Date().toLocaleString()}`}
+      </div>
+      {blackout && (
+        <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center text-white text-center z-50">
+          {t('warning.screenshot_detected')}
         </div>
-        {blackout && (
-          <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center text-white text-center z-50">
-            {t('warning.screenshot_detected')}
-          </div>
-        )}
-        <div className="space-y-4 max-w-lg mx-auto quiz-container">
-          {loading && <p>Loading...</p>}
-          {error && <p className="text-error">{error}</p>}
-          {!loading && !error && (
-            <>
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-mono">
-                  {t('quiz.progress', { current: current + 1, total: questions.length })}
-                </span>
-                <div className="text-right font-mono">
-                  {Math.floor(timeLeft / 60)}:{`${timeLeft % 60}`.padStart(2, '0')}
-                </div>
+      )}
+      <div className="space-y-4 max-w-lg mx-auto quiz-container">
+        {loading && <p>Loading...</p>}
+        {error && <p className="text-red-600">{error}</p>}
+        {!loading && !error && (
+          <>
+            <div className="flex justify-between items-center">
+              <span className="text-sm font-mono">
+                {t('quiz.progress', { current: current + 1, total: questions.length })}
+              </span>
+              <div className="text-right font-mono">
+                {Math.floor(timeLeft / 60)}:{`${timeLeft % 60}`.padStart(2, '0')}
               </div>
-              <ProgressBar value={(current / questions.length) * 100} />
-              {questions[current] && (
-                <QuestionCard
-                  question={questions[current]}
-                  onSelect={select}
-                  watermark={watermark}
-                />
-              )}
-            </>
-          )}
-          {suspicious && (
-            <p className="text-error text-sm">Session flagged for leaving the page.</p>
-          )}
-        </div>
-      </Layout>
-    </PageTransition>
+            </div>
+            <ProgressBar value={(current / questions.length) * 100} />
+            {questions[current] && (
+              <QuestionCard
+                question={questions[current]}
+                onSelect={select}
+                watermark={watermark}
+              />
+            )}
+          </>
+        )}
+        {suspicious && (
+          <p className="text-red-600 text-sm">Session flagged for leaving the page.</p>
+        )}
+      </div>
+    </Layout>
   );
 }

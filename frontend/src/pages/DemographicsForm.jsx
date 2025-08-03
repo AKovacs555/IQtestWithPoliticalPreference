@@ -35,45 +35,66 @@ export default function DemographicsForm() {
   return (
     <Layout>
       <div className="p-4 space-y-4 max-w-md mx-auto">
-      <h2 className="text-xl font-bold">Before you start</h2>
-      <div className="form-control">
-        <label className="label">Age Range</label>
-        <select className="select select-bordered" value={age} onChange={e => setAge(e.target.value)}>
-          <option>18-29</option>
-          <option>30-49</option>
-          <option>50-69</option>
-          <option>70+</option>
-        </select>
-      </div>
-      <div className="form-control">
-        <label className="label">Gender</label>
-        <select className="select select-bordered" value={gender} onChange={e => setGender(e.target.value)}>
-          <option value="male">Male</option>
-          <option value="female">Female</option>
-          <option value="other">Other</option>
-        </select>
-      </div>
-      <div className="form-control">
-        <label className="label">Income</label>
-        <select className="select select-bordered" value={income} onChange={e => setIncome(e.target.value)}>
-          <option value="0-3m">0-3m JPY</option>
-          <option value="3-6m">3-6m JPY</option>
-          <option value="6-10m">6-10m JPY</option>
-          <option value="10m+">10m+ JPY</option>
-        </select>
-      </div>
-      <div className="form-control">
-        <label className="label">Occupation</label>
-        <select className="select select-bordered" value={occupation} onChange={e => setOccupation(e.target.value)}>
-          <option value="student">Student</option>
-          <option value="employee">Company Employee</option>
-          <option value="public">Public Servant</option>
-          <option value="freelance">Self-Employed/Freelancer</option>
-          <option value="unemployed">Unemployed</option>
-          <option value="other">Other</option>
-        </select>
-      </div>
-      <button className="btn btn-primary w-full" onClick={save}>Start Quiz</button>
+        <h2 className="text-xl font-bold">Before you start</h2>
+        <div>
+          <label className="block mb-1">Age Range</label>
+          <select
+            className="w-full border rounded-md px-3 py-2"
+            value={age}
+            onChange={e => setAge(e.target.value)}
+          >
+            <option>18-29</option>
+            <option>30-49</option>
+            <option>50-69</option>
+            <option>70+</option>
+          </select>
+        </div>
+        <div>
+          <label className="block mb-1">Gender</label>
+          <select
+            className="w-full border rounded-md px-3 py-2"
+            value={gender}
+            onChange={e => setGender(e.target.value)}
+          >
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div>
+          <label className="block mb-1">Income</label>
+          <select
+            className="w-full border rounded-md px-3 py-2"
+            value={income}
+            onChange={e => setIncome(e.target.value)}
+          >
+            <option value="0-3m">0-3m JPY</option>
+            <option value="3-6m">3-6m JPY</option>
+            <option value="6-10m">6-10m JPY</option>
+            <option value="10m+">10m+ JPY</option>
+          </select>
+        </div>
+        <div>
+          <label className="block mb-1">Occupation</label>
+          <select
+            className="w-full border rounded-md px-3 py-2"
+            value={occupation}
+            onChange={e => setOccupation(e.target.value)}
+          >
+            <option value="student">Student</option>
+            <option value="employee">Company Employee</option>
+            <option value="public">Public Servant</option>
+            <option value="freelance">Self-Employed/Freelancer</option>
+            <option value="unemployed">Unemployed</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <button
+          className="w-full px-4 py-2 rounded-md bg-primary text-white"
+          onClick={save}
+        >
+          Start Quiz
+        </button>
       </div>
     </Layout>
   );

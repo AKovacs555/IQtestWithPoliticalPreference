@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { motion } from 'framer-motion';
 import Layout from '../components/Layout';
 
 const API_BASE = import.meta.env.VITE_API_BASE || "";
@@ -31,8 +30,7 @@ export default function Settings() {
 
   return (
     <Layout>
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-        <div className="p-4 space-y-2">
+      <div className="p-4 space-y-2">
         <h2 className="text-xl font-bold mb-2">Your Stats</h2>
         <p>Plays: {stats.plays}</p>
         <p>Referrals: {stats.referrals}</p>
@@ -55,9 +53,8 @@ export default function Settings() {
           </ul>
           <Link to="/party" className="underline text-sm">Update Party Preference</Link>
         </div>
-          <Link to="/" className="underline">Home</Link>
-        </div>
-      </motion.div>
+        <Link to="/" className="underline">Home</Link>
+      </div>
     </Layout>
   );
 }

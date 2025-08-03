@@ -2,17 +2,20 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Disable text selection to discourage copy/paste */
-* {
-  -webkit-user-select: none;
-  -ms-user-select: none;
-  user-select: none;
-}
+@import '../styles/tokens.css';
 
-body {
-  @apply bg-base-200 text-base-content;
+@layer base {
+  body {
+    @apply bg-surface text-text font-sans;
+  }
 }
 
 .quiz-container {
   user-select: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    @apply !transition-none !transform-none !animate-none;
+  }
 }
