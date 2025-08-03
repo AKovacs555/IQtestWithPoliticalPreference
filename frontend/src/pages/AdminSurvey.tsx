@@ -20,7 +20,7 @@ export default function AdminSurvey() {
   const [newStatement, setNewStatement] = useState('');
   const [newOptions, setNewOptions] = useState('');
   const [newType, setNewType] = useState<'sa' | 'ma'>('sa');
-  const [newExclusive, setNewExclusive] = useState('3');
+  const [exclusiveOptions, setExclusiveOptions] = useState('');
 
   const [status, setStatus] = useState<string | null>(null);
   const [editing, setEditing] = useState<any>(null);
@@ -67,15 +67,18 @@ export default function AdminSurvey() {
   }, [token]);
 
   const create = async () => {
+    const exclusiveIndices = exclusiveOptions
+      .split(',')
+      .map(s => s.trim())
+      .filter(s => s !== '')
+      .map(s => parseInt(s, 10));
+
     const payload = {
       lang: newLang,
       statement: newStatement,
       options: newOptions.split('\n').filter(Boolean),
       type: newType,
-      exclusive_options: newExclusive
-        .split(',')
-        .map(v => Number(v.trim()))
-        .filter(v => !isNaN(v))
+      exclusive_options: exclusiveIndices
     };
     const res = await fetch(`${apiBase}/admin/surveys`, {
       method: 'POST',
@@ -88,6 +91,7 @@ export default function AdminSurvey() {
     }
     setNewStatement('');
     setNewOptions('');
+    setExclusiveOptions('');
     load();
   };
 
@@ -158,6 +162,48 @@ export default function AdminSurvey() {
         />
         {status && <div className="alert alert-info text-sm">{status}</div>}
 
+        <div className="card card-bordered p-4 space-y-2">
+          <h2 className="text-lg font-bold mb-2">New Survey</h2>
+          <div>
+            <label className="block text-sm">Language</label>
+            <select
+              className="select select-bordered w-full"
+              value={newLang}
+              onChange={e => setNewLang(e.target.value)}
+            >
+              {languages.map(l => (
+                <option key={l} value={l}>{l}</option>
+              ))}
+            </select>
+          </div>
+          <textarea
+            className="textarea textarea-bordered w-full"
+            placeholder="Statement"
+            value={newStatement}
+            onChange={e => setNewStatement(e.target.value)}
+          />
+          <textarea
+            className="textarea textarea-bordered w-full"
+            placeholder="Options separated by newline"
+            value={newOptions}
+            onChange={e => setNewOptions(e.target.value)}
+          />
+          <div className="flex space-x-2">
+            <label><input type="radio" checked={newType === 'sa'} onChange={() => setNewType('sa')} /> SA</label>
+            <label><input type="radio" checked={newType === 'ma'} onChange={() => setNewType('ma')} /> MA</label>
+          </div>
+          <label className="label">
+            <span className="label-text">Exclusive option indices (comma-separated)</span>
+          </label>
+          <input
+            value={exclusiveOptions}
+            onChange={e => setExclusiveOptions(e.target.value)}
+            className="input input-bordered w-full"
+            placeholder="e.g. 3 or 0,2"
+          />
+          <button className="btn" onClick={create}>ADD</button>
+        </div>
+
         {editing && (
           <div className="p-2 border space-y-2">
             <h3 className="font-bold">Edit</h3>
@@ -190,7 +236,7 @@ export default function AdminSurvey() {
           </div>
         )}
 
-        <div className="space-y-2">
+        <div className="space-y-4">
           {items.map(item => (
             <div key={item.group_id} className="flex items-center justify-between space-x-2">
               <span>{item.statement}</span>
@@ -200,45 +246,6 @@ export default function AdminSurvey() {
               </div>
             </div>
           ))}
-        </div>
-
-        <div className="space-y-2 border p-2">
-          <h3 className="font-bold">New Survey</h3>
-          <div>
-            <label className="block text-sm">Language</label>
-            <select
-              className="select select-bordered w-full"
-              value={newLang}
-              onChange={e => setNewLang(e.target.value)}
-            >
-              {languages.map(l => (
-                <option key={l} value={l}>{l}</option>
-              ))}
-            </select>
-          </div>
-          <textarea
-            className="textarea textarea-bordered w-full"
-            placeholder="Statement"
-            value={newStatement}
-            onChange={e => setNewStatement(e.target.value)}
-          />
-          <textarea
-            className="textarea textarea-bordered w-full"
-            placeholder="Options separated by newline"
-            value={newOptions}
-            onChange={e => setNewOptions(e.target.value)}
-          />
-          <div className="flex space-x-2">
-            <label><input type="radio" checked={newType === 'sa'} onChange={() => setNewType('sa')} /> SA</label>
-            <label><input type="radio" checked={newType === 'ma'} onChange={() => setNewType('ma')} /> MA</label>
-          </div>
-          <input
-            className="input input-bordered w-full"
-            placeholder="Exclusive option indexes comma separated"
-            value={newExclusive}
-            onChange={e => setNewExclusive(e.target.value)}
-          />
-          <button className="btn" onClick={create}>Add</button>
         </div>
       </div>
     </Layout>
