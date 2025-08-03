@@ -66,7 +66,7 @@ async def start_quiz(
                 query = (
                     supabase.table("questions")
                     .select("*")
-                    .eq("language", lang)
+                    .eq("lang", lang)
                     .eq("approved", True)
                 )
                 if lower is not None:

@@ -3,7 +3,7 @@ import Layout from '../components/Layout';
 import { Link } from 'react-router-dom';
 
 interface SurveyItem {
-  group_id: number;
+  group_id: string;
   lang: string;
   statement: string;
   options: string[];
@@ -130,7 +130,7 @@ export default function AdminSurvey() {
     load();
   };
 
-  const remove = async (groupId: number) => {
+  const remove = async (groupId: string) => {
     if (!confirm('Delete?')) return;
     const res = await fetch(`${apiBase}/admin/surveys/${groupId}`, {
       method: 'DELETE',

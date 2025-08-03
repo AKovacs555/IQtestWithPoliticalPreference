@@ -57,7 +57,7 @@ async def import_questions(file: UploadFile = File(...)):
                 status_code=400, detail=f"Image in item {idx} must be a string"
             )
 
-        language = item.get("language", "ja")
+        lang = item.get("lang") or item.get("language", "ja")
         incoming_id = item["id"]
         if not isinstance(incoming_id, (int, str)):
             incoming_id = str(incoming_id)
@@ -70,7 +70,7 @@ async def import_questions(file: UploadFile = File(...)):
             "answer": answer,
             "irt_a": irt["a"],
             "irt_b": irt["b"],
-            "language": language,
+            "lang": lang,
             "image_prompt": item.get("image_prompt"),
             "image": image_val,
         }
@@ -79,19 +79,19 @@ async def import_questions(file: UploadFile = File(...)):
             inserted += 1
         except Exception as exc:
             logger.error(
-                f"Failed to insert record (lang={record['language']}, orig_id={record['orig_id']}): {exc}"
+                f"Failed to insert record (lang={record['lang']}, orig_id={record['orig_id']}): {exc}"
             )
             continue
 
-        if language == "ja":
-            for lang in target_languages:
+        if lang == "ja":
+            for tgt in target_languages:
                 try:
                     q_trans, opts_trans = await translate_question(
-                        item["question"], options, lang
+                        item["question"], options, tgt
                     )
                 except Exception as exc:
                     logger.error(
-                        f"Translation {lang} failed for orig_id {incoming_id}: {exc}"
+                        f"Translation {tgt} failed for orig_id {incoming_id}: {exc}"
                     )
                     continue
                 trans_record = {
@@ -102,7 +102,7 @@ async def import_questions(file: UploadFile = File(...)):
                     "answer": answer,
                     "irt_a": irt["a"],
                     "irt_b": irt["b"],
-                    "language": lang,
+                    "lang": tgt,
                     "image_prompt": item.get("image_prompt"),
                     "image": image_val,
                 }
@@ -111,7 +111,7 @@ async def import_questions(file: UploadFile = File(...)):
                     inserted += 1
                 except Exception as exc:
                     logger.error(
-                        f"Failed to insert record (lang={trans_record['language']}, orig_id={trans_record['orig_id']}): {exc}"
+                        f"Failed to insert record (lang={trans_record['lang']}, orig_id={trans_record['orig_id']}): {exc}"
                     )
                     continue
     return {"inserted": inserted}
@@ -169,7 +169,7 @@ async def import_questions_with_images(
         elif isinstance(filename, str) and filename.startswith("http"):
             image_url = filename
 
-        language = item.get("language", "ja")
+        lang = item.get("lang") or item.get("language", "ja")
 
         record = {
             "orig_id": incoming_id,
@@ -179,7 +179,7 @@ async def import_questions_with_images(
             "answer": item["answer"],
             "irt_a": item["irt"]["a"],
             "irt_b": item["irt"]["b"],
-            "language": language,
+            "lang": lang,
             "image_prompt": item.get("image_prompt"),
             "image": image_url,
         }
@@ -188,18 +188,18 @@ async def import_questions_with_images(
             inserted += 1
         except Exception as exc:
             logger.error(
-                f"Failed to insert record (lang={record['language']}, orig_id={record['orig_id']}): {exc}"
+                f"Failed to insert record (lang={record['lang']}, orig_id={record['orig_id']}): {exc}"
             )
         else:
-            if language == "ja":
-                for lang in target_languages:
+            if lang == "ja":
+                for tgt in target_languages:
                     try:
                         q_trans, opts_trans = await translate_question(
-                            item["question"], item["options"], lang
+                            item["question"], item["options"], tgt
                         )
                     except Exception as exc:
                         logger.error(
-                            f"Translation {lang} failed for orig_id {incoming_id}: {exc}"
+                            f"Translation {tgt} failed for orig_id {incoming_id}: {exc}"
                         )
                         continue
                     trans_record = {
@@ -210,7 +210,7 @@ async def import_questions_with_images(
                         "answer": item["answer"],
                         "irt_a": item["irt"]["a"],
                         "irt_b": item["irt"]["b"],
-                        "language": lang,
+                        "lang": tgt,
                         "image_prompt": item.get("image_prompt"),
                         "image": image_url,
                     }
@@ -219,7 +219,7 @@ async def import_questions_with_images(
                         inserted += 1
                     except Exception as exc:
                         logger.error(
-                            f"Failed to insert record (lang={trans_record['language']}, orig_id={trans_record['orig_id']}): {exc}"
+                            f"Failed to insert record (lang={trans_record['lang']}, orig_id={trans_record['orig_id']}): {exc}"
                         )
                         continue
     return {"inserted": inserted}

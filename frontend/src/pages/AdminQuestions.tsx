@@ -7,7 +7,7 @@ const languageOptions = ['ja', 'en', 'tr', 'ru', 'zh', 'ko', 'es', 'fr', 'it', '
 interface QuestionVariant {
   id: number;
   group_id: string;
-  language: string;
+  lang: string;
   question: string;
   options: string[];
   answer: number;
@@ -47,7 +47,7 @@ export default function AdminQuestions() {
   }
 
   const filterByLanguage = (data: QuestionVariant[], lang: string) =>
-    lang === 'ja' ? data : data.filter(q => q.language === lang);
+    lang === 'ja' ? data : data.filter(q => q.lang === lang);
 
   const fetchQuestions = async (lang: string): Promise<QuestionVariant[]> => {
     if (!token) return [];
@@ -80,14 +80,14 @@ export default function AdminQuestions() {
   const grouped = Object.values(
     displayedQuestions.reduce<Record<string, QuestionGroup>>((acc, q) => {
       acc[q.group_id] = acc[q.group_id] || { base: null, translations: [] };
-      if (q.language === 'ja') acc[q.group_id].base = q;
+      if (q.lang === 'ja') acc[q.group_id].base = q;
       else acc[q.group_id].translations.push(q);
       return acc;
     }, {})
   );
 
   const handleEdit = (groupId: string, lang: string = 'ja') => {
-    const record = allQuestions.find(q => q.group_id === groupId && q.language === lang);
+    const record = allQuestions.find(q => q.group_id === groupId && q.lang === lang);
     if (record) {
       setEditingQuestion({ ...record });
       setIsEditModalOpen(true);
@@ -310,13 +310,13 @@ export default function AdminQuestions() {
                 const variant =
                   selectedLang === 'ja'
                     ? g.base!
-                    : g.translations.find(t => t.language === selectedLang)!;
+                    : g.translations.find(t => t.lang === selectedLang)!;
                 const groupRecords = allQuestions.filter(
                   q => q.group_id === (g.base?.group_id || g.translations[0].group_id)
                 );
                 const ids = groupRecords.map(r => r.id);
                 const checked = ids.every(id => selected.has(id));
-                const otherLangs = groupRecords.filter(r => r.language !== variant.language);
+                const otherLangs = groupRecords.filter(r => r.lang !== variant.lang);
                 const approved = groupRecords[0]?.approved;
                 return (
                   <React.Fragment key={variant.group_id}>
@@ -353,7 +353,7 @@ export default function AdminQuestions() {
                         >
                           Other Languages ▼
                         </button>
-                        <button className="btn btn-xs" onClick={() => handleEdit(variant.group_id, variant.language)}>
+                        <button className="btn btn-xs" onClick={() => handleEdit(variant.group_id, variant.lang)}>
                           Edit
                         </button>
                         <button className="btn btn-xs" onClick={() => toggleApprove(variant.group_id)}>
@@ -371,11 +371,11 @@ export default function AdminQuestions() {
                           <div className="flex flex-wrap gap-2 py-2">
                             {otherLangs.map(tr => (
                               <button
-                                key={tr.language}
+                                key={tr.lang}
                                 className="btn btn-xs"
-                                onClick={() => handleEdit(variant.group_id, tr.language)}
+                                onClick={() => handleEdit(variant.group_id, tr.lang)}
                               >
-                                {tr.language}
+                                {tr.lang}
                               </button>
                             ))}
                           </div>
@@ -392,7 +392,7 @@ export default function AdminQuestions() {
         {isEditModalOpen && editingQuestion && (
           <dialog open className="modal">
             <div className="modal-box space-y-2">
-              <h3 className="font-bold mb-2">Edit ({editingQuestion.language}) ID {editingQuestion.id}</h3>
+              <h3 className="font-bold mb-2">Edit ({editingQuestion.lang}) ID {editingQuestion.id}</h3>
               <label className="form-control w-full">
                 <span className="label-text">Question</span>
                 <textarea
