@@ -1,0 +1,490 @@
+{
+  "questions": [
+    {
+      "id": 0,
+      "group_id": 0,
+      "lang": "en",
+      "statement": "Government should redistribute wealth from the rich to the poor.",
+      "options": [
+        "Strongly agree",
+        "Agree",
+        "Disagree",
+        "Strongly disagree"
+      ],
+      "type": "sa",
+      "exclusive_options": [
+        3
+      ],
+      "lr": -1,
+      "auth": -1
+    },
+    {
+      "id": 1,
+      "group_id": 0,
+      "lang": "ja",
+      "statement": "政府は富を裕福層から貧困層へ再分配すべきだ。",
+      "options": [
+        "強く賛成",
+        "賛成",
+        "反対",
+        "強く反対"
+      ],
+      "type": "sa",
+      "exclusive_options": [
+        3
+      ],
+      "lr": -1,
+      "auth": -1
+    },
+    {
+      "id": 2,
+      "group_id": 1,
+      "lang": "en",
+      "statement": "Markets should be free from government intervention.",
+      "options": [
+        "Strongly agree",
+        "Agree",
+        "Disagree",
+        "Strongly disagree"
+      ],
+      "type": "sa",
+      "exclusive_options": [
+        3
+      ],
+      "lr": 1,
+      "auth": -1
+    },
+    {
+      "id": 3,
+      "group_id": 1,
+      "lang": "ja",
+      "statement": "市場は政府の介入から自由であるべきだ。",
+      "options": [
+        "強く賛成",
+        "賛成",
+        "反対",
+        "強く反対"
+      ],
+      "type": "sa",
+      "exclusive_options": [
+        3
+      ],
+      "lr": 1,
+      "auth": -1
+    },
+    {
+      "id": 4,
+      "group_id": 2,
+      "lang": "en",
+      "statement": "Traditional values should be preserved even if it restricts some freedoms.",
+      "options": [
+        "Strongly agree",
+        "Agree",
+        "Disagree",
+        "Strongly disagree"
+      ],
+      "type": "sa",
+      "exclusive_options": [
+        3
+      ],
+      "lr": 1,
+      "auth": 1
+    },
+    {
+      "id": 5,
+      "group_id": 2,
+      "lang": "ja",
+      "statement": "ある自由を制限してでも伝統的価値を守るべきだ。",
+      "options": [
+        "強く賛成",
+        "賛成",
+        "反対",
+        "強く反対"
+      ],
+      "type": "sa",
+      "exclusive_options": [
+        3
+      ],
+      "lr": 1,
+      "auth": 1
+    },
+    {
+      "id": 6,
+      "group_id": 3,
+      "lang": "en",
+      "statement": "Personal privacy is more important than national security.",
+      "options": [
+        "Strongly agree",
+        "Agree",
+        "Disagree",
+        "Strongly disagree"
+      ],
+      "type": "sa",
+      "exclusive_options": [
+        3
+      ],
+      "lr": -1,
+      "auth": -1
+    },
+    {
+      "id": 7,
+      "group_id": 3,
+      "lang": "ja",
+      "statement": "個人のプライバシーは国家安全保障よりも重要だ。",
+      "options": [
+        "強く賛成",
+        "賛成",
+        "反対",
+        "強く反対"
+      ],
+      "type": "sa",
+      "exclusive_options": [
+        3
+      ],
+      "lr": -1,
+      "auth": -1
+    },
+    {
+      "id": 8,
+      "group_id": 4,
+      "lang": "en",
+      "statement": "The state should have the power to censor extremist views.",
+      "options": [
+        "Strongly agree",
+        "Agree",
+        "Disagree",
+        "Strongly disagree"
+      ],
+      "type": "sa",
+      "exclusive_options": [
+        3
+      ],
+      "lr": 0,
+      "auth": 1
+    },
+    {
+      "id": 9,
+      "group_id": 4,
+      "lang": "ja",
+      "statement": "国は過激な意見を検閲する権限を持つべきだ。",
+      "options": [
+        "強く賛成",
+        "賛成",
+        "反対",
+        "強く反対"
+      ],
+      "type": "sa",
+      "exclusive_options": [
+        3
+      ],
+      "lr": 0,
+      "auth": 1
+    },
+    {
+      "id": 10,
+      "group_id": 5,
+      "lang": "en",
+      "statement": "Strong environmental regulations are worth the economic cost.",
+      "options": [
+        "Strongly agree",
+        "Agree",
+        "Disagree",
+        "Strongly disagree"
+      ],
+      "type": "sa",
+      "exclusive_options": [
+        3
+      ],
+      "lr": -1,
+      "auth": 0
+    },
+    {
+      "id": 11,
+      "group_id": 5,
+      "lang": "ja",
+      "statement": "強力な環境規制は経済的コストに見合う。",
+      "options": [
+        "強く賛成",
+        "賛成",
+        "反対",
+        "強く反対"
+      ],
+      "type": "sa",
+      "exclusive_options": [
+        3
+      ],
+      "lr": -1,
+      "auth": 0
+    },
+    {
+      "id": 12,
+      "group_id": 6,
+      "lang": "en",
+      "statement": "Immigration should be restricted to protect local jobs.",
+      "options": [
+        "Strongly agree",
+        "Agree",
+        "Disagree",
+        "Strongly disagree"
+      ],
+      "type": "sa",
+      "exclusive_options": [
+        3
+      ],
+      "lr": 1,
+      "auth": 1
+    },
+    {
+      "id": 13,
+      "group_id": 6,
+      "lang": "ja",
+      "statement": "地元の雇用を守るため移民を制限すべきだ。",
+      "options": [
+        "強く賛成",
+        "賛成",
+        "反対",
+        "強く反対"
+      ],
+      "type": "sa",
+      "exclusive_options": [
+        3
+      ],
+      "lr": 1,
+      "auth": 1
+    },
+    {
+      "id": 14,
+      "group_id": 7,
+      "lang": "en",
+      "statement": "Welfare makes people dependent on the government.",
+      "options": [
+        "Strongly agree",
+        "Agree",
+        "Disagree",
+        "Strongly disagree"
+      ],
+      "type": "sa",
+      "exclusive_options": [
+        3
+      ],
+      "lr": 1,
+      "auth": 0
+    },
+    {
+      "id": 15,
+      "group_id": 7,
+      "lang": "ja",
+      "statement": "福祉は人々を政府に依存させる。",
+      "options": [
+        "強く賛成",
+        "賛成",
+        "反対",
+        "強く反対"
+      ],
+      "type": "sa",
+      "exclusive_options": [
+        3
+      ],
+      "lr": 1,
+      "auth": 0
+    },
+    {
+      "id": 16,
+      "group_id": 8,
+      "lang": "en",
+      "statement": "Religion should play a role in public policy.",
+      "options": [
+        "Strongly agree",
+        "Agree",
+        "Disagree",
+        "Strongly disagree"
+      ],
+      "type": "sa",
+      "exclusive_options": [
+        3
+      ],
+      "lr": 1,
+      "auth": 1
+    },
+    {
+      "id": 17,
+      "group_id": 8,
+      "lang": "ja",
+      "statement": "宗教は公共政策に役割を果たすべきだ。",
+      "options": [
+        "強く賛成",
+        "賛成",
+        "反対",
+        "強く反対"
+      ],
+      "type": "sa",
+      "exclusive_options": [
+        3
+      ],
+      "lr": 1,
+      "auth": 1
+    },
+    {
+      "id": 18,
+      "group_id": 9,
+      "lang": "en",
+      "statement": "Military action in foreign countries rarely solves problems.",
+      "options": [
+        "Strongly agree",
+        "Agree",
+        "Disagree",
+        "Strongly disagree"
+      ],
+      "type": "sa",
+      "exclusive_options": [
+        3
+      ],
+      "lr": -1,
+      "auth": -1
+    },
+    {
+      "id": 19,
+      "group_id": 9,
+      "lang": "ja",
+      "statement": "外国での軍事行動が問題を解決することは稀だ。",
+      "options": [
+        "強く賛成",
+        "賛成",
+        "反対",
+        "強く反対"
+      ],
+      "type": "sa",
+      "exclusive_options": [
+        3
+      ],
+      "lr": -1,
+      "auth": -1
+    },
+    {
+      "id": 20,
+      "group_id": 10,
+      "lang": "en",
+      "statement": "Drug use should be decriminalized.",
+      "options": [
+        "Strongly agree",
+        "Agree",
+        "Disagree",
+        "Strongly disagree"
+      ],
+      "type": "sa",
+      "exclusive_options": [
+        3
+      ],
+      "lr": -1,
+      "auth": -1
+    },
+    {
+      "id": 21,
+      "group_id": 10,
+      "lang": "ja",
+      "statement": "薬物使用は非犯罪化すべきだ。",
+      "options": [
+        "強く賛成",
+        "賛成",
+        "反対",
+        "強く反対"
+      ],
+      "type": "sa",
+      "exclusive_options": [
+        3
+      ],
+      "lr": -1,
+      "auth": -1
+    },
+    {
+      "id": 22,
+      "group_id": 11,
+      "lang": "en",
+      "statement": "Large corporations should be regulated to protect consumers.",
+      "options": [
+        "Strongly agree",
+        "Agree",
+        "Disagree",
+        "Strongly disagree"
+      ],
+      "type": "sa",
+      "exclusive_options": [
+        3
+      ],
+      "lr": -1,
+      "auth": 0
+    },
+    {
+      "id": 23,
+      "group_id": 11,
+      "lang": "ja",
+      "statement": "大企業は消費者を守るため規制されるべきだ。",
+      "options": [
+        "強く賛成",
+        "賛成",
+        "反対",
+        "強く反対"
+      ],
+      "type": "sa",
+      "exclusive_options": [
+        3
+      ],
+      "lr": -1,
+      "auth": 0
+    }
+  ],
+  "parties": [
+    {
+      "id": 0,
+      "name": "自由民主党"
+    },
+    {
+      "id": 1,
+      "name": "立憲民主党"
+    },
+    {
+      "id": 2,
+      "name": "日本維新の会"
+    },
+    {
+      "id": 3,
+      "name": "公明党"
+    },
+    {
+      "id": 4,
+      "name": "国民民主党"
+    },
+    {
+      "id": 5,
+      "name": "日本共産党"
+    },
+    {
+      "id": 6,
+      "name": "社会民主党"
+    },
+    {
+      "id": 7,
+      "name": "れいわ新選組"
+    },
+    {
+      "id": 8,
+      "name": "NHK党"
+    },
+    {
+      "id": 9,
+      "name": "参政党"
+    },
+    {
+      "id": 10,
+      "name": "日本第一党"
+    },
+    {
+      "id": 11,
+      "name": "ごぼうの党"
+    },
+    {
+      "id": 12,
+      "name": "無党派"
+    }
+  ]
+}

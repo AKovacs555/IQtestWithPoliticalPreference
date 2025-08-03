@@ -145,12 +145,17 @@ _dist_path = os.path.join(
 with open(_dist_path) as f:
     NORMATIVE_DIST = json.load(f)
 
-# Load political survey items
-_survey_path = os.path.join(os.path.dirname(__file__), "data", "political_survey.json")
-with open(_survey_path) as f:
-    _survey_data = json.load(f)
-    POLITICAL_SURVEY = _survey_data.get("questions", [])
-    PARTIES = _survey_data.get("parties", [])
+# Load political survey items (multi-language)
+_survey_path = os.path.join(os.path.dirname(__file__), "data", "surveys.json")
+
+
+def _load_survey_data():
+    with open(_survey_path) as f:
+        _survey_data = json.load(f)
+    return _survey_data.get("questions", []), _survey_data.get("parties", [])
+
+
+SURVEY_QUESTIONS, PARTIES = _load_survey_data()
 
 
 class OTPRequest(BaseModel):
@@ -207,6 +212,9 @@ class AdaptiveAnswerResponse(BaseModel):
 class SurveyItem(BaseModel):
     id: int
     statement: str
+    options: list[str]
+    type: str
+    exclusive_options: list[int] = []
 
 
 class PartyItem(BaseModel):
@@ -221,7 +229,7 @@ class SurveyStartResponse(BaseModel):
 
 class SurveyAnswer(BaseModel):
     id: int
-    value: int
+    selections: List[int]
 
 
 class SurveySubmitRequest(BaseModel):
@@ -623,9 +631,22 @@ async def adaptive_answer(payload: AdaptiveAnswerRequest):
 
 
 @app.get("/survey/start", response_model=SurveyStartResponse)
-async def survey_start():
-    items = [SurveyItem(id=i["id"], statement=i["statement"]) for i in POLITICAL_SURVEY]
-    parties = [PartyItem(id=p["id"], name=p["name"]) for p in PARTIES]
+async def survey_start(lang: str = "en"):
+    questions, parties_data = _load_survey_data()
+    items_raw = [q for q in questions if q.get("lang") == lang]
+    if not items_raw:  # fallback to English if requested lang missing
+        items_raw = [q for q in questions if q.get("lang") == "en"]
+    items = [
+        SurveyItem(
+            id=i["id"],
+            statement=i["statement"],
+            options=i.get("options", []),
+            type=i.get("type", "sa"),
+            exclusive_options=i.get("exclusive_options", []),
+        )
+        for i in items_raw
+    ]
+    parties = [PartyItem(id=p["id"], name=p["name"]) for p in parties_data]
     return {"items": items, "parties": parties}
 
 
@@ -633,20 +654,44 @@ async def survey_start():
 async def survey_submit(payload: SurveySubmitRequest):
     if not payload.answers:
         raise HTTPException(status_code=400, detail="No answers provided")
+
+    questions, _ = _load_survey_data()
     lr_score = 0.0
     auth_score = 0.0
+
     for ans in payload.answers:
-        if ans.id >= len(POLITICAL_SURVEY) or ans.id < 0:
+        matching = [q for q in questions if q.get("id") == ans.id]
+        if not matching:
             raise HTTPException(status_code=400, detail=f"Invalid question id {ans.id}")
-        item = POLITICAL_SURVEY[ans.id]
-        weight = ans.value - 3  # center Likert 1-5 at 0
+        item = matching[0]
+
+        selections = ans.selections
+        if item.get("type") == "sa":
+            if len(selections) != 1:
+                raise HTTPException(status_code=400, detail="Exactly one option required")
+            choice = selections[0]
+        else:  # multi-answer
+            if not selections:
+                raise HTTPException(status_code=400, detail="At least one option required")
+            # Exclusive option logic
+            if any(
+                idx in item.get("exclusive_options", []) and len(selections) > 1
+                for idx in selections
+            ):
+                raise HTTPException(status_code=400, detail="Exclusive option selected with others")
+            choice = selections[0]  # scoring uses first selection
+
+        if choice < 0 or choice >= len(item.get("options", [])):
+            raise HTTPException(status_code=400, detail=f"Invalid option index {choice}")
+
+        weight = choice - (len(item.get("options", [])) - 1) / 2
         lr_score += weight * item.get("lr", 0)
         auth_score += weight * item.get("auth", 0)
 
-    # Normalize by number of items
-    n = len(POLITICAL_SURVEY)
-    lr_score /= n
-    auth_score /= n
+    n = len(questions)
+    if n:
+        lr_score /= n
+        auth_score /= n
 
     if lr_score > 0.3:
         category = "Conservative"
