@@ -59,17 +59,17 @@ export default function Dashboard() {
     <Layout>
       <div className="max-w-2xl mx-auto space-y-4 py-4">
         <h2 className="text-2xl font-bold text-center">{t('dashboard.title')}</h2>
-        {hist.length ? (
-          <div className="h-64"><canvas ref={histRef}></canvas></div>
-        ) : (
+        {userScore == null ? (
           <p className="text-center">{t('dashboard.no_data')}</p>
+        ) : (
+          <>
+            {hist.length ? <div className="h-64"><canvas ref={histRef}></canvas></div> : null}
+            {percentile != null && (
+              <p className="text-center">{t('dashboard.percentile', { pct: percentile.toFixed(1) })}</p>
+            )}
+            {party.length ? <div className="h-64"><canvas ref={partyRef}></canvas></div> : null}
+          </>
         )}
-        {percentile != null && (
-          <p className="text-center">{t('dashboard.percentile', { pct: percentile.toFixed(1) })}</p>
-        )}
-        {party.length ? (
-          <div className="h-64"><canvas ref={partyRef}></canvas></div>
-        ) : null}
       </div>
     </Layout>
   );

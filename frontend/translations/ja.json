@@ -25,5 +25,18 @@
   "upload.status.uploading": "ファイルをアップロードしています…",
   "upload.status.translating": "翻訳処理中です…",
   "upload.status.saving": "データベースに保存しています…",
-  "warning.screenshot_detected": "不正行為が検出されました。テストが終了します。"
+  "warning.screenshot_detected": "不正行為が検出されました。テストが終了します。",
+  "select_country.title": "国籍を選択",
+  "select_country.select": "国を選択",
+  "select_country.save": "保存",
+  "select_country.search": "国名で検索",
+  "select_country.saved": "保存しました",
+  "select_country.error": "国を選択してください",
+  "select_party.title": "政党を選択",
+  "select_party.save": "保存",
+  "select_party.saved": "保存しました",
+  "select_party.select_error": "少なくとも1つの政党を選択してください",
+  "dashboard.title": "ダッシュボード",
+  "dashboard.no_data": "データが不足しています",
+  "dashboard.percentile": "あなたは{{pct}}パーセンタイルに位置しています"
 }

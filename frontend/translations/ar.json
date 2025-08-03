@@ -25,5 +25,18 @@
   "upload.status.uploading": "جاري رفع الملف…",
   "upload.status.translating": "جاري الترجمة…",
   "upload.status.saving": "جاري الحفظ في قاعدة البيانات…",
-  "warning.screenshot_detected": "تم اكتشاف نشاط مشبوه. سيتم إنهاء الاختبار."
+  "warning.screenshot_detected": "تم اكتشاف نشاط مشبوه. سيتم إنهاء الاختبار.",
+  "select_country.title": "Select nationality",
+  "select_country.select": "Select country",
+  "select_country.save": "Save",
+  "select_country.search": "Search country",
+  "select_country.saved": "Saved",
+  "select_country.error": "Please select a country",
+  "select_party.title": "Select party",
+  "select_party.save": "Save",
+  "select_party.saved": "Saved",
+  "select_party.select_error": "Please select at least one party",
+  "dashboard.title": "Dashboard",
+  "dashboard.no_data": "Not enough data",
+  "dashboard.percentile": "You are at the {{pct}} percentile"
 }

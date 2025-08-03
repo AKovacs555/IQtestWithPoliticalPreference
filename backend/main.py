@@ -785,16 +785,23 @@ async def leaderboard():
 
 @app.get("/stats/distribution")
 async def stats_distribution(user_id: str, epsilon: float = 1.0):
-    """Return histogram of top IQ scores and user's percentile."""
+    """Return overall and party IQ distributions with user percentile."""
     users = get_all_users()
-    scores = []
+    scores: list[float] = []
     user_score = None
+    party_scores: dict[int, list[float]] = {}
     for u in users:
         uscores = [s.get("iq") for s in (u.get("scores") or [])]
         if not uscores:
             continue
         top = max(uscores)
         scores.append(top)
+        parties = (u.get("party_log") or [])
+        parties = parties[-1]["party_ids"] if parties else []
+        if not parties:
+            parties = [12]
+        for pid in parties:
+            party_scores.setdefault(pid, []).append(top)
         if u.get("hashed_id") == user_id:
             user_score = top
 
@@ -809,7 +816,22 @@ async def stats_distribution(user_id: str, epsilon: float = 1.0):
     if user_score is not None and scores:
         rank = sum(1 for s in scores if s <= user_score)
         percentile = rank / len(scores) * 100
-    party_means = await leaderboard_by_party(epsilon)
+
+    party_means = []
+    for pid, vals in party_scores.items():
+        if not vals:
+            continue
+        true_mean = sum(vals) / len(vals)
+        noisy = add_laplace(true_mean, epsilon, sensitivity=1 / len(vals))
+        entry = {"party_id": pid, "avg_iq": noisy}
+        if len(vals) >= MIN_BUCKET_SIZE:
+            pb: dict[int, int] = {}
+            for v in vals:
+                b = int(v // 5 * 5)
+                pb[b] = pb.get(b, 0) + 1
+            entry["histogram"] = [{"bin": k, "count": c} for k, c in sorted(pb.items())]
+        party_means.append(entry)
+
     return {
         "histogram": histogram,
         "mean": mean,

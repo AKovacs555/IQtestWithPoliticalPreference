@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 import countryList from '../lib/countryList';
 import LanguageSelector from '../components/LanguageSelector';
@@ -9,19 +10,27 @@ export default function SelectNationality() {
   const [search, setSearch] = useState('');
   const apiBase = import.meta.env.VITE_API_BASE;
   const userId = localStorage.getItem('user_id') || 'demo';
-  const { t } = useTranslation();
+  const navigate = useNavigate();
+  const { t, i18n } = useTranslation();
 
   const save = async () => {
-    if (!country) return;
+    if (!country) {
+      alert(t('select_country.error'));
+      return;
+    }
     await fetch(`${apiBase}/user/nationality`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ user_id: userId, nationality: country })
     });
+    localStorage.setItem('nationality', country);
     alert(t('select_country.saved'));
+    navigate('/select-party');
   };
 
-  const filtered = countryList.filter(c =>
+  const countries = useMemo(() => countryList(i18n.language), [i18n.language]);
+
+  const filtered = countries.filter(c =>
     c.name.toLowerCase().includes(search.toLowerCase())
   );
 

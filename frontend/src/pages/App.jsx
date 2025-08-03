@@ -25,6 +25,8 @@ import History from './History.jsx';
 import confetti from 'canvas-confetti';
 import { getQuizStart, submitQuiz } from '../api';
 import TestPage from './TestPage.jsx';
+import RequireNationality from '../components/RequireNationality';
+import RequireParty from '../components/RequireParty';
 
 const PageTransition = ({ children }) => (
   <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
@@ -278,20 +280,20 @@ export default function App() {
     <AnimatePresence mode="wait">
       <Routes location={location} key={location.pathname}>
         <Route path="/" element={<Home />} />
-        <Route path="/select-set" element={<SelectSet />} />
-        <Route path="/start" element={<DemographicsForm />} />
-        <Route path="/quiz" element={<Quiz />} />
-        <Route path="/test" element={<TestPage />} />
-        <Route path="/survey" element={<SurveyPage />} />
+        <Route path="/select-set" element={<RequireNationality><RequireParty><SelectSet /></RequireParty></RequireNationality>} />
+        <Route path="/start" element={<RequireNationality><RequireParty><DemographicsForm /></RequireParty></RequireNationality>} />
+        <Route path="/quiz" element={<RequireNationality><RequireParty><Quiz /></RequireParty></RequireNationality>} />
+        <Route path="/test" element={<RequireNationality><RequireParty><TestPage /></RequireParty></RequireNationality>} />
+        <Route path="/survey" element={<RequireNationality><RequireParty><SurveyPage /></RequireParty></RequireNationality>} />
         <Route path="/pricing" element={<Pricing />} />
         <Route path="/result" element={<Result />} />
         <Route path="/leaderboard" element={<Leaderboard />} />
-        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/dashboard" element={<RequireNationality><RequireParty><Dashboard /></RequireParty></RequireNationality>} />
         <Route path="/settings/:userId" element={<Settings />} />
         <Route path="/history/:userId" element={<History />} />
-        <Route path="/party" element={<PartySelect />} />
+        <Route path="/party" element={<RequireNationality><PartySelect /></RequireNationality>} />
         <Route path="/select-nationality" element={<SelectNationality />} />
-        <Route path="/select-party" element={<SelectParty />} />
+        <Route path="/select-party" element={<RequireNationality><SelectParty /></RequireNationality>} />
         <Route path="/admin/questions" element={<AdminQuestions />} />
         <Route path="/admin/surveys" element={<AdminSurvey />} />
         <Route path="/admin/users" element={<AdminUsers />} />

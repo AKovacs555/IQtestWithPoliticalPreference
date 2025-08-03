@@ -25,5 +25,18 @@
   "upload.status.uploading": "Envoi du fichier…",
   "upload.status.translating": "Traduction…",
   "upload.status.saving": "Enregistrement dans la base de données…",
-  "warning.screenshot_detected": "Une activité suspecte a été détectée. Le test va se terminer."
+  "warning.screenshot_detected": "Une activité suspecte a été détectée. Le test va se terminer.",
+  "select_country.title": "Select nationality",
+  "select_country.select": "Select country",
+  "select_country.save": "Save",
+  "select_country.search": "Search country",
+  "select_country.saved": "Saved",
+  "select_country.error": "Please select a country",
+  "select_party.title": "Select party",
+  "select_party.save": "Save",
+  "select_party.saved": "Saved",
+  "select_party.select_error": "Please select at least one party",
+  "dashboard.title": "Dashboard",
+  "dashboard.no_data": "Not enough data",
+  "dashboard.percentile": "You are at the {{pct}} percentile"
 }

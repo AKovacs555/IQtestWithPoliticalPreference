@@ -18,6 +18,7 @@ export default function Navbar() {
         <LanguageSelector />
         <PointsBadge userId={userId} />
         <Link to="/leaderboard" className="btn btn-ghost btn-sm">Leaderboard</Link>
+        <Link to="/dashboard" className="btn btn-ghost btn-sm">Dashboard</Link>
         <Link to="/pricing" className="btn btn-ghost btn-sm">Pricing</Link>
         <Link to="/select-nationality" className="btn btn-ghost btn-sm">Nationality</Link>
         <Link to="/select-party" className="btn btn-ghost btn-sm">Parties</Link>

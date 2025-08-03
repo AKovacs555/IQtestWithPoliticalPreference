@@ -1,3 +1,4 @@
+from datetime import datetime
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from backend.deps.supabase_client import get_supabase_client
@@ -15,12 +16,8 @@ class PartyPayload(BaseModel):
 @router.post('/nationality')
 async def set_nationality(payload: NationalityPayload):
     supabase = get_supabase_client()
-    data = {
-        'user_id': payload.user_id,
-        'nationality': payload.nationality,
-    }
     try:
-        supabase.table('profiles').upsert(data, on_conflict='user_id').execute()
+        supabase.table('users').update({'nationality': payload.nationality}).eq('hashed_id', payload.user_id).execute()
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     return {'status': 'ok'}
@@ -29,7 +26,7 @@ async def set_nationality(payload: NationalityPayload):
 async def parties(country: str):
     supabase = get_supabase_client()
     try:
-        rows = supabase.table('political_parties').select('*').eq('country', country).execute().data
+        rows = supabase.table('parties').select('*').eq('country_code', country).execute().data
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     return {'parties': rows}
@@ -38,7 +35,10 @@ async def parties(country: str):
 async def save_party(payload: PartyPayload):
     supabase = get_supabase_client()
     try:
-        supabase.table('profiles').update({'party_ids': payload.party_ids}).eq('user_id', payload.user_id).execute()
+        resp = supabase.table('users').select('party_log').eq('hashed_id', payload.user_id).execute()
+        log = resp.data[0].get('party_log') if resp.data else []
+        log.append({'party_ids': payload.party_ids, 'timestamp': datetime.utcnow().isoformat()})
+        supabase.table('users').update({'party_log': log}).eq('hashed_id', payload.user_id).execute()
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     return {'status': 'ok'}

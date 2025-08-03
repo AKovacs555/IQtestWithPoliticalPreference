@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 import { useTranslation } from 'react-i18next';
 
@@ -8,6 +9,7 @@ export default function SelectParty() {
   const apiBase = import.meta.env.VITE_API_BASE;
   const userId = localStorage.getItem('user_id') || 'demo';
   const nationality = localStorage.getItem('nationality') || 'US';
+  const navigate = useNavigate();
   const { t } = useTranslation();
 
   useEffect(() => {
@@ -27,12 +29,18 @@ export default function SelectParty() {
   };
 
   const save = async () => {
+    if (selected.length === 0) {
+      alert(t('select_party.select_error'));
+      return;
+    }
     await fetch(`${apiBase}/user/party`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ user_id: userId, party_ids: selected })
     });
+    localStorage.setItem('party_selected', '1');
     alert(t('select_party.saved'));
+    navigate('/select-set');
   };
 
   return (
