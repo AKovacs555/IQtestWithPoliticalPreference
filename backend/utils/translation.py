@@ -3,6 +3,20 @@ import json
 import logging
 import openai
 
+
+LANG_NAME_MAP = {
+    "en": "English",
+    "tr": "Turkish",
+    "ru": "Russian",
+    "zh": "Chinese",
+    "ko": "Korean",
+    "es": "Spanish",
+    "fr": "French",
+    "it": "Italian",
+    "de": "German",
+    "ar": "Arabic",
+}
+
 api_key = os.environ.get("OPENAI_API_KEY")
 client = openai.AsyncClient(api_key=api_key) if api_key else None
 
@@ -17,8 +31,11 @@ async def translate_question(
     if client is None:
         raise RuntimeError("OPENAI_API_KEY environment variable not set")
 
+    # Look up human-readable language name; fall back to code if unknown
+    lang_name = LANG_NAME_MAP.get(target_lang, target_lang)
+
     prompt = (
-        f"Translate the following Japanese IQ test question and its four options into {target_lang}. "
+        f"Translate the following Japanese IQ test question and its four options into {lang_name}. "
         "Return a JSON object with keys 'question' and 'options' (array of four strings). "
         "Do not include any markdown or code fences."
         f"\n\nQuestion: {question_text}\nOptions: {options}"
