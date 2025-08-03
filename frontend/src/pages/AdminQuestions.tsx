@@ -52,8 +52,9 @@ export default function AdminQuestions() {
   const fetchQuestions = async (lang: string): Promise<QuestionVariant[]> => {
     if (!token) return [];
     setStatus('loading');
-    const res = await fetch(`${apiBase}/admin/questions?lang=${lang}`, {
-      headers: { 'X-Admin-Api-Key': token }
+    const res = await fetch(`${apiBase}/admin/questions/?lang=${lang}`, {
+      headers: { 'X-Admin-Api-Key': token },
+      redirect: 'manual'
     });
     let sorted: QuestionVariant[] = [];
     if (res.ok) {

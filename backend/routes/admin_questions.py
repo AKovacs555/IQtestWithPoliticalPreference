@@ -20,6 +20,11 @@ def check_admin(admin_key: Optional[str] = Header(None, alias="X-Admin-Api-Key")
         raise HTTPException(status_code=401, detail="Unauthorized")
 
 
+@router.get("", dependencies=[Depends(check_admin)])
+async def list_questions_no_slash():
+    return await list_questions()
+
+
 @router.get("/", dependencies=[Depends(check_admin)])
 async def list_questions():
     supabase = get_supabase_client()
