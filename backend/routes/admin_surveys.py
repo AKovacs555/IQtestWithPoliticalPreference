@@ -19,6 +19,10 @@ router = APIRouter(prefix="/admin/surveys", tags=["admin-surveys"])
 logger = logging.getLogger(__name__)
 
 
+# Language options should mirror those available to end users
+LANGUAGES = ["ja", "en", "tr", "ru", "zh", "ko", "es", "fr", "it", "de", "ar"]
+
+
 def check_admin(admin_key: Optional[str] = Header(None, alias="X-Admin-Api-Key")):
     expected_new = os.environ.get("ADMIN_API_KEY")
     expected_old = os.environ.get("ADMIN_TOKEN")
@@ -31,6 +35,12 @@ def check_admin(admin_key: Optional[str] = Header(None, alias="X-Admin-Api-Key")
     if admin_key != expected:
         logger.warning("Invalid admin key provided")
         raise HTTPException(status_code=401, detail="Unauthorized")
+
+
+@router.get("/languages", dependencies=[Depends(check_admin)])
+async def list_languages():
+    """Return the available languages for survey creation."""
+    return {"languages": LANGUAGES}
 
 
 @router.get("/", dependencies=[Depends(check_admin)])
