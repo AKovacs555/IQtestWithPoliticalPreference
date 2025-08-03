@@ -42,6 +42,9 @@ export default function AdminQuestions() {
   const { t } = useTranslation();
 
   const apiBase = import.meta.env.VITE_API_BASE || '';
+  if (!apiBase) {
+    console.warn('VITE_API_BASE is not set');
+  }
 
   const filterByLanguage = (data: QuestionVariant[], lang: string) =>
     lang === 'ja' ? data : data.filter(q => q.language === lang);

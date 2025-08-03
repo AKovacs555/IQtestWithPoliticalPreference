@@ -7,6 +7,9 @@ export default function AdminSurvey() {
   const [items, setItems] = useState<any[]>([]);
   const [newStatement, setNewStatement] = useState('');
   const apiBase = import.meta.env.VITE_API_BASE || '';
+  if (!apiBase) {
+    console.warn('VITE_API_BASE is not set');
+  }
 
   const load = async () => {
     if (!token) return;

@@ -115,6 +115,9 @@ from db import (
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
 SUPABASE_API_KEY = os.environ.get("SUPABASE_API_KEY", "")
 
+if not SUPABASE_URL or not SUPABASE_API_KEY:
+    logger.warning("SUPABASE_URL or SUPABASE_API_KEY is not configured")
+
 EVENTS: list[dict] = []
 
 # Dynamic pricing tiers loaded from RETRY_PRICE_TIERS

@@ -2,6 +2,18 @@
 
 This project provides an IQ quiz and political preference survey using a responsive freemium design. Older Flask implementations are stored in the `archive/` directory for reference while the active codebase runs on **FastAPI** with a **React** front end. The UI uses **Material UI** components with Tailwind utilities and works on mobile and desktop devices.
 
+## Required environment variables
+
+The following variables must be configured for local development and deployments:
+
+- `SUPABASE_URL` – URL of the Supabase instance
+- `SUPABASE_API_KEY` – service role or API key for Supabase access
+- `ADMIN_API_KEY` – token required for admin endpoints
+- `VITE_API_BASE` – base URL of the backend API used by the React app
+
+For details on preparing question files and importing them into Supabase see [docs/import_tests.md](docs/import_tests.md).
+
+
 ## Backend (FastAPI)
 
 - Located in `backend/`.

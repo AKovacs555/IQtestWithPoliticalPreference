@@ -7,6 +7,9 @@ export default function AdminUsers() {
   const [users, setUsers] = useState<any[]>([]);
   const [msg, setMsg] = useState('');
   const apiBase = import.meta.env.VITE_API_BASE || '';
+  if (!apiBase) {
+    console.warn('VITE_API_BASE is not set');
+  }
 
   const load = async () => {
     if (!token) return;
