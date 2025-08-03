@@ -6,6 +6,7 @@ export default function AdminSurvey() {
   const [token, setToken] = useState(() => localStorage.getItem('adminToken') || '');
   const [items, setItems] = useState<any[]>([]);
   const [newStatement, setNewStatement] = useState('');
+  const [status, setStatus] = useState<string | null>(null);
   const apiBase = import.meta.env.VITE_API_BASE || '';
   if (!apiBase) {
     console.warn('VITE_API_BASE is not set');
@@ -16,6 +17,10 @@ export default function AdminSurvey() {
     const res = await fetch(`${apiBase}/admin/surveys`, {
       headers: { 'X-Admin-Api-Key': token }
     });
+    if (res.status === 401) {
+      setStatus('Invalid admin API key. Please check your settings.');
+      return;
+    }
     if (res.ok) {
       const data = await res.json();
       setItems(data.questions || []);
@@ -26,30 +31,42 @@ export default function AdminSurvey() {
 
   const create = async () => {
     if (!newStatement) return;
-    await fetch(`${apiBase}/admin/surveys`, {
+    const res = await fetch(`${apiBase}/admin/surveys`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-Admin-Api-Key': token },
       body: JSON.stringify({ statement: newStatement })
     });
+    if (res.status === 401) {
+      setStatus('Invalid admin API key. Please check your settings.');
+      return;
+    }
     setNewStatement('');
     load();
   };
 
   const update = async (id: number, statement: string) => {
-    await fetch(`${apiBase}/admin/surveys/${id}`, {
+    const res = await fetch(`${apiBase}/admin/surveys/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json', 'X-Admin-Api-Key': token },
       body: JSON.stringify({ statement })
     });
+    if (res.status === 401) {
+      setStatus('Invalid admin API key. Please check your settings.');
+      return;
+    }
     load();
   };
 
   const remove = async (id: number) => {
     if (!confirm('Delete?')) return;
-    await fetch(`${apiBase}/admin/surveys/${id}`, {
+    const res = await fetch(`${apiBase}/admin/surveys/${id}`, {
       method: 'DELETE',
       headers: { 'X-Admin-Api-Key': token }
     });
+    if (res.status === 401) {
+      setStatus('Invalid admin API key. Please check your settings.');
+      return;
+    }
     load();
   };
 
@@ -67,6 +84,7 @@ export default function AdminSurvey() {
           placeholder="API key"
           className="input input-bordered w-full"
         />
+        {status && <div className="alert alert-info text-sm">{status}</div>}
         <div className="space-y-2">
           {items.map(item => (
             <div key={item.id} className="flex items-center space-x-2">
