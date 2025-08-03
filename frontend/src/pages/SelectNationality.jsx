@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import Layout from '../components/Layout';
-import getCountryList from '../lib/countryList';
+import countryList from '../lib/countryList';
 import LanguageSelector from '../components/LanguageSelector';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
@@ -15,8 +15,13 @@ export default function SelectNationality() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    setList(getCountryList(i18n.language));
-  }, [i18n.language]);
+    setList(
+      countryList.map(c => ({
+        code: c.code,
+        name: t(`country_names.${c.code}`, { defaultValue: c.name_en })
+      }))
+    );
+  }, [i18n.language, t]);
 
   const save = async () => {
     if (!country) {

@@ -10,8 +10,10 @@ from backend.db import (
     insert_surveys,
     update_survey,
     delete_survey,
+    get_dashboard_default_survey,
+    set_dashboard_default_survey,
 )
-from backend.utils.translation import translate_survey
+from backend.utils.translation import translate_survey, SUPPORTED_LANGUAGES
 
 
 router = APIRouter(prefix="/admin/surveys", tags=["admin-surveys"])
@@ -55,9 +57,11 @@ async def create_survey(payload: dict):
     base_entry = {**payload, "group_id": group_id}
     rows = [base_entry]
 
-    if payload.get("lang") == "ja":
-        target_langs = ["en", "tr", "it", "es", "de"]
-        for lang in target_langs:
+    base_lang = payload.get("lang")
+    if base_lang in SUPPORTED_LANGUAGES:
+        for lang in SUPPORTED_LANGUAGES:
+            if lang == base_lang:
+                continue
             statement_tr, options_tr = await translate_survey(
                 payload["statement"], payload["options"], lang
             )
@@ -83,9 +87,11 @@ async def create_survey(payload: dict):
 async def edit_survey(group_id: str, payload: dict):
     update_survey(group_id, payload["lang"], payload)
 
-    if payload.get("lang") == "ja":
-        target_langs = ["en", "tr", "it", "es", "de"]
-        for lang in target_langs:
+    base_lang = payload.get("lang")
+    if base_lang in SUPPORTED_LANGUAGES:
+        for lang in SUPPORTED_LANGUAGES:
+            if lang == base_lang:
+                continue
             statement_tr, options_tr = await translate_survey(
                 payload["statement"], payload["options"], lang
             )
@@ -109,3 +115,17 @@ async def edit_survey(group_id: str, payload: dict):
 async def remove_survey(group_id: str):
     delete_survey(group_id)
     return {"deleted": True}
+
+
+@router.get("/dashboard-default-survey")
+async def get_dashboard_default():
+    group_id = get_dashboard_default_survey()
+    return {"group_id": group_id}
+
+
+@router.post(
+    "/dashboard-default-survey", dependencies=[Depends(check_admin)]
+)
+async def set_dashboard_default(payload: dict):
+    set_dashboard_default_survey(payload.get("group_id"))
+    return {"status": "ok"}

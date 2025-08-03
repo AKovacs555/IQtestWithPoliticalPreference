@@ -54,8 +54,8 @@ export default function SurveyPage() {
   const submit = async () => {
     const payload = Object.entries(answers).map(([id, sel]) => ({ id: Number(id), selections: sel }));
     try {
-      await submitSurvey(payload);
       const uid = localStorage.getItem('user_id');
+      await submitSurvey(payload, uid);
       if (uid) {
         await completeSurvey(uid);
       }

@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import Layout from '../components/Layout';
 import { Link } from 'react-router-dom';
-import getCountryList from '../lib/countryList';
+import Select from 'react-select';
+import countryList from '../lib/countryList';
+import { useTranslation } from 'react-i18next';
 
 interface SurveyItem {
   group_id: string;
@@ -17,7 +19,8 @@ export default function AdminSurvey() {
   const [token, setToken] = useState(() => localStorage.getItem('adminToken') || '');
   const [items, setItems] = useState<SurveyItem[]>([]);
   const [languages, setLanguages] = useState<string[]>([]);
-  const [countries] = useState(() => getCountryList('en'));
+  const { t } = useTranslation();
+  const [countries] = useState(() => countryList);
 
   const [newLang, setNewLang] = useState('ja');
   const [newStatement, setNewStatement] = useState('');
@@ -25,6 +28,7 @@ export default function AdminSurvey() {
   const [newType, setNewType] = useState<'sa' | 'ma'>('sa');
   const [exclusiveOptions, setExclusiveOptions] = useState('');
   const [newTargets, setNewTargets] = useState<string[]>([]);
+  const [defaultSurvey, setDefaultSurvey] = useState('');
 
   const [status, setStatus] = useState<string | null>(null);
   const [editing, setEditing] = useState<any>(null);
@@ -65,9 +69,20 @@ export default function AdminSurvey() {
     }
   };
 
+  const loadDefault = async () => {
+    const res = await fetch(`${apiBase}/admin/dashboard-default-survey`, {
+      headers: token ? { 'X-Admin-Api-Key': token } : undefined,
+    });
+    if (res.ok) {
+      const data = await res.json();
+      setDefaultSurvey(data.group_id || '');
+    }
+  };
+
   useEffect(() => {
     loadLanguages();
     load();
+    loadDefault();
   }, [token]);
 
   const create = async () => {
@@ -136,6 +151,17 @@ export default function AdminSurvey() {
     }
     setEditing(null);
     load();
+  };
+
+  const saveDefault = async () => {
+    const res = await fetch(`${apiBase}/admin/dashboard-default-survey`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Admin-Api-Key': token },
+      body: JSON.stringify({ group_id: defaultSurvey }),
+    });
+    if (res.ok) {
+      setStatus(t('saved', { defaultValue: 'Saved' }));
+    }
   };
 
   const remove = async (groupId: string) => {
@@ -210,25 +236,33 @@ export default function AdminSurvey() {
             placeholder="e.g. 3 or 0,2"
           />
           <label className="label">
-            <span className="label-text">Target countries</span>
+            <span className="label-text">{t('select_target_countries', { defaultValue: 'Select target countries' })}</span>
           </label>
-          <select
-            multiple
-            className="select select-bordered w-full h-40"
-            value={newTargets}
-            onChange={e =>
-              setNewTargets(Array.from(e.target.selectedOptions).map(o => o.value))
-            }
-          >
-            {countries.map(c => (
-              <option key={c.code} value={c.code}>{c.name}</option>
-            ))}
-          </select>
-          <button
-            className="btn btn-xs mt-1"
-            onClick={() => setNewTargets(countries.map(c => c.code))}
-            type="button"
-          >Select All</button>
+          <Select
+            isMulti
+            isSearchable
+            options={countries.map(c => ({
+              value: c.code,
+              label: t(`country_names.${c.code}`, { defaultValue: c.name_en })
+            }))}
+            value={countries
+              .map(c => ({ value: c.code, label: t(`country_names.${c.code}`, { defaultValue: c.name_en }) }))
+              .filter(o => newTargets.includes(o.value))}
+            onChange={vals => setNewTargets(vals.map(v => v.value))}
+            placeholder={t('select_target_countries', { defaultValue: 'Select target countries' })}
+          />
+          <div className="space-x-2 mt-1">
+            <button
+              className="btn btn-xs"
+              onClick={() => setNewTargets(countries.map(c => c.code))}
+              type="button"
+            >{t('select_all', { defaultValue: 'Select All' })}</button>
+            <button
+              className="btn btn-xs"
+              onClick={() => setNewTargets([])}
+              type="button"
+            >{t('clear', { defaultValue: 'Clear' })}</button>
+          </div>
           <button className="btn" onClick={create}>ADD</button>
         </div>
 
@@ -258,28 +292,38 @@ export default function AdminSurvey() {
               onChange={e => setEditing({ ...editing, exclusive: e.target.value })}
             />
             <label className="label">
-              <span className="label-text">Target countries</span>
+              <span className="label-text">{t('select_target_countries', { defaultValue: 'Select target countries' })}</span>
             </label>
-            <select
-              multiple
-              className="select select-bordered w-full h-40"
-              value={editing.target_countries}
-              onChange={e =>
+            <Select
+              isMulti
+              isSearchable
+              options={countries.map(c => ({
+                value: c.code,
+                label: t(`country_names.${c.code}`, { defaultValue: c.name_en })
+              }))}
+              value={countries
+                .map(c => ({ value: c.code, label: t(`country_names.${c.code}`, { defaultValue: c.name_en }) }))
+                .filter(o => editing.target_countries.includes(o.value))}
+              onChange={vals =>
                 setEditing({
                   ...editing,
-                  target_countries: Array.from(e.target.selectedOptions).map(o => o.value),
+                  target_countries: vals.map(v => v.value),
                 })
               }
-            >
-              {countries.map(c => (
-                <option key={c.code} value={c.code}>{c.name}</option>
-              ))}
-            </select>
-            <button
-              className="btn btn-xs mt-1"
-              onClick={() => setEditing({ ...editing, target_countries: countries.map(c => c.code) })}
-              type="button"
-            >Select All</button>
+              placeholder={t('select_target_countries', { defaultValue: 'Select target countries' })}
+            />
+            <div className="space-x-2 mt-1">
+              <button
+                className="btn btn-xs"
+                onClick={() => setEditing({ ...editing, target_countries: countries.map(c => c.code) })}
+                type="button"
+              >{t('select_all', { defaultValue: 'Select All' })}</button>
+              <button
+                className="btn btn-xs"
+                onClick={() => setEditing({ ...editing, target_countries: [] })}
+                type="button"
+              >{t('clear', { defaultValue: 'Clear' })}</button>
+            </div>
             <div className="flex space-x-2">
               <button className="btn" onClick={saveEdit}>Save</button>
               <button className="btn" onClick={() => setEditing(null)}>Cancel</button>
@@ -297,6 +341,21 @@ export default function AdminSurvey() {
               </div>
             </div>
           ))}
+        </div>
+
+        <div className="card card-bordered p-4 space-y-2 mt-4">
+          <h2 className="text-lg font-bold mb-2">{t('select_survey_for_dashboard', { defaultValue: 'Select survey for dashboard' })}</h2>
+          <select
+            className="select select-bordered w-full"
+            value={defaultSurvey}
+            onChange={e => setDefaultSurvey(e.target.value)}
+          >
+            <option value="">--</option>
+            {items.map(i => (
+              <option key={i.group_id} value={i.group_id}>{i.statement}</option>
+            ))}
+          </select>
+          <button className="btn" onClick={saveDefault}>{t('survey.submit', { defaultValue: 'Submit' })}</button>
         </div>
       </div>
     </Layout>

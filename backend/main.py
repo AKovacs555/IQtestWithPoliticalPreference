@@ -113,6 +113,8 @@ from db import (
     get_supabase,
     get_surveys,
     get_parties,
+    insert_survey_answers,
+    get_survey_answers,
 )
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
 SUPABASE_API_KEY = os.environ.get("SUPABASE_API_KEY", "")
@@ -225,6 +227,7 @@ class SurveyAnswer(BaseModel):
 
 class SurveySubmitRequest(BaseModel):
     answers: List[SurveyAnswer]
+    user_id: Optional[str] = None
 
 
 class PartySelection(BaseModel):
@@ -660,6 +663,11 @@ async def survey_start(lang: str = "en", user_id: str | None = None):
     return {"items": items, "parties": parties}
 
 
+@app.get("/surveys")
+async def public_surveys(lang: str = "en"):
+    return {"questions": get_surveys(lang)}
+
+
 @app.post("/survey/submit", response_model=SurveyResult)
 async def survey_submit(payload: SurveySubmitRequest):
     if not payload.answers:
@@ -669,6 +677,7 @@ async def survey_submit(payload: SurveySubmitRequest):
     lr_score = 0.0
     auth_score = 0.0
 
+    answer_rows: List[dict] = []
     for ans in payload.answers:
         item = questions.get(ans.id)
         if not item:
@@ -696,10 +705,23 @@ async def survey_submit(payload: SurveySubmitRequest):
         lr_score += weight * item.get("lr", 0)
         auth_score += weight * item.get("auth", 0)
 
+        if payload.user_id:
+            for sel in selections:
+                answer_rows.append(
+                    {
+                        "user_id": payload.user_id,
+                        "group_id": item.get("group_id"),
+                        "option_index": sel,
+                    }
+                )
+
     n = len(payload.answers)
     if n:
         lr_score /= n
         auth_score /= n
+
+    if answer_rows:
+        insert_survey_answers(answer_rows)
 
     if lr_score > 0.3:
         category = "Conservative"
@@ -810,6 +832,80 @@ async def leaderboard():
     epsilon = float(os.getenv("DP_EPSILON", "1.0"))
     data = await leaderboard_by_party(epsilon)
     return {"leaderboard": data}
+
+
+@app.get("/stats/iq_histogram")
+async def iq_histogram(user_id: str):
+    users = get_all_users()
+    top_scores = []
+    user_score = None
+    for u in users:
+        uscores = [s.get("iq") for s in (u.get("scores") or [])]
+        if not uscores:
+            continue
+        top = max(uscores)
+        top_scores.append(top)
+        if u.get("hashed_id") == user_id:
+            user_score = top
+    if not top_scores:
+        return {
+            "histogram": [],
+            "bucket_edges": [],
+            "user_score": user_score,
+            "user_percentile": None,
+        }
+    min_edge = int(min(top_scores) // 5 * 5)
+    max_edge = int(max(top_scores) // 5 * 5) + 5
+    bucket_edges = list(range(min_edge, max_edge + 1, 5))
+    hist_counts = [0] * (len(bucket_edges) - 1)
+    for s in top_scores:
+        idx = min(int((s - min_edge) // 5), len(hist_counts) - 1)
+        hist_counts[idx] += 1
+    percentile = None
+    if user_score is not None:
+        rank = sum(1 for s in top_scores if s <= user_score)
+        percentile = rank / len(top_scores) * 100
+    return {
+        "histogram": hist_counts,
+        "bucket_edges": bucket_edges,
+        "user_score": user_score,
+        "user_percentile": percentile,
+    }
+
+
+@app.get("/stats/survey_options/{group_id}")
+async def survey_option_stats(group_id: str):
+    answers = get_survey_answers(group_id)
+    if not answers:
+        return {"options": [], "averages": [], "counts": []}
+    users = {u["hashed_id"]: u for u in get_all_users()}
+    survey = next(
+        (s for s in get_surveys("en") if s.get("group_id") == group_id),
+        None,
+    )
+    if not survey:
+        survey = next(
+            (s for s in get_surveys() if s.get("group_id") == group_id),
+            None,
+        )
+    options = survey.get("options", []) if survey else []
+    iq_by_option: dict[int, list[float]] = {i: [] for i in range(len(options))}
+    for ans in answers:
+        user = users.get(ans["user_id"])
+        if not user:
+            continue
+        uscores = [s.get("iq") for s in (user.get("scores") or [])]
+        if not uscores:
+            continue
+        top = max(uscores)
+        iq_by_option.setdefault(ans["option_index"], []).append(top)
+    averages = []
+    counts = []
+    for i in range(len(options)):
+        vals = iq_by_option.get(i, [])
+        counts.append(len(vals))
+        averages.append(sum(vals) / len(vals) if vals else 0)
+    return {"options": options, "averages": averages, "counts": counts}
 
 
 @app.get("/stats/distribution")
