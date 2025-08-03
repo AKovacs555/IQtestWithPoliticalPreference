@@ -33,11 +33,19 @@ def check_admin(admin_key: Optional[str] = Header(None, alias="X-Admin-Api-Key")
 
 
 def load_data() -> dict:
+    """Load survey data from ``DATA_PATH``.
+
+    If the file does not yet exist, create it with an empty
+    structure so both the admin endpoints and the user-facing
+    survey share the same persistent storage.
+    """
     try:
         with open(DATA_PATH) as f:
             return json.load(f)
     except FileNotFoundError:
-        return {"questions": [], "parties": []}
+        data = {"questions": [], "parties": []}
+        save_data(data)
+        return data
 
 
 def save_data(data: dict) -> None:
