@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import Layout from '../components/Layout';
 import { Link } from 'react-router-dom';
+import getCountryList from '../lib/countryList';
 
 interface SurveyItem {
   group_id: string;
@@ -9,18 +10,21 @@ interface SurveyItem {
   options: string[];
   type: string;
   exclusive_options: number[];
+  target_countries?: string[];
 }
 
 export default function AdminSurvey() {
   const [token, setToken] = useState(() => localStorage.getItem('adminToken') || '');
   const [items, setItems] = useState<SurveyItem[]>([]);
   const [languages, setLanguages] = useState<string[]>([]);
+  const [countries] = useState(() => getCountryList('en'));
 
   const [newLang, setNewLang] = useState('ja');
   const [newStatement, setNewStatement] = useState('');
   const [newOptions, setNewOptions] = useState('');
   const [newType, setNewType] = useState<'sa' | 'ma'>('sa');
   const [exclusiveOptions, setExclusiveOptions] = useState('');
+  const [newTargets, setNewTargets] = useState<string[]>([]);
 
   const [status, setStatus] = useState<string | null>(null);
   const [editing, setEditing] = useState<any>(null);
@@ -78,7 +82,8 @@ export default function AdminSurvey() {
       statement: newStatement,
       options: newOptions.split('\n').filter(Boolean),
       type: newType,
-      exclusive_options: exclusiveIndices
+      exclusive_options: exclusiveIndices,
+      target_countries: newTargets,
     };
     const res = await fetch(`${apiBase}/admin/surveys`, {
       method: 'POST',
@@ -92,6 +97,7 @@ export default function AdminSurvey() {
     setNewStatement('');
     setNewOptions('');
     setExclusiveOptions('');
+    setNewTargets([]);
     load();
   };
 
@@ -102,7 +108,8 @@ export default function AdminSurvey() {
       statement: item.statement,
       options: item.options.join('\n'),
       type: item.type,
-      exclusive: item.exclusive_options.join(',')
+      exclusive: item.exclusive_options.join(','),
+      target_countries: item.target_countries || [],
     });
   };
 
@@ -115,7 +122,8 @@ export default function AdminSurvey() {
       exclusive_options: editing.exclusive
         .split(',')
         .map((v: string) => Number(v.trim()))
-        .filter((v: number) => !isNaN(v))
+        .filter((v: number) => !isNaN(v)),
+      target_countries: editing.target_countries || [],
     };
     const res = await fetch(`${apiBase}/admin/surveys/${editing.group_id}`, {
       method: 'PUT',
@@ -201,6 +209,26 @@ export default function AdminSurvey() {
             className="input input-bordered w-full"
             placeholder="e.g. 3 or 0,2"
           />
+          <label className="label">
+            <span className="label-text">Target countries</span>
+          </label>
+          <select
+            multiple
+            className="select select-bordered w-full h-40"
+            value={newTargets}
+            onChange={e =>
+              setNewTargets(Array.from(e.target.selectedOptions).map(o => o.value))
+            }
+          >
+            {countries.map(c => (
+              <option key={c.code} value={c.code}>{c.name}</option>
+            ))}
+          </select>
+          <button
+            className="btn btn-xs mt-1"
+            onClick={() => setNewTargets(countries.map(c => c.code))}
+            type="button"
+          >Select All</button>
           <button className="btn" onClick={create}>ADD</button>
         </div>
 
@@ -229,6 +257,29 @@ export default function AdminSurvey() {
               value={editing.exclusive}
               onChange={e => setEditing({ ...editing, exclusive: e.target.value })}
             />
+            <label className="label">
+              <span className="label-text">Target countries</span>
+            </label>
+            <select
+              multiple
+              className="select select-bordered w-full h-40"
+              value={editing.target_countries}
+              onChange={e =>
+                setEditing({
+                  ...editing,
+                  target_countries: Array.from(e.target.selectedOptions).map(o => o.value),
+                })
+              }
+            >
+              {countries.map(c => (
+                <option key={c.code} value={c.code}>{c.name}</option>
+              ))}
+            </select>
+            <button
+              className="btn btn-xs mt-1"
+              onClick={() => setEditing({ ...editing, target_countries: countries.map(c => c.code) })}
+              type="button"
+            >Select All</button>
             <div className="flex space-x-2">
               <button className="btn" onClick={saveEdit}>Save</button>
               <button className="btn" onClick={() => setEditing(null)}>Cancel</button>

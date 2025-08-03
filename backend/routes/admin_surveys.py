@@ -71,6 +71,7 @@ async def create_survey(payload: dict):
                     "exclusive_options": payload["exclusive_options"],
                     "lr": payload.get("lr", 0),
                     "auth": payload.get("auth", 0),
+                    "target_countries": payload.get("target_countries", []),
                 }
             )
 
@@ -98,6 +99,7 @@ async def edit_survey(group_id: str, payload: dict):
                     "exclusive_options": payload["exclusive_options"],
                     "lr": payload.get("lr", 0),
                     "auth": payload.get("auth", 0),
+                    "target_countries": payload.get("target_countries", []),
                 },
             )
     return {"updated": True}

@@ -8,19 +8,20 @@ export default function Leaderboard() {
   const [data, setData] = useState([]);
   const [partyNames, setPartyNames] = useState({});
   const chartRef = useRef();
+  const userId = localStorage.getItem('user_id') || '';
 
   useEffect(() => {
     fetch(`${API_BASE}/leaderboard`)
       .then(res => res.json())
       .then(res => setData(res.leaderboard || []));
-    fetch(`${API_BASE}/survey/start`)
+    fetch(`${API_BASE}/survey/start?user_id=${userId}`)
       .then(res => res.json())
       .then(res => {
         const map = {};
         res.parties.forEach(p => { map[p.id] = p.name; });
         setPartyNames(map);
       });
-  }, []);
+  }, [userId]);
 
   useEffect(() => {
     if (!data.length || !Object.keys(partyNames).length) return;
