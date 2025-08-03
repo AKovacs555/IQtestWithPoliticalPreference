@@ -4,6 +4,19 @@ import logging
 import openai
 
 
+SUPPORTED_LANGUAGES = [
+    "en",
+    "ja",
+    "es",
+    "de",
+    "it",
+    "tr",
+    "fr",
+    "zh",
+    "ko",
+    "ar",
+]
+
 LANG_NAME_MAP = {
     "en": "English",
     "tr": "Turkish",

@@ -40,5 +40,11 @@
   "survey.loading": "Loading...",
   "dashboard.title": "Dashboard",
   "dashboard.no_data": "Not enough data",
-  "dashboard.percentile": "You are at the {{pct}} percentile"
+  "dashboard.percentile": "You are at the {{pct}} percentile",
+  "select_target_countries": "Select target countries",
+  "select_all": "Select All",
+  "clear": "Clear",
+  "select_survey_for_dashboard": "Select survey for dashboard",
+  "saved": "Saved",
+  "dashboard.select_survey": "Select survey"
 }

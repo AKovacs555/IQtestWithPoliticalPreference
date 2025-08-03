@@ -41,11 +41,13 @@ export async function getSurvey(lang, userId) {
   return handleJson(res);
 }
 
-export async function submitSurvey(answers) {
+export async function submitSurvey(answers, userId) {
+  const payload = { answers };
+  if (userId) payload.user_id = userId;
   const res = await fetch(`${API_BASE}/survey/submit`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ answers })
+    body: JSON.stringify(payload)
   });
   return handleJson(res);
 }

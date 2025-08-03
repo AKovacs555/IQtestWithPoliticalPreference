@@ -103,6 +103,43 @@ def delete_survey(group_id: str) -> None:
     supabase.from_("surveys").delete().eq("group_id", group_id).execute()
 
 
+def insert_survey_answers(rows: List[Dict[str, Any]]) -> None:
+    if not rows:
+        return
+    supabase = get_supabase()
+    supabase.from_("survey_answers").insert(rows).execute()
+
+
+def get_survey_answers(group_id: str) -> List[Dict[str, Any]]:
+    supabase = get_supabase()
+    resp = (
+        supabase.from_("survey_answers")
+        .select("user_id, option_index")
+        .eq("group_id", group_id)
+        .execute()
+    )
+    return resp.data or []
+
+
+def get_dashboard_default_survey() -> Optional[str]:
+    supabase = get_supabase()
+    resp = (
+        supabase.from_("dashboard_settings")
+        .select("default_survey_group_id")
+        .limit(1)
+        .execute()
+    )
+    data = resp.data or []
+    return data[0]["default_survey_group_id"] if data else None
+
+
+def set_dashboard_default_survey(group_id: str) -> None:
+    supabase = get_supabase()
+    supabase.from_("dashboard_settings").upsert(
+        {"id": 1, "default_survey_group_id": group_id}
+    ).execute()
+
+
 def get_parties() -> List[Dict[str, Any]]:
     supabase = get_supabase()
     resp = supabase.from_("parties").select("*").execute()

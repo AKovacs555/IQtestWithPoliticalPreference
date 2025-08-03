@@ -6,71 +6,94 @@ import { useTranslation } from 'react-i18next';
 const API_BASE = import.meta.env.VITE_API_BASE || '';
 
 export default function Dashboard() {
-  const [hist, setHist] = useState([]);
-  const [party, setParty] = useState([]);
-  const [percentile, setPercentile] = useState(null);
-  const [userScore, setUserScore] = useState(null);
-  const [partyNames, setPartyNames] = useState({});
-  const histRef = useRef();
-  const partyRef = useRef();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const userId = localStorage.getItem('user_id') || 'demo';
+  const histRef = useRef();
+  const barRef = useRef();
+  const [hist, setHist] = useState({ histogram: [], bucket_edges: [], user_score: null, user_percentile: null });
+  const [surveyList, setSurveyList] = useState([]);
+  const [selectedSurvey, setSelectedSurvey] = useState('');
+  const [optionStats, setOptionStats] = useState(null);
 
   useEffect(() => {
-    fetch(`${API_BASE}/stats/distribution?user_id=${userId}`)
+    fetch(`${API_BASE}/stats/iq_histogram?user_id=${userId}`)
       .then(r => r.json())
-      .then(d => {
-        setHist(d.histogram || []);
-        setPercentile(d.percentile);
-        setUserScore(d.user_score);
-        setParty(d.party_means || []);
-      });
-    fetch(`${API_BASE}/survey/start?user_id=${userId}`).then(r => r.json()).then(res => {
-      const map = {};
-      (res.parties || []).forEach(p => { map[p.id] = p.name; });
-      setPartyNames(map);
-    });
-  }, []);
+      .then(setHist);
+
+    fetch(`${API_BASE}/surveys?lang=${i18n.language}`)
+      .then(r => r.json())
+      .then(d => setSurveyList(d.questions || []));
+
+    fetch(`${API_BASE}/admin/dashboard-default-survey`)
+      .then(r => r.json())
+      .then(d => setSelectedSurvey(d.group_id || ''));
+  }, [i18n.language, userId]);
 
   useEffect(() => {
-    if (!hist.length) return;
+    if (!hist.histogram.length) return;
     const ctx = histRef.current.getContext('2d');
-    const labels = hist.map(h => `${h.bin}-${h.bin + 5}`);
-    const colors = hist.map(h => (userScore >= h.bin && userScore < h.bin + 5 ? 'rgb(255,99,132)' : 'rgb(75,192,192)'));
+    const labels = hist.bucket_edges.slice(0, -1).map((b, i) => `${b}-${hist.bucket_edges[i + 1]}`);
+    const colors = labels.map((label, idx) => {
+      const start = hist.bucket_edges[idx];
+      const end = hist.bucket_edges[idx + 1];
+      return hist.user_score >= start && hist.user_score < end ? 'rgb(255,99,132)' : 'rgb(75,192,192)';
+    });
     new Chart(ctx, {
       type: 'bar',
-      data: { labels, datasets: [{ data: hist.map(h => h.count), backgroundColor: colors }] },
+      data: { labels, datasets: [{ data: hist.histogram, backgroundColor: colors }] },
       options: { responsive: true, maintainAspectRatio: false }
     });
-  }, [hist, userScore]);
+  }, [hist]);
 
   useEffect(() => {
-    if (!party.length || !Object.keys(partyNames).length) return;
-    const ctx = partyRef.current.getContext('2d');
-    const labels = party.map(p => partyNames[p.party_id] || `Party ${p.party_id}`);
+    if (!selectedSurvey) return;
+    fetch(`${API_BASE}/stats/survey_options/${selectedSurvey}`)
+      .then(r => r.json())
+      .then(d => setOptionStats(d));
+  }, [selectedSurvey]);
+
+  useEffect(() => {
+    if (!optionStats) return;
+    const ctx = barRef.current.getContext('2d');
     new Chart(ctx, {
       type: 'bar',
-      data: { labels, datasets: [{ data: party.map(p => p.avg_iq), backgroundColor: 'rgb(75,192,192)' }] },
+      data: {
+        labels: optionStats.options,
+        datasets: [{ data: optionStats.averages, backgroundColor: 'rgb(75,192,192)' }]
+      },
       options: { responsive: true, maintainAspectRatio: false }
     });
-  }, [party, partyNames]);
+  }, [optionStats]);
 
   return (
     <Layout>
       <div className="max-w-2xl mx-auto space-y-4 py-4">
         <h2 className="text-2xl font-bold text-center">{t('dashboard.title')}</h2>
-        {userScore == null ? (
+        {hist.user_score == null ? (
           <p className="text-center">{t('dashboard.no_data')}</p>
         ) : (
           <>
-            {hist.length ? (
+            {hist.histogram.length ? (
               <div className="h-64"><canvas ref={histRef}></canvas></div>
             ) : null}
-            {percentile != null && (
-              <p className="text-center">{t('dashboard.percentile', { pct: percentile.toFixed(1) })}</p>
+            {hist.user_percentile != null && (
+              <p className="text-center">{t('dashboard.percentile', { pct: hist.user_percentile.toFixed(1) })}</p>
             )}
-            {party.length ? (
-              <div className="h-64"><canvas ref={partyRef}></canvas></div>
+            <div>
+              <label className="block mb-1">{t('dashboard.select_survey', { defaultValue: 'Select survey' })}</label>
+              <select
+                className="select select-bordered w-full"
+                value={selectedSurvey}
+                onChange={e => setSelectedSurvey(e.target.value)}
+              >
+                <option value="">--</option>
+                {surveyList.map(s => (
+                  <option key={s.group_id} value={s.group_id}>{s.statement}</option>
+                ))}
+              </select>
+            </div>
+            {optionStats && optionStats.options.length ? (
+              <div className="h-64"><canvas ref={barRef}></canvas></div>
             ) : null}
           </>
         )}
