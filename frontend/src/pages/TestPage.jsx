@@ -5,6 +5,7 @@ import { getQuizStart, submitQuiz } from '../api';
 import ProgressBar from '../components/ProgressBar';
 import QuestionCard from '../components/QuestionCard';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 
 const PageTransition = ({ children }) => (
   <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
@@ -23,9 +24,15 @@ export default function TestPage() {
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState(null);
   const { t, i18n } = useTranslation();
+  const navigate = useNavigate();
   const watermark = React.useMemo(() => `${session?.slice(0,6) || ''}-${Date.now()}`,[session]);
 
   React.useEffect(() => {
+    const nat = localStorage.getItem('nationality');
+    if (!nat) {
+      navigate('/select-nationality');
+      return;
+    }
     async function load() {
       try {
         const data = await getQuizStart(undefined, i18n.language);
@@ -39,7 +46,7 @@ export default function TestPage() {
       }
     }
     load();
-  }, []);
+  }, [i18n.language, navigate]);
 
   React.useEffect(() => {
     if (questions.length > 0 && document.fullscreenElement == null) {
