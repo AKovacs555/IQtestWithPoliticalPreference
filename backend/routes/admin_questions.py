@@ -1,9 +1,12 @@
 import os
+import logging
 from typing import Optional
 import asyncio
 from fastapi import APIRouter, Depends, HTTPException, Header
 from backend.deps.supabase_client import get_supabase_client
 from backend.utils.translation import translate_question
+
+logger = logging.getLogger(__name__)
 
 # Supported languages for translating questions from Japanese
 TARGET_LANGS = ["en", "tr", "ru", "zh", "ko", "es", "fr", "it", "de", "ar"]
@@ -20,8 +23,12 @@ def check_admin(admin_key: Optional[str] = Header(None, alias="X-Admin-Api-Key")
 @router.get("/", dependencies=[Depends(check_admin)])
 async def list_questions():
     supabase = get_supabase_client()
-    resp = supabase.table("questions").select("*").execute()
-    return resp.data
+    try:
+        resp = supabase.table("questions").select("*").execute()
+        return resp.data
+    except Exception as e:
+        logger.error("Error fetching questions from Supabase: %s", e)
+        raise HTTPException(status_code=500, detail="Failed to fetch questions")
 
 
 @router.post("/{group_id}/toggle_approved", dependencies=[Depends(check_admin)])

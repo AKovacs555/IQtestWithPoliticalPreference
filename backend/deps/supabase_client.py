@@ -1,7 +1,13 @@
 import os
+import logging
 from supabase import create_client, Client
 
+logger = logging.getLogger(__name__)
+
 def get_supabase_client() -> Client:
-    supabase_url = os.environ["SUPABASE_URL"]
-    service_key = os.environ["SUPABASE_SERVICE_ROLE_KEY"]
-    return create_client(supabase_url, service_key)
+    url = os.environ.get("SUPABASE_URL")
+    key = os.environ.get("SUPABASE_API_KEY")
+    missing = [name for name, val in [("SUPABASE_URL", url), ("SUPABASE_API_KEY", key)] if not val]
+    if missing:
+        raise RuntimeError(f"Missing environment variables: {', '.join(missing)}")
+    return create_client(url, key)
