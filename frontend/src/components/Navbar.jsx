@@ -3,11 +3,13 @@ import { Link } from 'react-router-dom';
 import ThemeToggle from './ThemeToggle';
 import PointsBadge from './PointsBadge';
 import LanguageSelector from './LanguageSelector';
+import { useTranslation } from 'react-i18next';
 
 export default function Navbar() {
   const userId = 'demo';
   // Show Admin link if VITE_SHOW_ADMIN === 'true'  (set in Vercel env vars)
   const showAdmin = import.meta.env.VITE_SHOW_ADMIN === 'true' || import.meta.env.DEV;
+  const { t } = useTranslation();
   return (
     <div className="navbar bg-base-100 shadow-md px-4">
       <div className="flex-1">
@@ -21,6 +23,7 @@ export default function Navbar() {
         <Link to="/pricing" className="btn btn-ghost btn-sm">Pricing</Link>
         <Link to="/select-nationality" className="btn btn-ghost btn-sm">Nationality</Link>
         <Link to="/select-party" className="btn btn-ghost btn-sm">Parties</Link>
+        <Link to="/dashboard" className="btn btn-ghost btn-sm">{t('dashboard.title')}</Link>
         <Link to="/test" className="btn btn-primary btn-sm">Take Quiz</Link>
         {showAdmin && (
           <>

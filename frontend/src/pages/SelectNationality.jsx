@@ -1,27 +1,39 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Layout from '../components/Layout';
-import countryList from '../lib/countryList';
+import getCountryList from '../lib/countryList';
 import LanguageSelector from '../components/LanguageSelector';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 
 export default function SelectNationality() {
   const [country, setCountry] = useState('');
   const [search, setSearch] = useState('');
+  const [list, setList] = useState([]);
   const apiBase = import.meta.env.VITE_API_BASE;
   const userId = localStorage.getItem('user_id') || 'demo';
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    setList(getCountryList(i18n.language));
+  }, [i18n.language]);
 
   const save = async () => {
-    if (!country) return;
+    if (!country) {
+      alert(t('select_country.select'));
+      return;
+    }
     await fetch(`${apiBase}/user/nationality`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ user_id: userId, nationality: country })
     });
+    localStorage.setItem('nationality', country);
     alert(t('select_country.saved'));
+    navigate('/select-party');
   };
 
-  const filtered = countryList.filter(c =>
+  const filtered = list.filter(c =>
     c.name.toLowerCase().includes(search.toLowerCase())
   );
 

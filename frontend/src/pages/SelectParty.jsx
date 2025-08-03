@@ -1,20 +1,26 @@
 import React, { useEffect, useState } from 'react';
 import Layout from '../components/Layout';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 
 export default function SelectParty() {
   const [parties, setParties] = useState([]);
   const [selected, setSelected] = useState([]);
   const apiBase = import.meta.env.VITE_API_BASE;
   const userId = localStorage.getItem('user_id') || 'demo';
-  const nationality = localStorage.getItem('nationality') || 'US';
+  const nationality = localStorage.getItem('nationality') || '';
   const { t } = useTranslation();
+  const navigate = useNavigate();
 
   useEffect(() => {
+    if (!nationality) {
+      navigate('/select-nationality');
+      return;
+    }
     fetch(`${apiBase}/user/parties/${nationality}`)
       .then(r => r.json())
       .then(d => setParties(d.parties || []));
-  }, []);
+  }, [nationality]);
 
   const toggle = (id) => {
     setSelected(s => {
@@ -33,6 +39,7 @@ export default function SelectParty() {
       body: JSON.stringify({ user_id: userId, party_ids: selected })
     });
     alert(t('select_party.saved'));
+    navigate('/test');
   };
 
   return (

@@ -3,6 +3,7 @@ import Layout from '../components/Layout';
 import LanguageSelector from '../components/LanguageSelector';
 import { getSurvey, submitSurvey } from '../api';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 
 export default function SurveyPage() {
   const [items, setItems] = useState([]);
@@ -11,13 +12,19 @@ export default function SurveyPage() {
   const [error, setError] = useState(null);
   const [submitted, setSubmitted] = useState(false);
   const { t, i18n } = useTranslation();
+  const navigate = useNavigate();
 
   useEffect(() => {
+    const nat = localStorage.getItem('nationality');
+    if (!nat) {
+      navigate('/select-nationality');
+      return;
+    }
     getSurvey(i18n.language)
       .then(d => setItems(d.items || []))
       .catch(e => setError(e.message))
       .finally(() => setLoading(false));
-  }, [i18n.language]);
+  }, [i18n.language, navigate]);
 
   const handleChange = (item, optionIdx) => {
     setAnswers(a => {
