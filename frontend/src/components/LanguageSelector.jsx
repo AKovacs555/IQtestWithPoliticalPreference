@@ -22,9 +22,16 @@ export default function LanguageSelector() {
     localStorage.setItem('i18nLang', lang);
   };
   return (
-    <select value={i18nInstance.language} onChange={handleChange} className="select select-bordered select-sm">
+    <select
+      value={i18nInstance.language}
+      onChange={handleChange}
+      className="border rounded-md px-2 py-2 text-sm"
+      aria-label="Select language"
+    >
       {languages.map(l => (
-        <option key={l.code} value={l.code}>{l.label}</option>
+        <option key={l.code} value={l.code} lang={l.code}>
+          {l.label}
+        </option>
       ))}
     </select>
   );

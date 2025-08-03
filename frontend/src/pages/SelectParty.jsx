@@ -44,24 +44,33 @@ export default function SelectParty() {
 
   return (
     <Layout>
-      <div className="space-y-2 max-w-md mx-auto">
+      <div className="space-y-4 max-w-md mx-auto">
         <h2 className="text-xl font-bold mb-2">{t('select_party.title')}</h2>
         {parties.map(p => {
           const noAff = selected.includes(12);
           const disabled = (noAff && p.id !== 12) || (!noAff && selected.length > 0 && p.id === 12);
           return (
-            <label key={p.id} className={`flex items-center space-x-2 ${disabled ? 'opacity-50' : ''}`}>
+            <label
+              key={p.id}
+              className={`flex items-center space-x-2 py-1 ${disabled ? 'opacity-50' : ''}`}
+            >
               <input
                 type="checkbox"
                 checked={selected.includes(p.id)}
                 disabled={disabled}
                 onChange={() => toggle(p.id)}
+                className="h-4 w-4"
               />
               <span>{p.name}</span>
             </label>
           );
         })}
-        <button className="btn" onClick={save}>{t('select_party.save')}</button>
+        <button
+          className="px-4 py-2 rounded-md bg-primary text-white"
+          onClick={save}
+        >
+          {t('select_party.save')}
+        </button>
       </div>
     </Layout>
   );

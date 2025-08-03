@@ -58,7 +58,7 @@ export default function PartySelect() {
       <div className="p-4 space-y-4 max-w-md mx-auto">
         <h2 className="text-xl font-bold text-center">Select Party</h2>
         {loading && <p>Loading...</p>}
-        {error && <p className="text-error">{error}</p>}
+        {error && <p className="text-red-600">{error}</p>}
         {!loading && (
           <div className="space-y-2">
             {parties.map(p => (
@@ -67,14 +67,19 @@ export default function PartySelect() {
                   type="checkbox"
                   checked={selected.includes(p.id)}
                   onChange={() => toggle(p.id)}
-                  className="checkbox"
+                  className="h-4 w-4"
                 />
                 <span>{p.name}</span>
               </label>
             ))}
           </div>
         )}
-        <button onClick={save} className="btn btn-primary w-full">Save</button>
+        <button
+          onClick={save}
+          className="w-full px-4 py-2 rounded-md bg-primary text-white"
+        >
+          Save
+        </button>
       </div>
     </Layout>
   );

@@ -81,9 +81,9 @@ export default function SurveyPage() {
         <LanguageSelector />
         <h2 className="text-2xl font-bold text-center">{t('survey.title')}</h2>
         {loading && <p>{t('survey.loading')}</p>}
-        {error && <p className="text-error">{error}</p>}
+        {error && <p className="text-red-600">{error}</p>}
         {!loading && items.map(item => (
-          <div key={item.id} className="card bg-base-100 p-4 space-y-2">
+          <div key={item.id} className="p-4 bg-surface rounded-md shadow space-y-2">
             <p>{item.statement}</p>
             <div className="flex flex-col space-y-1">
               {item.options.map((opt, idx) => {
@@ -110,7 +110,12 @@ export default function SurveyPage() {
           </div>
         ))}
         {!loading && items.length > 0 && (
-          <button className="btn btn-primary" onClick={submit}>{t('survey.submit')}</button>
+          <button
+            className="px-4 py-2 rounded-md bg-primary text-white"
+            onClick={submit}
+          >
+            {t('survey.submit')}
+          </button>
         )}
       </div>
     </Layout>

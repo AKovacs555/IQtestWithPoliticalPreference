@@ -1,28 +1,21 @@
 module.exports = {
   content: [
     './index.html',
-    './src/**/*.{js,jsx,ts,tsx}'
+    './src/**/*.{js,jsx,ts,tsx}',
   ],
+  darkMode: ['class', '[data-theme="dark"]'],
   theme: {
-    extend: {},
-  },
-  plugins: [require('daisyui')],
-  daisyui: {
-    themes: [
-      {
-        pro: {
-          primary: '#4f46e5',
-          secondary: '#06b6d4',
-          accent: '#f59e0b',
-          neutral: '#374151',
-          'base-100': '#ffffff',
-          info: '#3abff8',
-          success: '#36d399',
-          warning: '#fbbd23',
-          error: '#f87272',
-        },
+    extend: {
+      fontFamily: {
+        sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
       },
-      'dark',
-    ],
+      colors: {
+        primary: 'var(--color-primary)',
+        accent: 'var(--color-accent)',
+        surface: 'var(--color-surface)',
+        text: 'var(--color-text)',
+      },
+    },
   },
+  plugins: [],
 };

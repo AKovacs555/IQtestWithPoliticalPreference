@@ -18,9 +18,14 @@ export default function SelectSet() {
         <h2 className="text-xl font-bold text-center">Choose a Test</h2>
         <ul className="space-y-2">
           {sets.map(id => (
-            <li key={id} className="card bg-base-100 shadow p-4 flex justify-between items-center">
+            <li key={id} className="p-4 bg-surface rounded-md shadow flex justify-between items-center">
               <span>{id}</span>
-              <Link to={`/start?set=${id}`} className="btn btn-primary btn-sm">Start</Link>
+              <Link
+                to={`/start?set=${id}`}
+                className="px-4 py-2 rounded-md bg-primary text-white text-sm"
+              >
+                Start
+              </Link>
             </li>
           ))}
         </ul>

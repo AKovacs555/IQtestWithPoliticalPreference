@@ -8,7 +8,9 @@ export default function Layout({ children }) {
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
-      <main className="flex-1 container mx-auto p-4">{children}</main>
+      <main className="flex-1 w-full max-w-screen-lg mx-auto px-4" role="main">
+        {children}
+      </main>
       <Footer />
     </div>
   );
