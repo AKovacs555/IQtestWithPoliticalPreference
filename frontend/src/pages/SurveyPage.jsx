@@ -10,21 +10,41 @@ export default function SurveyPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [submitted, setSubmitted] = useState(false);
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   useEffect(() => {
-    getSurvey()
+    getSurvey(i18n.language)
       .then(d => setItems(d.items || []))
       .catch(e => setError(e.message))
       .finally(() => setLoading(false));
-  }, []);
+  }, [i18n.language]);
 
-  const handleChange = (id, value) => {
-    setAnswers(a => ({ ...a, [id]: Number(value) }));
+  const handleChange = (item, optionIdx) => {
+    setAnswers(a => {
+      const current = a[item.id] || [];
+      let updated;
+      if (item.type === 'sa') {
+        updated = [optionIdx];
+      } else {
+        // multi-answer
+        const isSelected = current.includes(optionIdx);
+        if (isSelected) {
+          updated = current.filter(i => i !== optionIdx);
+        } else {
+          const exclusive = item.exclusive_options || [];
+          if (exclusive.includes(optionIdx)) {
+            updated = [optionIdx];
+          } else {
+            updated = current.filter(i => !exclusive.includes(i)).concat(optionIdx);
+          }
+        }
+      }
+      return { ...a, [item.id]: updated };
+    });
   };
 
   const submit = async () => {
-    const payload = Object.entries(answers).map(([id, value]) => ({ id: Number(id), value }));
+    const payload = Object.entries(answers).map(([id, sel]) => ({ id: Number(id), selections: sel }));
     try {
       await submitSurvey(payload);
       setSubmitted(true);
@@ -53,18 +73,28 @@ export default function SurveyPage() {
         {!loading && items.map(item => (
           <div key={item.id} className="card bg-base-100 p-4 space-y-2">
             <p>{item.statement}</p>
-            {item.type === 'slider' ? (
-              <input type="range" min="1" max="5" value={answers[item.id] || 3} onChange={e => handleChange(item.id, e.target.value)} className="range" />
-            ) : (
-              <div className="flex justify-between">
-                {[1,2,3,4,5].map(v => (
-                  <label key={v} className="flex flex-col items-center">
-                    <input type="radio" name={`q-${item.id}`} value={v} checked={answers[item.id]===v} onChange={() => handleChange(item.id,v)} />
-                    <span>{v}</span>
+            <div className="flex flex-col space-y-1">
+              {item.options.map((opt, idx) => {
+                const selected = answers[item.id] || [];
+                const exclusive = item.exclusive_options || [];
+                const exclusiveSelected = selected.some(i => exclusive.includes(i));
+                const disabled = item.type === 'ma' && exclusiveSelected && !selected.includes(idx);
+                const inputType = item.type === 'ma' ? 'checkbox' : 'radio';
+                const checked = selected.includes(idx);
+                return (
+                  <label key={idx} className="flex items-center space-x-2">
+                    <input
+                      type={inputType}
+                      name={`q-${item.id}`}
+                      checked={checked}
+                      disabled={disabled}
+                      onChange={() => handleChange(item, idx)}
+                    />
+                    <span>{opt}</span>
                   </label>
-                ))}
-              </div>
-            )}
+                );
+              })}
+            </div>
           </div>
         ))}
         {!loading && items.length > 0 && (

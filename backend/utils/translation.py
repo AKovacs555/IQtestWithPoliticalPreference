@@ -15,6 +15,7 @@ LANG_NAME_MAP = {
     "it": "Italian",
     "de": "German",
     "ar": "Arabic",
+    "ja": "Japanese",
 }
 
 api_key = os.environ.get("OPENAI_API_KEY")
@@ -64,3 +65,59 @@ async def translate_question(
         )
         raise
     return data["question"], data["options"]
+
+
+async def translate_survey(
+    statement: str, options: list[str], target_lang: str
+) -> tuple[str, list[str]]:
+    """Translate a survey question and options into ``target_lang``.
+
+    Parameters
+    ----------
+    statement:
+        The question text in the source language.
+    options:
+        A list of option strings in the source language.
+    target_lang:
+        ISO language code to translate into.
+
+    Returns
+    -------
+    tuple[str, list[str]]
+        The translated statement and list of options.
+    """
+
+    if client is None:
+        raise RuntimeError("OPENAI_API_KEY environment variable not set")
+
+    lang_name = LANG_NAME_MAP.get(target_lang, target_lang)
+
+    prompt = (
+        "Translate the following survey question and its options into "
+        f"{lang_name}. Question: {statement} Options: {options}. "
+        "Return JSON {\"statement\":..., \"options\": [...]}."
+    )
+
+    response = await client.chat.completions.create(
+        model="gpt-4o",
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.3,
+        response_format={"type": "json_object"},
+    )
+
+    content = response.choices[0].message.content.strip()
+    if content.startswith("```"):
+        content = content.split("```", 2)[1].strip()
+        if content.lower().startswith("json"):
+            content = content[4:].strip()
+    try:
+        data = json.loads(content)
+    except Exception as exc:
+        logger.error(
+            "Failed to parse translation for %s: %s\nRaw content: %s",
+            target_lang,
+            exc,
+            content,
+        )
+        raise
+    return data["statement"], data["options"]

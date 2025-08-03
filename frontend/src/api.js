@@ -30,8 +30,12 @@ export async function submitQuiz(sessionId, answers) {
   return handleJson(res);
 }
 
-export async function getSurvey() {
-  const res = await fetch(`${API_BASE}/survey/start`);
+export async function getSurvey(lang) {
+  let url = `${API_BASE}/survey/start`;
+  if (lang) {
+    url += `?lang=${lang}`;
+  }
+  const res = await fetch(url);
   return handleJson(res);
 }
 
