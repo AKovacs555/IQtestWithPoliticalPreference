@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Disclosure } from '@headlessui/react';
-import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
+import { Menu, X } from 'lucide-react';
 import ThemeToggle from './ThemeToggle';
 import PointsBadge from './PointsBadge';
 import LanguageSelector from './LanguageSelector';
@@ -27,10 +27,10 @@ export default function Navbar() {
   ];
 
   return (
-    <Disclosure as="nav" className="bg-surface shadow-sm">
+    <Disclosure as="nav" className="backdrop-blur-md bg-white/50 border-b border-white/20 shadow-sm">
       {({ open }) => (
         <>
-          <div className="mx-auto max-w-screen-lg px-4">
+          <div className="mx-auto max-w-screen-sm px-4 sm:px-8">
             <div className="flex h-14 items-center justify-between">
               <Link to="/" className="text-lg font-bold">IQ Test</Link>
               <div className="hidden md:flex md:items-center md:space-x-4">
@@ -41,26 +41,26 @@ export default function Navbar() {
                   <Link
                     key={link.to}
                     to={link.to}
-                    className={link.primary ? 'px-3 py-2 rounded-md bg-primary text-white' : 'px-3 py-2 rounded-md hover:bg-gray-200'}
+                    className={link.primary ? 'px-4 py-2 rounded-md bg-primary text-white hover:bg-primary/90 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500' : 'px-4 py-2 rounded-md hover:bg-gray-200 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500'}
                   >
                     {link.label}
                   </Link>
                 ))}
                 {showAdmin && (
                   adminLinks.map((link) => (
-                    <Link key={link.to} to={link.to} className="px-3 py-2 rounded-md hover:bg-gray-200">
+                    <Link key={link.to} to={link.to} className="px-4 py-2 rounded-md hover:bg-gray-200 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500">
                       {link.label}
                     </Link>
                   ))
                 )}
               </div>
               <div className="md:hidden flex items-center">
-                <Disclosure.Button className="inline-flex items-center justify-center rounded-md p-2 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-primary">
+                <Disclosure.Button className="inline-flex items-center justify-center rounded-md p-2 hover:bg-gray-200 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary">
                   <span className="sr-only">Open main menu</span>
                   {open ? (
-                    <XMarkIcon className="h-6 w-6" aria-hidden="true" />
+                    <X className="h-6 w-6" aria-hidden="true" />
                   ) : (
-                    <Bars3Icon className="h-6 w-6" aria-hidden="true" />
+                    <Menu className="h-6 w-6" aria-hidden="true" />
                   )}
                 </Disclosure.Button>
               </div>
@@ -72,13 +72,13 @@ export default function Navbar() {
             <LanguageSelector />
             <PointsBadge userId={userId} />
             {links.map((link) => (
-              <Link key={link.to} to={link.to} className="block px-3 py-2 rounded-md hover:bg-gray-200">
+              <Link key={link.to} to={link.to} className="block px-4 py-2 rounded-md hover:bg-gray-200 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500">
                 {link.label}
               </Link>
             ))}
             {showAdmin && (
               adminLinks.map((link) => (
-                <Link key={link.to} to={link.to} className="block px-3 py-2 rounded-md hover:bg-gray-200">
+                <Link key={link.to} to={link.to} className="block px-4 py-2 rounded-md hover:bg-gray-200 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500">
                   {link.label}
                 </Link>
               ))
