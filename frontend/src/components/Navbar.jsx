@@ -1,25 +1,30 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Disclosure } from '@headlessui/react';
 import { Menu, X } from 'lucide-react';
 import ThemeToggle from './ThemeToggle';
 import PointsBadge from './PointsBadge';
 import LanguageSelector from './LanguageSelector';
 import { useTranslation } from 'react-i18next';
+import useAuth from '../hooks/useAuth';
 
 export default function Navbar() {
   const userId =
     typeof window !== 'undefined' ? localStorage.getItem('user_id') : null;
   const showAdmin = import.meta.env.VITE_SHOW_ADMIN === 'true' || import.meta.env.DEV;
   const { t } = useTranslation();
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const handleStart = () => {
+    if (!user) navigate('/signup');
+    else navigate('/test');
+  };
 
   const links = [
     { to: '/leaderboard', label: t('nav.leaderboard') },
     { to: '/pricing', label: t('nav.pricing') },
     { to: '/select-nationality', label: t('nav.nationality') },
     { to: '/dashboard', label: t('dashboard.title') },
-    { to: '/test', label: t('nav.take_quiz'), primary: true },
   ];
 
   const adminLinks = [
@@ -42,19 +47,21 @@ export default function Navbar() {
                   <Link
                     key={link.to}
                     to={link.to}
-                    className={
-                      link.primary
-                        ? 'px-4 py-2 rounded-md bg-primary text-white hover:bg-primary/90 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary'
-                        : 'px-4 py-2 rounded-md hover:bg-gray-200 dark:hover:bg-slate-700 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary'
-                    }
+                    className='px-4 py-2 rounded-md hover:bg-gray-200 dark:hover:bg-slate-700 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary'
                   >
                     {link.label}
                   </Link>
                 ))}
-                {token && (
+                <button
+                  onClick={handleStart}
+                  className='px-4 py-2 rounded-md bg-primary text-white hover:bg-primary/90 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary'
+                >
+                  {t('nav.take_quiz')}
+                </button>
+                {user && (
                   <button
                     onClick={() => {
-                      localStorage.removeItem('token');
+                      localStorage.removeItem('authToken');
                       localStorage.removeItem('user_id');
                     }}
                     className="px-4 py-2 rounded-md hover:bg-gray-200 dark:hover:bg-slate-700 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary"
@@ -92,6 +99,12 @@ export default function Navbar() {
                 {link.label}
               </Link>
             ))}
+            <button
+              onClick={handleStart}
+              className="block w-full text-left px-4 py-2 rounded-md bg-primary text-white hover:bg-primary/90 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary"
+            >
+              {t('nav.take_quiz')}
+            </button>
             {showAdmin && (
               adminLinks.map((link) => (
                 <Link key={link.to} to={link.to} className="block px-4 py-2 rounded-md hover:bg-gray-200 dark:hover:bg-slate-700 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary">

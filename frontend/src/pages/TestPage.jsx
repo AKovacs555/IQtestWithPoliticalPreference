@@ -5,6 +5,7 @@ import { getQuizStart, submitQuiz } from '../api';
 import ProgressBar from '../components/ProgressBar';
 import QuestionCard from '../components/QuestionCard';
 import { useNavigate } from 'react-router-dom';
+import useAuth from '../hooks/useAuth';
 
 export default function TestPage() {
   const [session, setSession] = React.useState(null);
@@ -18,10 +19,15 @@ export default function TestPage() {
   const [error, setError] = React.useState(null);
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const isMobile = /Mobi|Android/i.test(navigator.userAgent);
   const watermark = React.useMemo(() => `${session?.slice(0,6) || ''}-${Date.now()}`,[session]);
 
   React.useEffect(() => {
+    if (!user) {
+      navigate('/signup');
+      return;
+    }
     const nat = localStorage.getItem('nationality');
     if (!nat) {
       navigate('/select-nationality');
@@ -49,7 +55,7 @@ export default function TestPage() {
       }
     }
     load();
-  }, [i18n.language, navigate]);
+  }, [i18n.language, navigate, user]);
 
   React.useEffect(() => {
     if (

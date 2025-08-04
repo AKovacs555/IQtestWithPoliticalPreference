@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
+import useAuth from '../hooks/useAuth';
 
 const API_BASE = import.meta.env.VITE_API_BASE || "";
 
@@ -12,6 +13,12 @@ export default function Home() {
   const [leaders, setLeaders] = useState([]);
   const [partyNames, setPartyNames] = useState({});
   const userId = localStorage.getItem('user_id') || '';
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const handleStart = () => {
+    if (!user) navigate('/signup');
+    else navigate('/test');
+  };
 
   useEffect(() => {
     fetch(`${API_BASE}/leaderboard`)
@@ -60,13 +67,13 @@ export default function Home() {
             </motion.div>
           ))}
         </div>
-        <Link
-          to="/test"
+        <button
+          onClick={handleStart}
           className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-gradient-to-r from-cyan-400 via-fuchsia-500 to-purple-600 text-gray-900 dark:text-gray-100 font-semibold py-3 px-6 rounded-full shadow-md drop-shadow-glow hover:from-cyan-300 hover:to-purple-500 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-400"
         >
           {t('landing.startButton')}
           <ArrowRight className="w-5 h-5" />
-        </Link>
+        </button>
       </motion.section>
     </Layout>
   );

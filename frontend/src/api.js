@@ -14,7 +14,7 @@ async function handleJson(res) {
 
 function authHeaders() {
   const token =
-    typeof localStorage !== 'undefined' ? localStorage.getItem('token') : null;
+    typeof localStorage !== 'undefined' ? localStorage.getItem('authToken') : null;
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 

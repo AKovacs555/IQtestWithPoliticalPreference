@@ -12,9 +12,9 @@ export default function LoginPage() {
   const handleLogin = async () => {
     try {
       const res = await loginAccount(identifier, password);
-      localStorage.setItem('token', res.token);
+      localStorage.setItem('authToken', res.token);
       localStorage.setItem('user_id', res.user_id);
-      navigate('/survey');
+      navigate(localStorage.getItem('survey_completed') === 'true' ? '/test' : '/survey');
     } catch (e) {
       setError(e.message);
     }
