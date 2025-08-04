@@ -31,9 +31,12 @@ For details on preparing question files and importing them into Supabase see [do
   - `SUPABASE_URL` – base URL for Supabase (required for share images).
   - The backend communicates with Supabase purely through the REST API so
     no `DATABASE_URL` is needed.
-  - `SMS_PROVIDER` – `twilio` (default) or `sns` for Amazon SNS.
+  - `SMS_PROVIDER` – `sns` (default) or `twilio`.
   - When using Twilio: `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_VERIFY_SERVICE_SID`.
-  - When using SNS: `AWS_REGION` and AWS credentials configured in the environment.
+  - When using SNS: set `AWS_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` and optionally `SMS_SENDER_ID`.
+    Ensure the account is out of the SMS sandbox, the region supports SMS delivery and the spend limit allows messages.
+    Some countries (including Japan) may require sender ID registration or origination identities; contact AWS Support if
+    messages are not delivered.
   - The backend logs an estimated cost for each OTP sent based on the selected SMS provider.
   - `NOWPAYMENTS_API_KEY` – API key for cryptocurrency payments.
   - `NOWPAYMENTS_CALLBACK_URL` – URL for payment confirmations.

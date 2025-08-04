@@ -39,6 +39,15 @@ class LoginPayload(BaseModel):
     password: str
 
 
+def normalize_phone(phone: str) -> str:
+    # Remove spaces and dashes
+    p = phone.strip().replace(" ", "").replace("-", "")
+    # If no '+' prefix, assume it's a Japanese number and prepend +81
+    if not p.startswith("+"):
+        p = "+81" + p.lstrip("0")
+    return p
+
+
 def _save_code(phone: str, code: str) -> None:
     _codes[phone] = (code, time.time() + CODE_TTL)
 
@@ -57,9 +66,10 @@ def _check_code(phone: str, code: str) -> bool:
 @router.post("/send-code")
 async def send_code(payload: SendCodePayload):
     code = f"{random.randint(0, 999999):06d}"
-    _save_code(payload.phone, code)
+    phone = normalize_phone(payload.phone)
+    _save_code(phone, code)
     try:
-        send_otp(payload.phone, code)
+        send_otp(phone, code)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     return {"status": "sent"}
@@ -67,14 +77,16 @@ async def send_code(payload: SendCodePayload):
 
 @router.post("/verify-code")
 async def verify_code(payload: VerifyCodePayload):
-    if _check_code(payload.phone, payload.code):
+    phone = normalize_phone(payload.phone)
+    if _check_code(phone, payload.code):
         return {"status": "verified"}
     raise HTTPException(status_code=400, detail="Invalid code")
 
 
 @router.post("/register")
 async def register(payload: RegisterPayload):
-    if not _check_code(payload.phone, payload.code):
+    phone = normalize_phone(payload.phone)
+    if not _check_code(phone, payload.code):
         raise HTTPException(status_code=400, detail="Invalid code")
     supabase = get_supabase_client()
     password_hash = bcrypt.hashpw(payload.password.encode(), bcrypt.gensalt()).decode()
@@ -82,7 +94,7 @@ async def register(payload: RegisterPayload):
     referral_code = ''.join(random.choice('ABCDEFGHJKLMNPQRSTUVWXYZ23456789') for _ in range(6))
     data = {
         "hashed_id": hashed_id,
-        "phone": payload.phone,
+        "phone": phone,
         "email": payload.email,
         "password_hash": password_hash,
         "free_tests": 0,
