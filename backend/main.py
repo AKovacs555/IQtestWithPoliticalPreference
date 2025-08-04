@@ -114,6 +114,7 @@ from db import (
     get_surveys,
     get_parties,
     insert_survey_answers,
+    insert_survey_responses,
     get_survey_answers,
     get_answered_survey_ids,
 )
@@ -743,11 +744,8 @@ async def survey_submit(payload: SurveySubmitRequest):
         insert_survey_answers(answer_rows)
 
     if response_rows:
-        supabase = get_supabase()
-        supabase.from_("survey_responses").insert(response_rows).execute()
-        supabase.from_("users").update({"survey_completed": True}).eq(
-            "hashed_id", payload.user_id
-        ).execute()
+        insert_survey_responses(response_rows)
+        db_update_user(payload.user_id, {"survey_completed": True})
 
     if lr_score > 0.3:
         category = "Conservative"
