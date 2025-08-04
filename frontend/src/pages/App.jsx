@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
+import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import useShareMeta from '../hooks/useShareMeta';
 import Layout from '../components/Layout';
@@ -209,8 +209,8 @@ const Result = () => {
   const share = params.get('share');
   const ref = React.useRef();
   const [avg, setAvg] = React.useState(null);
-  const [partyName, setPartyName] = React.useState('');
   const { t } = useTranslation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     confetti({ particleCount: 150, spread: 70 });
@@ -239,24 +239,12 @@ const Result = () => {
       });
   }, []);
 
-  useEffect(() => {
-    const uid = localStorage.getItem('user_id') || 'testuser';
-    Promise.all([
-      fetch(`${API_BASE}/survey/start?user_id=${uid}`).then(r => r.json()),
-      fetch(`${API_BASE}/user/stats/${uid}`).then(r => r.ok ? r.json() : { party_log: [] })
-    ]).then(([p, s]) => {
-      const latest = s.party_log && s.party_log.length ? s.party_log[s.party_log.length-1].party_ids[0] : null;
-      if (latest != null) {
-        const map = {};
-        p.parties.forEach(pt => { map[pt.id] = pt.name; });
-        setPartyName(map[latest] || '');
-      }
-    });
-  }, []);
-
   const url = encodeURIComponent(window.location.href);
   const text = encodeURIComponent(
-    `I scored ${Number(score).toFixed(1)} IQ! ${partyName ? 'Supporter of ' + partyName : ''}`
+    t('result.share_text', {
+      score: Number(score).toFixed(1),
+      percentile: Number(percentile).toFixed(1)
+    })
   );
 
   return (
@@ -272,14 +260,16 @@ const Result = () => {
           {share && <img src={share} alt="IQ share card" className="mx-auto rounded" />}
           {share && (
             <div className="space-x-2">
+              {/* Share on X (Twitter) */}
               <a
                 href={`https://twitter.com/intent/tweet?url=${url}&text=${text}`}
                 target="_blank"
                 rel="noreferrer"
                 className="px-4 py-2 rounded-md bg-primary text-white text-sm hover:bg-primary/90 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary"
               >
-                Share on X
+                X
               </a>
+              {/* Share on LINE */}
               <a
                 href={`https://social-plugins.line.me/lineit/share?url=${url}`}
                 target="_blank"
@@ -288,16 +278,28 @@ const Result = () => {
               >
                 LINE
               </a>
-              {navigator.share && (
-                <button
-                  onClick={() => navigator.share({ url, text })}
-                  className="px-4 py-2 rounded-md bg-primary text-white text-sm hover:bg-primary/90 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary"
-                >
-                  {t('share.button')}
-                </button>
-              )}
+              {/* Copy link or share */}
+              <button
+                onClick={() => {
+                  if (navigator.share) {
+                    navigator.share({ url: window.location.href, text: decodeURIComponent(text) });
+                  } else {
+                    navigator.clipboard.writeText(window.location.href);
+                    alert(t('result.link_copied'));
+                  }
+                }}
+                className="px-4 py-2 rounded-md bg-primary text-white text-sm hover:bg-primary/90 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary"
+              >
+                {t('result.share')}
+              </button>
             </div>
           )}
+          <button
+            onClick={() => navigate('/')}
+            className="px-4 py-2 mt-4 rounded-md bg-primary text-white text-sm hover:bg-primary/90 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary"
+          >
+            {t('result.back_to_home')}
+          </button>
           <div className="mt-4">
             <a
               href="/premium.html"
@@ -307,7 +309,6 @@ const Result = () => {
             </a>
           </div>
           <p className="text-sm text-gray-600">This test is for research and entertainment.</p>
-          <Link to="/" className="underline active:scale-95 transition-all duration-200">Home</Link>
         </div>
       </Layout>
     </PageTransition>

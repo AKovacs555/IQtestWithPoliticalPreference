@@ -46,7 +46,11 @@
   "clear": "Clear",
   "select_survey_for_dashboard": "Select survey for dashboard",
   "saved": "Saved",
-  "dashboard.select_survey": "Select survey"
+  "dashboard.select_survey": "Select survey",
+  "result.back_to_home": "Back to Home",
+  "result.share_text": "I scored {{score}} IQ and am in the {{percentile}} percentile!",
+  "result.link_copied": "Link copied!",
+  "result.share": "Share"
   ,"nav": {
     "leaderboard": "Leaderboard",
     "pricing": "Pricing",

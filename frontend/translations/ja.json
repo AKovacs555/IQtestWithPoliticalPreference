@@ -46,7 +46,11 @@
   "clear": "クリア",
   "select_survey_for_dashboard": "ダッシュボード用のアンケートを選択",
   "saved": "保存しました",
-  "dashboard.select_survey": "アンケートを選択"
+  "dashboard.select_survey": "アンケートを選択",
+  "result.back_to_home": "ホームに戻る",
+  "result.share_text": "IQは{{score}}、上位{{percentile}}%でした！",
+  "result.link_copied": "リンクをコピーしました",
+  "result.share": "シェア"
   ,"nav": {
     "leaderboard": "ランキング",
     "pricing": "料金",

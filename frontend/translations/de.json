@@ -25,7 +25,11 @@
   "upload.status.uploading": "Datei wird hochgeladen…",
   "upload.status.translating": "Übersetzen…",
   "upload.status.saving": "Speichern in der Datenbank…",
-  "warning.screenshot_detected": "Verdächtige Aktivität erkannt. Der Test wird beendet."
+  "warning.screenshot_detected": "Verdächtige Aktivität erkannt. Der Test wird beendet.",
+  "result.back_to_home": "Zur Startseite",
+  "result.share_text": "Ich habe einen IQ von {{score}} und liege im {{percentile}}. Perzentil!",
+  "result.link_copied": "Link kopiert",
+  "result.share": "Teilen"
   ,"nav": {
     "leaderboard": "Bestenliste",
     "pricing": "Preise",

@@ -25,7 +25,11 @@
   "upload.status.uploading": "파일 업로드 중…",
   "upload.status.translating": "번역 중…",
   "upload.status.saving": "데이터베이스에 저장하는 중…",
-  "warning.screenshot_detected": "이상 행위가 감지되었습니다. 테스트가 종료됩니다."
+  "warning.screenshot_detected": "이상 행위가 감지되었습니다. 테스트가 종료됩니다.",
+  "result.back_to_home": "홈으로 돌아가기",
+  "result.share_text": "내 IQ는 {{score}}이고 상위 {{percentile}}%입니다!",
+  "result.link_copied": "링크가 복사되었습니다",
+  "result.share": "공유"
   ,"nav": {
     "leaderboard": "리더보드",
     "pricing": "가격",

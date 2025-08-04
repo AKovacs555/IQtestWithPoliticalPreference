@@ -25,7 +25,11 @@
   "upload.status.uploading": "Subiendo archivo…",
   "upload.status.translating": "Traduciendo…",
   "upload.status.saving": "Guardando en la base de datos…",
-  "warning.screenshot_detected": "Se detectó actividad sospechosa. La prueba finalizará."
+  "warning.screenshot_detected": "Se detectó actividad sospechosa. La prueba finalizará.",
+  "result.back_to_home": "Volver al inicio",
+  "result.share_text": "¡Obtuve {{score}} de IQ y estoy en el percentil {{percentile}}!",
+  "result.link_copied": "Enlace copiado",
+  "result.share": "Compartir"
   ,"nav": {
     "leaderboard": "Clasificación",
     "pricing": "Precios",

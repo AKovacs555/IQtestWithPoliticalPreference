@@ -25,7 +25,11 @@
   "upload.status.uploading": "正在上传文件…",
   "upload.status.translating": "正在翻译…",
   "upload.status.saving": "正在保存到数据库…",
-  "warning.screenshot_detected": "检测到可疑操作，测试将结束。"
+  "warning.screenshot_detected": "检测到可疑操作，测试将结束。",
+  "result.back_to_home": "返回首页",
+  "result.share_text": "我的智商是{{score}}，位于第{{percentile}}百分位！",
+  "result.link_copied": "链接已复制",
+  "result.share": "分享"
   ,"nav": {
     "leaderboard": "排行榜",
     "pricing": "定价",

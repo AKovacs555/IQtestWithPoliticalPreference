@@ -25,7 +25,11 @@
   "upload.status.uploading": "جاري رفع الملف…",
   "upload.status.translating": "جاري الترجمة…",
   "upload.status.saving": "جاري الحفظ في قاعدة البيانات…",
-  "warning.screenshot_detected": "تم اكتشاف نشاط مشبوه. سيتم إنهاء الاختبار."
+  "warning.screenshot_detected": "تم اكتشاف نشاط مشبوه. سيتم إنهاء الاختبار.",
+  "result.back_to_home": "العودة إلى الصفحة الرئيسية",
+  "result.share_text": "حصلت على معدل ذكاء {{score}} وأنا في النسبة المئوية {{percentile}}!",
+  "result.link_copied": "تم نسخ الرابط",
+  "result.share": "شارك"
   ,"nav": {
     "leaderboard": "لوحة المتصدرين",
     "pricing": "التسعير",

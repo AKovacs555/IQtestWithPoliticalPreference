@@ -25,7 +25,11 @@
   "upload.status.uploading": "Загрузка файла…",
   "upload.status.translating": "Перевод…",
   "upload.status.saving": "Сохранение в базу данных…",
-  "warning.screenshot_detected": "Обнаружена подозрительная активность. Тест будет завершён."
+  "warning.screenshot_detected": "Обнаружена подозрительная активность. Тест будет завершён.",
+  "result.back_to_home": "На главную",
+  "result.share_text": "Мой IQ {{score}}, я в {{percentile}}-м процентиле!",
+  "result.link_copied": "Ссылка скопирована",
+  "result.share": "Поделиться"
   ,"nav": {
     "leaderboard": "Таблица лидеров",
     "pricing": "Цены",

@@ -25,7 +25,11 @@
   "upload.status.uploading": "Envoi du fichier…",
   "upload.status.translating": "Traduction…",
   "upload.status.saving": "Enregistrement dans la base de données…",
-  "warning.screenshot_detected": "Une activité suspecte a été détectée. Le test va se terminer."
+  "warning.screenshot_detected": "Une activité suspecte a été détectée. Le test va se terminer.",
+  "result.back_to_home": "Retour à l'accueil",
+  "result.share_text": "J'ai obtenu un QI de {{score}} et je suis au {{percentile}}e percentile !",
+  "result.link_copied": "Lien copié",
+  "result.share": "Partager"
   ,"nav": {
     "leaderboard": "Classement",
     "pricing": "Tarifs",
