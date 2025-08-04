@@ -25,6 +25,8 @@ import confetti from 'canvas-confetti';
 import { getQuizStart, submitQuiz } from '../api';
 import TestPage from './TestPage.jsx';
 import { AnimatePresence, motion } from 'framer-motion';
+import SignupPage from './SignupPage.jsx';
+import LoginPage from './LoginPage.jsx';
 
 const PageTransition = ({ children }) => (
   <motion.div
@@ -55,6 +57,11 @@ const Quiz = () => {
   const watermark = React.useMemo(() => `${session?.slice(0,6) || ''}-${Date.now()}`,[session]);
 
   React.useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      navigate('/login');
+      return;
+    }
     const nat = localStorage.getItem('nationality');
     if (!nat) {
       navigate('/select-nationality');
@@ -335,6 +342,8 @@ export default function App() {
         <Route path="/party" element={<PartySelect />} />
         <Route path="/select-nationality" element={<SelectNationality />} />
         <Route path="/select-party" element={<SelectParty />} />
+        <Route path="/signup" element={<SignupPage />} />
+        <Route path="/login" element={<LoginPage />} />
         <Route path="/admin/questions" element={<AdminQuestions />} />
         <Route path="/admin/surveys" element={<AdminSurvey />} />
         <Route path="/admin/users" element={<AdminUsers />} />
