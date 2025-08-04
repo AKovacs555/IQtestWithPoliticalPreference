@@ -45,7 +45,7 @@ def test_survey_submit_handles_null_lr_auth(monkeypatch):
         assert data["libertarian_authoritarian"] == 0
 
 
-def test_survey_submit_marks_completion(monkeypatch):
+def test_survey_submit_persists_answers_and_marks_completion(monkeypatch):
     uid = 'user10'
     _create_user(uid)
     surveys = [
@@ -61,10 +61,20 @@ def test_survey_submit_marks_completion(monkeypatch):
         }
     ]
     monkeypatch.setattr('main.get_surveys', lambda lang=None: surveys)
+    payload = {"answers": [{"id": "1", "selections": [0]}], "user_id": uid}
     with TestClient(app) as client:
-        r = client.post('/survey/submit', json={"answers": [{"id": "1", "selections": [0]}], "user_id": uid})
+        r = client.post('/survey/submit', json=payload)
         assert r.status_code == 200
+
+    # user should be flagged as completed
     user = db.get_user(uid)
     assert user['survey_completed'] is True
+
+    # survey response should be persisted with expected fields
     supa = db.get_supabase()
-    assert supa.tables['survey_responses'][0]['user_id'] == uid
+    assert len(supa.tables.get('survey_responses', [])) == 1
+    assert supa.tables['survey_responses'][0] == {
+        'user_id': uid,
+        'survey_group_id': 'g1',
+        'answer': {"id": "1", "selections": [0]},
+    }
