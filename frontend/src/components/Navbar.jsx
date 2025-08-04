@@ -59,12 +59,20 @@ export default function Navbar() {
                   {t('nav.take_quiz')}
                 </button>
                 {!user && (
-                  <Link
-                    to="/login"
-                    className='px-4 py-2 rounded-md hover:bg-gray-200 dark:hover:bg-slate-700 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary'
-                  >
-                    {t('nav.login', { defaultValue: 'Log in' })}
-                  </Link>
+                  <>
+                    <Link
+                      to="/login"
+                      className='px-4 py-2 rounded-md hover:bg-gray-200 dark:hover:bg-slate-700 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary'
+                    >
+                      {t('nav.login', { defaultValue: 'Log in' })}
+                    </Link>
+                    <Link
+                      to="/signup"
+                      className='px-4 py-2 rounded-md hover:bg-gray-200 dark:hover:bg-slate-700 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary'
+                    >
+                      {t('nav.signup', { defaultValue: 'Sign up' })}
+                    </Link>
+                  </>
                 )}
                 {user && (
                   <button
@@ -115,12 +123,20 @@ export default function Navbar() {
               {t('nav.take_quiz')}
             </button>
             {!user && (
-              <Link
-                to="/login"
-                className="block px-4 py-2 rounded-md hover:bg-gray-200 dark:hover:bg-slate-700 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary"
-              >
-                {t('nav.login', { defaultValue: 'Log in' })}
-              </Link>
+              <>
+                <Link
+                  to="/login"
+                  className="block px-4 py-2 rounded-md hover:bg-gray-200 dark:hover:bg-slate-700 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary"
+                >
+                  {t('nav.login', { defaultValue: 'Log in' })}
+                </Link>
+                <Link
+                  to="/signup"
+                  className="block px-4 py-2 rounded-md hover:bg-gray-200 dark:hover:bg-slate-700 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary"
+                >
+                  {t('nav.signup', { defaultValue: 'Sign up' })}
+                </Link>
+              </>
             )}
             {user && (
               <button
