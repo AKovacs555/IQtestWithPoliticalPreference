@@ -27,12 +27,12 @@ export default function Navbar() {
   ];
 
   return (
-    <Disclosure as="nav" className="backdrop-blur-md bg-white/50 border-b border-white/20 shadow-sm">
+    <Disclosure as="nav" className="backdrop-blur-md bg-white/50 dark:bg-slate-800/60 border-b border-white/20 dark:border-slate-700/60 shadow-sm">
       {({ open }) => (
         <>
           <div className="mx-auto max-w-screen-sm px-4 sm:px-8">
             <div className="flex h-14 items-center justify-between">
-              <Link to="/" className="text-lg font-bold">IQ Test</Link>
+              <Link to="/" className="text-lg font-bold text-gray-900 dark:text-slate-100">IQ Test</Link>
               <div className="hidden md:flex md:items-center md:space-x-4">
                 <ThemeToggle />
                 <LanguageSelector />
@@ -41,21 +41,25 @@ export default function Navbar() {
                   <Link
                     key={link.to}
                     to={link.to}
-                    className={link.primary ? 'px-4 py-2 rounded-md bg-primary text-white hover:bg-primary/90 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500' : 'px-4 py-2 rounded-md hover:bg-gray-200 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500'}
+                    className={
+                      link.primary
+                        ? 'px-4 py-2 rounded-md bg-primary text-white hover:bg-primary/90 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary'
+                        : 'px-4 py-2 rounded-md hover:bg-gray-200 dark:hover:bg-slate-700 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary'
+                    }
                   >
                     {link.label}
                   </Link>
                 ))}
                 {showAdmin && (
                   adminLinks.map((link) => (
-                    <Link key={link.to} to={link.to} className="px-4 py-2 rounded-md hover:bg-gray-200 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <Link key={link.to} to={link.to} className="px-4 py-2 rounded-md hover:bg-gray-200 dark:hover:bg-slate-700 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary">
                       {link.label}
                     </Link>
                   ))
                 )}
               </div>
               <div className="md:hidden flex items-center">
-                <Disclosure.Button className="inline-flex items-center justify-center rounded-md p-2 hover:bg-gray-200 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary">
+                <Disclosure.Button className="inline-flex items-center justify-center rounded-md p-2 hover:bg-gray-200 dark:hover:bg-slate-700 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary">
                   <span className="sr-only">Open main menu</span>
                   {open ? (
                     <X className="h-6 w-6" aria-hidden="true" />
@@ -72,13 +76,13 @@ export default function Navbar() {
             <LanguageSelector />
             <PointsBadge userId={userId} />
             {links.map((link) => (
-              <Link key={link.to} to={link.to} className="block px-4 py-2 rounded-md hover:bg-gray-200 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+              <Link key={link.to} to={link.to} className="block px-4 py-2 rounded-md hover:bg-gray-200 dark:hover:bg-slate-700 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary">
                 {link.label}
               </Link>
             ))}
             {showAdmin && (
               adminLinks.map((link) => (
-                <Link key={link.to} to={link.to} className="block px-4 py-2 rounded-md hover:bg-gray-200 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <Link key={link.to} to={link.to} className="block px-4 py-2 rounded-md hover:bg-gray-200 dark:hover:bg-slate-700 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary">
                   {link.label}
                 </Link>
               ))
