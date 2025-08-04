@@ -115,6 +115,8 @@ from db import (
     get_parties,
     insert_survey_answers,
     get_survey_answers,
+    insert_survey_responses,
+    get_answered_survey_ids,
 )
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
 SUPABASE_API_KEY = os.environ.get("SUPABASE_API_KEY", "")
@@ -643,12 +645,20 @@ async def survey_start(
         surveys = get_surveys("en")
     user = get_user(user_id) if user_id else None
     user_nationality = nationality or (user.get("nationality") if user else None)
+    answered_ids: set[str] = set()
+    if user_id:
+        answered_ids = set(get_answered_survey_ids(user_id))
     items_raw = [
         q
         for q in surveys
-        if not q.get("target_countries")
-        or not user_nationality
-        or user_nationality in q.get("target_countries")
+        if (
+            q.get("group_id") not in answered_ids
+            and (
+                not q.get("target_countries")
+                or not user_nationality
+                or user_nationality in q.get("target_countries")
+            )
+        )
     ]
     parties_data = get_parties()
     items = [
@@ -680,6 +690,7 @@ async def survey_submit(payload: SurveySubmitRequest):
     auth_score = 0.0
 
     answer_rows: List[dict] = []
+    response_rows: List[dict] = []
     for ans in payload.answers:
         item = questions.get(ans.id)
         if not item:
@@ -716,6 +727,13 @@ async def survey_submit(payload: SurveySubmitRequest):
                         "option_index": sel,
                     }
                 )
+            response_rows.append(
+                {
+                    "user_id": payload.user_id,
+                    "survey_group_id": item.get("group_id"),
+                    "answer": {"id": ans.id, "selections": selections},
+                }
+            )
 
     n = len(payload.answers)
     if n:
@@ -724,6 +742,9 @@ async def survey_submit(payload: SurveySubmitRequest):
 
     if answer_rows:
         insert_survey_answers(answer_rows)
+    if response_rows:
+        insert_survey_responses(response_rows)
+        db_update_user(payload.user_id, {"survey_completed": True})
 
     if lr_score > 0.3:
         category = "Conservative"

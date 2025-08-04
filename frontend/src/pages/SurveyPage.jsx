@@ -21,7 +21,15 @@ export default function SurveyPage() {
     }
     const uid = localStorage.getItem('user_id');
     getSurvey(i18n.language, uid)
-      .then(d => setItems(d.items || []))
+      .then(d => {
+        const list = d.items || [];
+        if (!list.length) {
+          localStorage.setItem('survey_completed', 'true');
+          navigate('/test');
+          return;
+        }
+        setItems(list);
+      })
       .catch(e => setError(e.message))
       .finally(() => setLoading(false));
   }, [i18n.language, navigate]);
