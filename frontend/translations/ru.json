@@ -26,4 +26,10 @@
   "upload.status.translating": "Перевод…",
   "upload.status.saving": "Сохранение в базу данных…",
   "warning.screenshot_detected": "Обнаружена подозрительная активность. Тест будет завершён."
+  ,"nav": {
+    "leaderboard": "Таблица лидеров",
+    "pricing": "Цены",
+    "nationality": "Гражданство",
+    "take_quiz": "Пройти тест"
+  }
 }

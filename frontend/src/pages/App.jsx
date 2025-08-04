@@ -107,7 +107,8 @@ const Quiz = () => {
           answers.map((ans, idx) => ({
             id: questions[idx].id,
             answer: ans ?? -1,
-          }))
+          })),
+          localStorage.getItem('user_id')
         );
         const params = new URLSearchParams({
           score: result.iq,
@@ -149,7 +150,8 @@ const Quiz = () => {
       try {
         const data = await submitQuiz(
           session,
-          a.map((ans, idx) => ({ id: questions[idx].id, answer: ans }))
+          a.map((ans, idx) => ({ id: questions[idx].id, answer: ans })),
+          localStorage.getItem('user_id')
         );
         const params = new URLSearchParams({
           score: data.iq,

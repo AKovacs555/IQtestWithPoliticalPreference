@@ -26,4 +26,10 @@
   "upload.status.translating": "Übersetzen…",
   "upload.status.saving": "Speichern in der Datenbank…",
   "warning.screenshot_detected": "Verdächtige Aktivität erkannt. Der Test wird beendet."
+  ,"nav": {
+    "leaderboard": "Bestenliste",
+    "pricing": "Preise",
+    "nationality": "Nationalität",
+    "take_quiz": "Quiz starten"
+  }
 }

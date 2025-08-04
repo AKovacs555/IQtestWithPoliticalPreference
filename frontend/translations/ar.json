@@ -26,4 +26,10 @@
   "upload.status.translating": "جاري الترجمة…",
   "upload.status.saving": "جاري الحفظ في قاعدة البيانات…",
   "warning.screenshot_detected": "تم اكتشاف نشاط مشبوه. سيتم إنهاء الاختبار."
+  ,"nav": {
+    "leaderboard": "لوحة المتصدرين",
+    "pricing": "التسعير",
+    "nationality": "الجنسية",
+    "take_quiz": "ابدأ الاختبار"
+  }
 }

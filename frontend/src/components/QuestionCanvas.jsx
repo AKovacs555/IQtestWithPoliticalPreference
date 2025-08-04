@@ -3,8 +3,28 @@ import React from 'react';
 // Rendering questions on a canvas discourages copy/paste and basic DOM scraping.
 // It does not stop operating-system screenshots but adds a lightweight hurdle.
 
+function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
+  const words = text.split(' ');
+  let line = '';
+  const lines = [];
+  words.forEach((word) => {
+    const testLine = line + word + ' ';
+    const metrics = ctx.measureText ? ctx.measureText(testLine) : { width: testLine.length * 10 };
+    if (metrics.width > maxWidth && line !== '') {
+      lines.push(line.trim());
+      line = word + ' ';
+    } else {
+      line = testLine;
+    }
+  });
+  lines.push(line.trim());
+  lines.forEach((l, i) => ctx.fillText(l, x, y + i * lineHeight));
+  return lines.length;
+}
+
 export default function QuestionCanvas({ question, options, onSelect, watermark }) {
   const ref = React.useRef(null);
+  const questionLinesRef = React.useRef(0);
   const [theme, setTheme] = React.useState(() => document.documentElement.getAttribute('data-theme'));
 
   React.useEffect(() => {
@@ -23,9 +43,12 @@ export default function QuestionCanvas({ question, options, onSelect, watermark 
     ctx.font = '16px sans-serif';
     const theme = document.documentElement.getAttribute('data-theme');
     ctx.fillStyle = theme === 'dark' ? '#fff' : '#000';
-    ctx.fillText(question, 10, 20);
+    const maxWidth = canvas.width - 20;
+    const questionLines = wrapText(ctx, question, 10, 20, maxWidth, 24);
+    questionLinesRef.current = questionLines;
+    const optionsStartY = 40 + questionLines * 24;
     options.forEach((opt, i) => {
-      ctx.fillText(`${i + 1}. ${opt}`, 10, 50 + i * 24);
+      ctx.fillText(`${i + 1}. ${opt}`, 10, optionsStartY + i * 24);
     });
     ctx.globalAlpha = 0.2;
     ctx.fillText(watermark, 10, canvas.height - 10);
@@ -34,9 +57,10 @@ export default function QuestionCanvas({ question, options, onSelect, watermark 
 
   const handleClick = (e) => {
     const y = e.nativeEvent.offsetY;
-    const idx = Math.floor((y - 40) / 24);
+    const optionsStartY = 40 + questionLinesRef.current * 24;
+    const idx = Math.floor((y - optionsStartY) / 24);
     if (idx >= 0 && idx < options.length) onSelect(idx);
   };
 
-  return <canvas ref={ref} width={300} height={200} onClick={handleClick} />;
+  return <canvas ref={ref} width={300} height={260} onClick={handleClick} />;
 }
