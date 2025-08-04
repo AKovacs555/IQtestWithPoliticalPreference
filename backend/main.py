@@ -704,8 +704,8 @@ async def survey_submit(payload: SurveySubmitRequest):
             raise HTTPException(status_code=400, detail=f"Invalid option index {choice}")
 
         weight = choice - (len(item.get("options", [])) - 1) / 2
-        lr_score += weight * item.get("lr", 0)
-        auth_score += weight * item.get("auth", 0)
+        lr_score += weight * (item.get("lr") or 0)
+        auth_score += weight * (item.get("auth") or 0)
 
         if payload.user_id:
             for sel in selections:
