@@ -114,6 +114,7 @@ from db import (
     get_surveys,
     get_parties,
     insert_survey_answers,
+    insert_survey_responses,
     get_survey_answers,
     get_answered_survey_ids,
 )
@@ -681,6 +682,40 @@ async def public_surveys(lang: str = "en"):
 
 @app.post("/survey/submit", response_model=SurveyResult)
 async def survey_submit(payload: SurveySubmitRequest):
+    """Persist survey responses and return ideological scores.
+
+    Parameters
+    ----------
+    payload: SurveySubmitRequest
+        JSON body with the user's answers.  Expected structure:
+
+        ``{
+            "user_id": "<hashed id>",
+            "answers": [
+                {"id": "<question id>", "selections": [<int>, ...]},
+                ...
+            ],
+            "items": [ {"id": "<question id>", "group_id": "<group>"}, ... ]  # optional
+        }``
+
+        ``items`` may be omitted; when absent the server will look up survey
+        definitions by ID.  Each selection index must be valid for the referenced
+        item and single‑answer questions must contain exactly one selection.
+
+    Behavior
+    --------
+    The endpoint records every response in ``survey_responses`` and updates the
+    user's ``survey_completed`` flag in one atomic operation.  On success the
+    computed left/right and libertarian/authoritarian scores are returned.
+
+    Errors
+    ------
+    * ``400`` – missing answers, unknown question IDs, invalid option indices or
+      misuse of exclusive choices.
+    * ``500`` – any database failure prevents persistence and marks the request
+      unsuccessful.
+    """
+
     if not payload.answers:
         raise HTTPException(status_code=400, detail="No answers provided")
 
@@ -743,11 +778,8 @@ async def survey_submit(payload: SurveySubmitRequest):
         insert_survey_answers(answer_rows)
 
     if response_rows:
-        supabase = get_supabase()
-        supabase.from_("survey_responses").insert(response_rows).execute()
-        supabase.from_("users").update({"survey_completed": True}).eq(
-            "hashed_id", payload.user_id
-        ).execute()
+        insert_survey_responses(response_rows)
+        db_update_user(payload.user_id, {"survey_completed": True})
 
     if lr_score > 0.3:
         category = "Conservative"
