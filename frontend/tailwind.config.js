@@ -15,6 +15,12 @@ module.exports = {
         surface: 'var(--color-surface)',
         text: 'var(--color-text)',
       },
+      dropShadow: {
+        glow: [
+          '0 0 8px rgba(58, 150, 250, 0.6)',
+          '0 0 20px rgba(58, 150, 250, 0.4)',
+        ],
+      },
     },
   },
   plugins: [],
