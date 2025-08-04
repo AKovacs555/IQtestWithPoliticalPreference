@@ -19,8 +19,12 @@ export default function SurveyPage() {
       navigate('/select-nationality');
       return;
     }
+    if (localStorage.getItem('survey_completed') === 'true') {
+      navigate('/test');
+      return;
+    }
     const uid = localStorage.getItem('user_id');
-    getSurvey(i18n.language, uid)
+    getSurvey(i18n.language, uid, nat)
       .then(d => {
         const list = d.items || [];
         if (!list.length) {
