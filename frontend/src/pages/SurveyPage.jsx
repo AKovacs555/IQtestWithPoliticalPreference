@@ -14,6 +14,11 @@ export default function SurveyPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      navigate('/login');
+      return;
+    }
     const nat = localStorage.getItem('nationality');
     if (!nat) {
       navigate('/select-nationality');

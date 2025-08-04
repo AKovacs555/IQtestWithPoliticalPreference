@@ -12,6 +12,7 @@ export default function Navbar() {
     typeof window !== 'undefined' ? localStorage.getItem('user_id') : null;
   const showAdmin = import.meta.env.VITE_SHOW_ADMIN === 'true' || import.meta.env.DEV;
   const { t } = useTranslation();
+  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
 
   const links = [
     { to: '/leaderboard', label: t('nav.leaderboard') },
@@ -50,6 +51,17 @@ export default function Navbar() {
                     {link.label}
                   </Link>
                 ))}
+                {token && (
+                  <button
+                    onClick={() => {
+                      localStorage.removeItem('token');
+                      localStorage.removeItem('user_id');
+                    }}
+                    className="px-4 py-2 rounded-md hover:bg-gray-200 dark:hover:bg-slate-700 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary"
+                  >
+                    {t('nav.logout', { defaultValue: 'Log out' })}
+                  </button>
+                )}
                 {showAdmin && (
                   adminLinks.map((link) => (
                     <Link key={link.to} to={link.to} className="px-4 py-2 rounded-md hover:bg-gray-200 dark:hover:bg-slate-700 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary">
