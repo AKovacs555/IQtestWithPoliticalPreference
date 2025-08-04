@@ -26,13 +26,22 @@ export default function TestPage() {
       navigate('/select-nationality');
       return;
     }
+    if (localStorage.getItem('survey_completed') !== 'true') {
+      navigate('/survey');
+      return;
+    }
     async function load() {
       try {
-        const data = await getQuizStart(undefined, i18n.language);
+        const uid = localStorage.getItem('user_id');
+        const data = await getQuizStart(undefined, i18n.language, uid);
         setSession(data.session_id);
         setQuestions(data.questions);
         setCurrent(0);
       } catch (err) {
+        if (err.message && err.message.includes('survey_required')) {
+          navigate('/survey');
+          return;
+        }
         setError(err.message);
       } finally {
         setLoading(false);

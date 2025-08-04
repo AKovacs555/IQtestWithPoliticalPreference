@@ -34,8 +34,9 @@ export default function SelectNationality() {
       body: JSON.stringify({ user_id: userId, nationality: country })
     });
     localStorage.setItem('nationality', country);
+    localStorage.setItem('survey_completed', 'false');
     alert(t('select_country.saved'));
-    navigate('/select-party');
+    navigate('/survey');
   };
 
   const filtered = list.filter(c =>

@@ -10,7 +10,6 @@ export default function SurveyPage() {
   const [answers, setAnswers] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [submitted, setSubmitted] = useState(false);
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
 
@@ -58,22 +57,13 @@ export default function SurveyPage() {
       await submitSurvey(payload, uid);
       if (uid) {
         await completeSurvey(uid);
+        localStorage.setItem('survey_completed', 'true');
       }
-      setSubmitted(true);
+      navigate('/test');
     } catch (e) {
       setError(e.message);
     }
   };
-
-  if (submitted) {
-    return (
-      <Layout>
-        <div className="py-8 text-center">
-          <p>{t('survey.thank_you')}</p>
-        </div>
-      </Layout>
-    );
-  }
 
   return (
     <Layout>
