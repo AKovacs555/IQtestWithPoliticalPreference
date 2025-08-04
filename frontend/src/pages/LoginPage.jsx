@@ -1,7 +1,5 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Layout from '../components/Layout';
-import { loginAccount } from '../api';
 
 export default function LoginPage() {
   const [identifier, setIdentifier] = useState('');
@@ -9,39 +7,51 @@ export default function LoginPage() {
   const [error, setError] = useState(null);
   const navigate = useNavigate();
 
-  const handleLogin = async () => {
-    try {
-      const res = await loginAccount(identifier, password);
-      localStorage.setItem('authToken', res.token);
-      localStorage.setItem('user_id', res.user_id);
-      navigate(localStorage.getItem('survey_completed') === 'true' ? '/test' : '/survey');
-    } catch (e) {
-      setError(e.message);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const res = await fetch(`${import.meta.env.VITE_API_BASE}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ identifier, password }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      localStorage.setItem('authToken', data.token);
+      localStorage.setItem('user_id', data.user_id);
+      navigate('/');
+    } else {
+      const err = await res.json();
+      setError(err.detail || 'Login failed');
     }
   };
 
   return (
-    <Layout>
-      <div className="max-w-md mx-auto space-y-4">
-        <h2 className="text-2xl font-bold text-center">Log in</h2>
+    <div className="flex flex-col items-center justify-center h-screen">
+      <form onSubmit={handleSubmit} className="w-80 p-4 bg-white rounded shadow">
+        <h2 className="mb-4 text-xl font-semibold">Login</h2>
         {error && <p className="text-red-600">{error}</p>}
         <input
-          className="w-full p-2 border rounded"
-          placeholder="Phone or email"
+          type="text"
+          placeholder="Email or Username"
           value={identifier}
           onChange={(e) => setIdentifier(e.target.value)}
+          className="w-full px-3 py-2 mb-3 border rounded"
         />
         <input
-          className="w-full p-2 border rounded"
           type="password"
           placeholder="Password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
+          className="w-full px-3 py-2 mb-4 border rounded"
         />
-        <button className="px-4 py-2 bg-primary text-white rounded" onClick={handleLogin}>
-          Log in
+        <button
+          type="submit"
+          className="w-full py-2 text-white bg-blue-600 rounded hover:bg-blue-700"
+        >
+          Log In
         </button>
-      </div>
-    </Layout>
+      </form>
+    </div>
   );
 }
+

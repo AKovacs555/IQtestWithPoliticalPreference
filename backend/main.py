@@ -154,18 +154,6 @@ with open(_dist_path) as f:
     NORMATIVE_DIST = json.load(f)
 
 
-
-class OTPRequest(BaseModel):
-    phone: Optional[str] = None
-    email: Optional[str] = None
-
-
-class OTPVerify(BaseModel):
-    phone: Optional[str] = None
-    email: Optional[str] = None
-    code: str
-
-
 class QuizQuestion(BaseModel):
     id: int
     question: str
@@ -304,57 +292,6 @@ def hash_phone(phone: str, salt: str) -> str:
 
 # Adaptive testing session store
 OTP_CODES = {}
-
-
-@app.post("/auth/request-otp")
-async def request_otp(data: OTPRequest):
-    if data.phone:
-        code = str(random.randint(100000, 999999))
-        send_otp(data.phone, code)
-        OTP_CODES[data.phone] = code
-        return {"status": "sent"}
-    if data.email:
-        supabase = get_supabase()
-        supabase.auth.sign_in_with_otp({"email": data.email})
-        return {"status": "email_sent"}
-    raise HTTPException(status_code=400, detail="No contact provided")
-
-
-@app.post("/auth/verify-otp")
-async def verify_otp(data: OTPVerify):
-    if data.phone:
-        if OTP_CODES.get(data.phone) != data.code:
-            raise HTTPException(status_code=400, detail="Invalid code")
-        OTP_CODES.pop(data.phone, None)
-    elif data.email:
-        supabase = get_supabase()
-        user = supabase.auth.verify_otp(
-            {"email": data.email, "token": data.code, "type": "email"}
-        )
-        if not user:
-            raise HTTPException(status_code=400, detail="Invalid code")
-    else:
-        raise HTTPException(status_code=400, detail="Invalid contact")
-    # store hashed phone with per-record salt and initialize counters
-    phone_or_email = data.phone or data.email
-    salt = secrets.token_hex(8)
-    hashed = hash_phone(phone_or_email, salt)
-    user = get_user(hashed)
-    if not user:
-        db_create_user(
-            {
-                "hashed_id": hashed,
-                "salt": salt,
-                "plays": 0,
-                "referrals": 0,
-                "points": 0,
-                "scores": [],
-                "party_log": [],
-                "demographic": {},
-            }
-        )
-    return {"status": "verified", "id": hashed}
-
 
 def _retry_price(user: dict) -> int:
     plays_paid = max((user.get("plays", 0)) - (user.get("referrals", 0)), 0)

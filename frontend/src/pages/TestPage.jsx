@@ -25,7 +25,7 @@ export default function TestPage() {
 
   React.useEffect(() => {
     if (!user) {
-      navigate('/signup');
+      navigate('/login');
       return;
     }
     const nat = localStorage.getItem('nationality');
@@ -39,8 +39,7 @@ export default function TestPage() {
     }
     async function load() {
       try {
-        const uid = localStorage.getItem('user_id');
-        const data = await getQuizStart(undefined, i18n.language, uid);
+        const data = await getQuizStart(undefined, i18n.language);
         setSession(data.session_id);
         setQuestions(data.questions);
         setCurrent(0);
@@ -114,8 +113,7 @@ export default function TestPage() {
       (async () => {
         const result = await submitQuiz(
           session,
-          answers.map((ans, idx) => ({ id: questions[idx].id, answer: ans ?? -1 })),
-          localStorage.getItem('user_id')
+          answers.map((ans, idx) => ({ id: questions[idx].id, answer: ans ?? -1 }))
         );
         const params = new URLSearchParams({
           score: result.iq,
@@ -156,8 +154,7 @@ export default function TestPage() {
       try {
         const data = await submitQuiz(
           session,
-          a.map((ans, idx) => ({ id: questions[idx].id, answer: ans })),
-          localStorage.getItem('user_id')
+          a.map((ans, idx) => ({ id: questions[idx].id, answer: ans }))
         );
         const params = new URLSearchParams({
           score: data.iq,

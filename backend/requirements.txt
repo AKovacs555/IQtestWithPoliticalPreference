@@ -10,6 +10,5 @@ jsonschema
 pytest
 requests
 openai>=1.0,<2.0
-bcrypt
+bcrypt>=4.0.0
 PyJWT
-phonenumbers

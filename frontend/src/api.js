@@ -18,23 +18,17 @@ function authHeaders() {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
-export async function getQuizStart(setId, lang, userId) {
+export async function getQuizStart(setId, lang) {
   let url = setId ? `${API_BASE}/quiz/start?set_id=${setId}` : `${API_BASE}/quiz/start`;
   if (lang) {
     url += (url.includes('?') ? `&lang=${lang}` : `?lang=${lang}`);
-  }
-  const uid =
-    userId || (typeof localStorage !== 'undefined' ? localStorage.getItem('user_id') : null);
-  if (uid) {
-    url += (url.includes('?') ? `&user_id=${uid}` : `?user_id=${uid}`);
   }
   const res = await fetch(url, { headers: { ...authHeaders() } });
   return handleJson(res);
 }
 
-export async function submitQuiz(sessionId, answers, userId) {
+export async function submitQuiz(sessionId, answers) {
   const payload = { session_id: sessionId, answers };
-  if (userId) payload.user_id = userId;
   const res = await fetch(`${API_BASE}/quiz/submit`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...authHeaders() },
@@ -116,40 +110,13 @@ export async function getPartiesForCountry(country) {
   return handleJson(res);
 }
 
-export async function sendCode(phone) {
-  const res = await fetch(`${API_BASE}/auth/send-code`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ phone })
-  });
-  return handleJson(res);
-}
-
-export async function verifyCode(phone, code) {
-  const res = await fetch(`${API_BASE}/auth/verify-code`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ phone, code })
-  });
-  return handleJson(res);
-}
-
-export async function registerAccount({ phone, email, password, code, ref }) {
-  const payload = { phone, email, password, code };
+export async function registerAccount({ username, email, password, ref }) {
+  const payload = { username, email, password };
   if (ref) payload.referral_code = ref;
   const res = await fetch(`${API_BASE}/auth/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload)
-  });
-  return handleJson(res);
-}
-
-export async function loginAccount(identifier, password) {
-  const res = await fetch(`${API_BASE}/auth/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ identifier, password })
   });
   return handleJson(res);
 }

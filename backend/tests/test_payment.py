@@ -21,17 +21,3 @@ def test_payment_flow(monkeypatch):
         r = client.post("/play/record", json={"user_id": user_id})
         assert r.status_code == 200
         assert r.json()["plays"] == 2
-
-
-def test_verify_otp_creates_user(monkeypatch):
-    monkeypatch.setattr("main.send_otp", lambda *a, **k: None)
-    phone = "+1234567892"
-    with TestClient(app) as client:
-        r = client.post("/auth/request-otp", json={"phone": phone})
-        assert r.status_code == 200
-        code = main.OTP_CODES[phone]
-        r = client.post("/auth/verify-otp", json={"phone": phone, "code": code})
-        assert r.status_code == 200
-        user_id = r.json()["id"]
-    user = db.get_user(user_id)
-    assert user is not None

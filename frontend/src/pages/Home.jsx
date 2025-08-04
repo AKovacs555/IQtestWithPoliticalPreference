@@ -16,7 +16,7 @@ export default function Home() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const handleStart = () => {
-    if (!user) navigate('/signup');
+    if (!user) navigate('/login');
     else navigate('/test');
   };
 

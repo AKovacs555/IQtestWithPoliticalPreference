@@ -7,6 +7,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..',
 from main import app
 from backend import db
 import routes.quiz as quiz
+from backend.deps.auth import create_token
 
 
 def _create_user(uid, extra=None):
@@ -35,12 +36,13 @@ def test_quiz_requires_survey_completion(monkeypatch):
         'get_balanced_random_questions_by_set',
         lambda n, sid: [{'id': 1, 'question': 'q', 'options': ['a'], 'answer': 0}],
     )
+    token = create_token(uid)
     with TestClient(app) as client:
-        r = client.get(f'/quiz/start?set_id=set1&user_id={uid}')
+        r = client.get('/quiz/start?set_id=set1', headers={"Authorization": f"Bearer {token}"})
         assert r.status_code == 400
         assert r.json()['detail']['error'] == 'survey_required'
         db.update_user(uid, {'survey_completed': True})
-        r = client.get(f'/quiz/start?set_id=set1&user_id={uid}')
+        r = client.get('/quiz/start?set_id=set1', headers={"Authorization": f"Bearer {token}"})
         assert r.status_code == 200
         assert 'questions' in r.json()
 

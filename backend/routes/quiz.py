@@ -4,7 +4,7 @@ import json
 import logging
 from pathlib import Path
 from typing import List
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Request, Depends
 import random
 from pydantic import BaseModel
 from backend.deps.supabase_client import get_supabase_client
@@ -12,7 +12,7 @@ from backend.questions import available_sets, get_balanced_random_questions_by_s
 from backend.scoring import estimate_theta, iq_score, ability_summary, standard_error
 from backend.irt import percentile
 from backend.features import generate_share_image
-from backend.db import get_user
+from backend.deps.auth import get_current_user
 
 router = APIRouter(prefix="/quiz", tags=["quiz"])
 
@@ -39,7 +39,6 @@ class QuizAnswer(BaseModel):
 class QuizSubmitRequest(BaseModel):
     session_id: str
     answers: List[QuizAnswer]
-    user_id: str | None = None
 
 @router.get("/sets")
 async def quiz_sets():
@@ -50,18 +49,16 @@ async def start_quiz(
     request: Request,
     set_id: str | None = None,
     lang: str = "ja",
-    user_id: str | None = None,
+    user: dict = Depends(get_current_user),
 ):
-    if user_id:
-        user = get_user(user_id)
-        if user and not user.get("survey_completed"):
-            raise HTTPException(
-                status_code=400,
-                detail={
-                    "error": "survey_required",
-                    "message": "Please complete the survey before taking the IQ test.",
-                },
-            )
+    if user and not user.get("survey_completed"):
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "error": "survey_required",
+                "message": "Please complete the survey before taking the IQ test.",
+            },
+        )
     if set_id:
         try:
             questions = get_balanced_random_questions_by_set(NUM_QUESTIONS, set_id)
@@ -143,7 +140,9 @@ async def start_quiz(
     return {"session_id": session_id, "questions": models}
 
 @router.post("/submit")
-async def submit_quiz(payload: QuizSubmitRequest, request: Request):
+async def submit_quiz(
+    payload: QuizSubmitRequest, request: Request, user: dict = Depends(get_current_user)
+):
     session = request.app.state.sessions.get(payload.session_id)
     if not session:
         raise HTTPException(status_code=400, detail="Invalid session")
@@ -161,14 +160,13 @@ async def submit_quiz(payload: QuizSubmitRequest, request: Request):
     pct = percentile(theta, NORMATIVE_DIST)
     ability = ability_summary(theta)
     se = standard_error(theta, responses)
-    share_url = generate_share_image(payload.user_id or "anon", iq, pct)
-    if payload.user_id:
-        supabase = get_supabase_client()
-        supabase.table("user_scores").insert({
-            "user_id": payload.user_id,
-            "session_id": payload.session_id,
-            "iq": iq,
-            "percentile": pct,
-        }).execute()
+    share_url = generate_share_image(user["hashed_id"], iq, pct)
+    supabase = get_supabase_client()
+    supabase.table("user_scores").insert({
+        "user_id": user["hashed_id"],
+        "session_id": payload.session_id,
+        "iq": iq,
+        "percentile": pct,
+    }).execute()
     request.app.state.sessions.pop(payload.session_id, None)
     return {"theta": theta, "iq": iq, "percentile": pct, "ability": ability, "se": se, "share_url": share_url}
