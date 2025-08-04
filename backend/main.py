@@ -115,7 +115,6 @@ from db import (
     get_parties,
     insert_survey_answers,
     get_survey_answers,
-    insert_survey_responses,
     get_answered_survey_ids,
 )
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
@@ -742,9 +741,13 @@ async def survey_submit(payload: SurveySubmitRequest):
 
     if answer_rows:
         insert_survey_answers(answer_rows)
+
     if response_rows:
-        insert_survey_responses(response_rows)
-        db_update_user(payload.user_id, {"survey_completed": True})
+        supabase = get_supabase()
+        supabase.from_("survey_responses").insert(response_rows).execute()
+        supabase.from_("users").update({"survey_completed": True}).eq(
+            "hashed_id", payload.user_id
+        ).execute()
 
     if lr_score > 0.3:
         category = "Conservative"
