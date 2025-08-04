@@ -35,14 +35,21 @@ export async function submitQuiz(sessionId, answers) {
   return handleJson(res);
 }
 
-export async function getSurvey(lang, userId) {
+export async function getSurvey(lang, userId, nationality) {
   let url = `${API_BASE}/survey/start`;
   const params = [];
   if (lang) params.push(`lang=${lang}`);
-  const uid = userId || (typeof localStorage !== 'undefined' ? localStorage.getItem('user_id') : null);
+  const uid =
+    userId ||
+    (typeof localStorage !== 'undefined'
+      ? localStorage.getItem('user_id')
+      : null);
   if (uid) params.push(`user_id=${uid}`);
   const nat =
-    typeof localStorage !== 'undefined' ? localStorage.getItem('nationality') : null;
+    nationality ||
+    (typeof localStorage !== 'undefined'
+      ? localStorage.getItem('nationality')
+      : null);
   if (nat) params.push(`nationality=${nat}`);
   if (params.length) url += `?${params.join('&')}`;
   const res = await fetch(url);
