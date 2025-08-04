@@ -25,7 +25,11 @@
   "upload.status.uploading": "Caricamento del file…",
   "upload.status.translating": "Traduzione in corso…",
   "upload.status.saving": "Salvataggio nel database…",
-  "warning.screenshot_detected": "Rilevata attività sospetta. Il test terminerà."
+  "warning.screenshot_detected": "Rilevata attività sospetta. Il test terminerà.",
+  "result.back_to_home": "Torna alla home",
+  "result.share_text": "Ho ottenuto un QI di {{score}} ed è nel percentile {{percentile}}!",
+  "result.link_copied": "Link copiato",
+  "result.share": "Condividi"
   ,"nav": {
     "leaderboard": "Classifica",
     "pricing": "Prezzi",

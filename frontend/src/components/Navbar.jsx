@@ -8,7 +8,8 @@ import LanguageSelector from './LanguageSelector';
 import { useTranslation } from 'react-i18next';
 
 export default function Navbar() {
-  const userId = 'demo';
+  const userId =
+    typeof window !== 'undefined' ? localStorage.getItem('user_id') : null;
   const showAdmin = import.meta.env.VITE_SHOW_ADMIN === 'true' || import.meta.env.DEV;
   const { t } = useTranslation();
 
