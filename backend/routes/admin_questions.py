@@ -65,6 +65,26 @@ async def toggle_approved(group_id: str):
     return {"group_id": group_id, "approved": new_status}
 
 
+@router.post("/approve_batch", dependencies=[Depends(check_admin)])
+async def approve_batch(payload: dict):
+    """
+    Bulk approve or disapprove questions.
+    Expects JSON body: {"group_ids": ["uuid1", "uuid2"], "approved": true}
+    or, alternatively, {"ids": [1,2,3], "approved": true} to update by question IDs.
+    """
+    ids = payload.get("group_ids") or []
+    question_ids = payload.get("ids") or []
+    supabase = get_supabase_client()
+    if ids:
+        supabase.table("questions").update({"approved": payload["approved"]}).in_("group_id", ids).execute()
+        return {"updated": len(ids), "approved": payload["approved"]}
+    elif question_ids:
+        supabase.table("questions").update({"approved": payload["approved"]}).in_("id", question_ids).execute()
+        return {"updated": len(question_ids), "approved": payload["approved"]}
+    else:
+        raise HTTPException(status_code=400, detail="No IDs provided")
+
+
 @router.put("/{question_id}", dependencies=[Depends(check_admin)])
 async def update_question(question_id: int, payload: dict):
     if not isinstance(payload.get("options"), list) or len(payload["options"]) != 4:
