@@ -47,4 +47,10 @@
   "select_survey_for_dashboard": "Select survey for dashboard",
   "saved": "Saved",
   "dashboard.select_survey": "Select survey"
+  ,"nav": {
+    "leaderboard": "Leaderboard",
+    "pricing": "Pricing",
+    "nationality": "Nationality",
+    "take_quiz": "Take Quiz"
+  }
 }

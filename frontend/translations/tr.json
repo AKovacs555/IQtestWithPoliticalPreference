@@ -26,4 +26,10 @@
   "upload.status.translating": "Çevriliyor…",
   "upload.status.saving": "Veritabanına kaydediliyor…",
   "warning.screenshot_detected": "Şüpheli etkinlik tespit edildi. Test sonlandırılacak."
+  ,"nav": {
+    "leaderboard": "Liderlik Tablosu",
+    "pricing": "Fiyatlandırma",
+    "nationality": "Uyruk",
+    "take_quiz": "Testi Çöz"
+  }
 }

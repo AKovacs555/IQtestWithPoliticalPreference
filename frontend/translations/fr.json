@@ -26,4 +26,10 @@
   "upload.status.translating": "Traduction…",
   "upload.status.saving": "Enregistrement dans la base de données…",
   "warning.screenshot_detected": "Une activité suspecte a été détectée. Le test va se terminer."
+  ,"nav": {
+    "leaderboard": "Classement",
+    "pricing": "Tarifs",
+    "nationality": "Nationalité",
+    "take_quiz": "Passer le test"
+  }
 }

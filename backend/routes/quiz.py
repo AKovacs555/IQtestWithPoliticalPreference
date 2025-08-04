@@ -1,6 +1,7 @@
 import os
 import secrets
 import json
+import logging
 from pathlib import Path
 from typing import List
 from fastapi import APIRouter, HTTPException, Request
@@ -97,6 +98,18 @@ async def start_quiz(
                     unique.append(r)
                     if len(unique) == limit:
                         break
+                if len(unique) < limit:
+                    for r in rows:
+                        if len(unique) == limit:
+                            break
+                        if r not in unique:
+                            unique.append(r)
+                if len(unique) < limit:
+                    logging.getLogger(__name__).warning(
+                        "fetch_subset returned %d questions but %d requested",
+                        len(unique),
+                        limit,
+                    )
                 return unique
 
             easy_qs = fetch_subset(None, -0.33, easy)
@@ -149,5 +162,13 @@ async def submit_quiz(payload: QuizSubmitRequest, request: Request):
     ability = ability_summary(theta)
     se = standard_error(theta, responses)
     share_url = generate_share_image(payload.user_id or "anon", iq, pct)
+    if payload.user_id:
+        supabase = get_supabase_client()
+        supabase.table("user_scores").insert({
+            "user_id": payload.user_id,
+            "session_id": payload.session_id,
+            "iq": iq,
+            "percentile": pct,
+        }).execute()
     request.app.state.sessions.pop(payload.session_id, None)
     return {"theta": theta, "iq": iq, "percentile": pct, "ability": ability, "se": se, "share_url": share_url}

@@ -47,4 +47,10 @@
   "select_survey_for_dashboard": "ダッシュボード用のアンケートを選択",
   "saved": "保存しました",
   "dashboard.select_survey": "アンケートを選択"
+  ,"nav": {
+    "leaderboard": "ランキング",
+    "pricing": "料金",
+    "nationality": "国籍",
+    "take_quiz": "テストを受ける"
+  }
 }

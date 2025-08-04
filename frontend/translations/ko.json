@@ -26,4 +26,10 @@
   "upload.status.translating": "번역 중…",
   "upload.status.saving": "데이터베이스에 저장하는 중…",
   "warning.screenshot_detected": "이상 행위가 감지되었습니다. 테스트가 종료됩니다."
+  ,"nav": {
+    "leaderboard": "리더보드",
+    "pricing": "가격",
+    "nationality": "국적",
+    "take_quiz": "퀴즈 풀기"
+  }
 }

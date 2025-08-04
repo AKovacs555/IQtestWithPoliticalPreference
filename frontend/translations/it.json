@@ -26,4 +26,10 @@
   "upload.status.translating": "Traduzione in corso…",
   "upload.status.saving": "Salvataggio nel database…",
   "warning.screenshot_detected": "Rilevata attività sospetta. Il test terminerà."
+  ,"nav": {
+    "leaderboard": "Classifica",
+    "pricing": "Prezzi",
+    "nationality": "Nazionalità",
+    "take_quiz": "Fai il test"
+  }
 }

@@ -13,12 +13,11 @@ export default function Navbar() {
   const { t } = useTranslation();
 
   const links = [
-    { to: '/leaderboard', label: 'Leaderboard' },
-    { to: '/pricing', label: 'Pricing' },
-    { to: '/select-nationality', label: 'Nationality' },
-    { to: '/select-party', label: 'Parties' },
+    { to: '/leaderboard', label: t('nav.leaderboard') },
+    { to: '/pricing', label: t('nav.pricing') },
+    { to: '/select-nationality', label: t('nav.nationality') },
     { to: '/dashboard', label: t('dashboard.title') },
-    { to: '/test', label: 'Take Quiz', primary: true },
+    { to: '/test', label: t('nav.take_quiz'), primary: true },
   ];
 
   const adminLinks = [

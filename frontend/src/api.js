@@ -26,11 +26,13 @@ export async function getQuizStart(setId, lang, userId) {
   return handleJson(res);
 }
 
-export async function submitQuiz(sessionId, answers) {
+export async function submitQuiz(sessionId, answers, userId) {
+  const payload = { session_id: sessionId, answers };
+  if (userId) payload.user_id = userId;
   const res = await fetch(`${API_BASE}/quiz/submit`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ session_id: sessionId, answers })
+    body: JSON.stringify(payload)
   });
   return handleJson(res);
 }
