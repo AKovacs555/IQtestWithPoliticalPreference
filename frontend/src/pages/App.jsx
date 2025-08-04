@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import useShareMeta from '../hooks/useShareMeta';
+import useAuth from '../hooks/useAuth';
 import Layout from '../components/Layout';
 import AdminQuestions from './AdminQuestions';
 import AdminSurvey from './AdminSurvey';
@@ -56,10 +57,11 @@ const Quiz = () => {
   const navigate = useNavigate();
   const watermark = React.useMemo(() => `${session?.slice(0,6) || ''}-${Date.now()}`,[session]);
 
+  const { user } = useAuth();
+
   React.useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      navigate('/login');
+    if (!user) {
+      navigate('/signup');
       return;
     }
     const nat = localStorage.getItem('nationality');
@@ -85,7 +87,7 @@ const Quiz = () => {
       }
     }
     load();
-  }, [setId, navigate]);
+  }, [setId, navigate, user]);
 
   // Prevent copying or cutting text and disable context menu
   React.useEffect(() => {
