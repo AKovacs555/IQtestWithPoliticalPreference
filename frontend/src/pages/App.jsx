@@ -114,10 +114,10 @@ const Quiz = () => {
           percentile: result.percentile,
           share: result.share_url,
         });
-        window.location.href = '/result?' + params.toString();
+        navigate('/result?' + params.toString());
       })();
     }
-  }, [timeLeft, loading, error]);
+  }, [timeLeft, loading, error, navigate]);
 
   React.useEffect(() => {
     let hideTime = null;
@@ -156,7 +156,7 @@ const Quiz = () => {
           percentile: data.percentile,
           share: data.share_url,
         });
-        window.location.href = '/result?' + params.toString();
+        navigate('/result?' + params.toString());
       } catch (err) {
         setError(err.message);
       }
