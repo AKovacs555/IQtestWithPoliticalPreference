@@ -62,7 +62,7 @@ export default function Home() {
         </div>
         <Link
           to="/test"
-          className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-primary text-white font-medium py-3 px-6 rounded-full shadow-md hover:bg-primary/90 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary drop-shadow-md"
+          className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-gradient-to-r from-cyan-400 via-fuchsia-500 to-purple-600 text-gray-900 dark:text-gray-100 font-semibold py-3 px-6 rounded-full shadow-md drop-shadow-glow hover:from-cyan-300 hover:to-purple-500 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-400"
         >
           {t('landing.startButton')}
           <ArrowRight className="w-5 h-5" />

@@ -25,7 +25,7 @@ export default function LanguageSelector() {
     <select
       value={i18nInstance.language}
       onChange={handleChange}
-      className="border rounded-md px-2 py-2 text-sm"
+      className="border rounded-md px-3 py-2 text-base bg-gray-100 text-gray-900 dark:bg-gray-700 dark:text-gray-100"
       aria-label="Select language"
     >
       {languages.map(l => (
