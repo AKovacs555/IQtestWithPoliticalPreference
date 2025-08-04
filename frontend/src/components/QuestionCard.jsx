@@ -4,7 +4,7 @@ import QuestionCanvas from './QuestionCanvas';
 export default function QuestionCard({ question, onSelect, watermark }) {
   const { question: text, options } = question;
   return (
-    <div className="relative space-y-6 p-6 bg-white/70 backdrop-blur-md rounded-2xl shadow-lg">
+    <div className="relative space-y-6 p-6 bg-white/70 dark:bg-slate-800/60 backdrop-blur-md rounded-2xl shadow-lg text-gray-900 dark:text-slate-100">
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-20 text-xs select-none">
         {watermark}
       </div>

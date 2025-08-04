@@ -6,7 +6,7 @@
 
 @layer base {
   body {
-    @apply bg-gradient-to-br from-indigo-100 via-white to-cyan-100 text-text font-sans overflow-x-hidden;
+    @apply bg-gray-50 text-gray-900 dark:bg-gradient-to-br dark:from-[#0f172a] dark:via-[#1e293b] dark:to-[#0f172a] dark:text-slate-100 font-sans overflow-x-hidden transition-colors duration-300;
   }
 }
 
