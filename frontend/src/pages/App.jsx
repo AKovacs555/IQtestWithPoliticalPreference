@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Routes, Route, Link, useLocation } from 'react-router-dom';
+import { Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import useShareMeta from '../hooks/useShareMeta';
 import Layout from '../components/Layout';
@@ -51,12 +51,23 @@ const Quiz = () => {
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState(null);
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const watermark = React.useMemo(() => `${session?.slice(0,6) || ''}-${Date.now()}`,[session]);
 
   React.useEffect(() => {
+    const nat = localStorage.getItem('nationality');
+    if (!nat) {
+      navigate('/select-nationality');
+      return;
+    }
+    if (localStorage.getItem('survey_completed') !== 'true') {
+      navigate('/survey');
+      return;
+    }
     async function load() {
       try {
-        const data = await getQuizStart(setId);
+        const uid = localStorage.getItem('user_id');
+        const data = await getQuizStart(setId, undefined, uid);
         setSession(data.session_id);
         setQuestions(data.questions);
         setCurrent(0);
@@ -67,7 +78,7 @@ const Quiz = () => {
       }
     }
     load();
-  }, [setId]);
+  }, [setId, navigate]);
 
   // Prevent copying or cutting text and disable context menu
   React.useEffect(() => {

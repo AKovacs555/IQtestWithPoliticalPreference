@@ -12,10 +12,15 @@ async function handleJson(res) {
   return res.json();
 }
 
-export async function getQuizStart(setId, lang) {
+export async function getQuizStart(setId, lang, userId) {
   let url = setId ? `${API_BASE}/quiz/start?set_id=${setId}` : `${API_BASE}/quiz/start`;
   if (lang) {
     url += (url.includes('?') ? `&lang=${lang}` : `?lang=${lang}`);
+  }
+  const uid =
+    userId || (typeof localStorage !== 'undefined' ? localStorage.getItem('user_id') : null);
+  if (uid) {
+    url += (url.includes('?') ? `&user_id=${uid}` : `?user_id=${uid}`);
   }
   const res = await fetch(url);
   return handleJson(res);
@@ -36,6 +41,9 @@ export async function getSurvey(lang, userId) {
   if (lang) params.push(`lang=${lang}`);
   const uid = userId || (typeof localStorage !== 'undefined' ? localStorage.getItem('user_id') : null);
   if (uid) params.push(`user_id=${uid}`);
+  const nat =
+    typeof localStorage !== 'undefined' ? localStorage.getItem('nationality') : null;
+  if (nat) params.push(`nationality=${nat}`);
   if (params.length) url += `?${params.join('&')}`;
   const res = await fetch(url);
   return handleJson(res);

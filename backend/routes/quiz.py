@@ -84,7 +84,7 @@ async def start_quiz(
                     query = query.gte("irt_b", lower)
                 if upper is not None:
                     query = query.lt("irt_b", upper)
-                rows = query.order("random()").execute().data
+                rows = query.order("random").execute().data
                 unique = []
                 seen = set()
                 for r in rows:

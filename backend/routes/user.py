@@ -35,7 +35,7 @@ async def parties(country: str):
 async def save_party(payload: PartyPayload):
     supabase = get_supabase_client()
     try:
-        supabase.table('profiles').update({'party_ids': payload.party_ids}).eq('user_id', payload.user_id).execute()
+        supabase.table('users').update({'party_ids': payload.party_ids}).eq('hashed_id', payload.user_id).execute()
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     return {'status': 'ok'}

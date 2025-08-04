@@ -635,18 +635,20 @@ async def adaptive_answer(payload: AdaptiveAnswerRequest):
 
 
 @app.get("/survey/start", response_model=SurveyStartResponse)
-async def survey_start(lang: str = "en", user_id: str | None = None):
+async def survey_start(
+    lang: str = "en", user_id: str | None = None, nationality: str | None = None
+):
     surveys = get_surveys(lang)
     if not surveys and lang != "en":
         surveys = get_surveys("en")
     user = get_user(user_id) if user_id else None
-    nationality = user.get("nationality") if user else None
+    user_nationality = nationality or (user.get("nationality") if user else None)
     items_raw = [
         q
         for q in surveys
         if not q.get("target_countries")
-        or not nationality
-        or nationality in q.get("target_countries")
+        or not user_nationality
+        or user_nationality in q.get("target_countries")
     ]
     parties_data = get_parties()
     items = [
