@@ -4,7 +4,7 @@ import QuestionCanvas from './QuestionCanvas';
 export default function QuestionCard({ question, onSelect, watermark }) {
   const { question: text, options } = question;
   return (
-    <div className="relative space-y-4 p-4 bg-surface shadow rounded-md">
+    <div className="relative space-y-6 p-6 bg-white/70 backdrop-blur-md rounded-2xl shadow-lg">
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-20 text-xs select-none">
         {watermark}
       </div>
@@ -22,12 +22,12 @@ export default function QuestionCard({ question, onSelect, watermark }) {
         onSelect={onSelect}
         watermark={watermark}
       />
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-2 gap-4">
         {options.map((_, i) => (
           <button
             key={i}
             onClick={() => onSelect(i)}
-            className="px-4 py-3 rounded-md bg-primary text-white hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-primary"
+            className="w-full py-3 rounded-md bg-primary text-white hover:bg-blue-600 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary"
           >
             {i + 1}
           </button>

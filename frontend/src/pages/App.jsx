@@ -24,8 +24,18 @@ import History from './History.jsx';
 import confetti from 'canvas-confetti';
 import { getQuizStart, submitQuiz } from '../api';
 import TestPage from './TestPage.jsx';
+import { AnimatePresence, motion } from 'framer-motion';
 
-const PageTransition = ({ children }) => <>{children}</>;
+const PageTransition = ({ children }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    exit={{ opacity: 0, y: -20 }}
+    transition={{ duration: 0.2 }}
+  >
+    {children}
+  </motion.div>
+);
 
 
 const Quiz = () => {
@@ -239,8 +249,8 @@ const Result = () => {
   return (
     <PageTransition>
       <Layout>
-        <div className="text-center space-y-2">
-          <h2 className="text-xl font-bold">Your Results</h2>
+        <div className="text-center space-y-4 p-6 max-w-md mx-auto rounded-2xl backdrop-blur-md bg-white/60 shadow-lg">
+          <h2 className="text-2xl font-bold">Your Results</h2>
           <p>IQ: {Number(score).toFixed(2)}</p>
           <p>Percentile: {Number(percentile).toFixed(1)}%</p>
           <span className="text-xs text-gray-500" title="Scores are for entertainment and may not reflect a clinical IQ">what's this?</span>
@@ -253,7 +263,7 @@ const Result = () => {
                 href={`https://twitter.com/intent/tweet?url=${url}&text=${text}`}
                 target="_blank"
                 rel="noreferrer"
-                className="px-4 py-2 rounded-md bg-primary text-white text-sm"
+                className="px-4 py-2 rounded-md bg-primary text-white text-sm hover:bg-primary/90 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary"
               >
                 Share on X
               </a>
@@ -261,14 +271,14 @@ const Result = () => {
                 href={`https://social-plugins.line.me/lineit/share?url=${url}`}
                 target="_blank"
                 rel="noreferrer"
-                className="px-4 py-2 rounded-md bg-primary text-white text-sm"
+                className="px-4 py-2 rounded-md bg-primary text-white text-sm hover:bg-primary/90 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary"
               >
                 LINE
               </a>
               {navigator.share && (
                 <button
                   onClick={() => navigator.share({ url, text })}
-                  className="px-4 py-2 rounded-md bg-primary text-white text-sm"
+                  className="px-4 py-2 rounded-md bg-primary text-white text-sm hover:bg-primary/90 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary"
                 >
                   {t('share.button')}
                 </button>
@@ -278,13 +288,13 @@ const Result = () => {
           <div className="mt-4">
             <a
               href="/premium.html"
-              className="px-4 py-2 rounded-md bg-primary text-white text-sm"
+              className="px-4 py-2 rounded-md bg-primary text-white text-sm hover:bg-primary/90 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary"
             >
               Upgrade to Pro Pass
             </a>
           </div>
           <p className="text-sm text-gray-600">This test is for research and entertainment.</p>
-          <Link to="/" className="underline">Home</Link>
+          <Link to="/" className="underline active:scale-95 transition-all duration-200">Home</Link>
         </div>
       </Layout>
     </PageTransition>
@@ -294,7 +304,8 @@ const Result = () => {
 export default function App() {
   const location = useLocation();
   return (
-    <Routes location={location} key={location.pathname}>
+    <AnimatePresence mode="wait">
+      <Routes location={location} key={location.pathname}>
         <Route path="/" element={<Home />} />
         <Route path="/select-set" element={<SelectSet />} />
         <Route path="/start" element={<DemographicsForm />} />
@@ -314,5 +325,6 @@ export default function App() {
         <Route path="/admin/surveys" element={<AdminSurvey />} />
         <Route path="/admin/users" element={<AdminUsers />} />
       </Routes>
+    </AnimatePresence>
   );
 }

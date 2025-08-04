@@ -6,7 +6,7 @@
 
 @layer base {
   body {
-    @apply bg-surface text-text font-sans;
+    @apply bg-gradient-to-br from-indigo-100 via-white to-cyan-100 text-text font-sans overflow-x-hidden;
   }
 }
 
