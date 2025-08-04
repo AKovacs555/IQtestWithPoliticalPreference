@@ -128,7 +128,7 @@ def get_answered_survey_ids(user_id: str) -> List[str]:
         .execute()
     )
     data = resp.data or []
-    return [row["survey_group_id"] for row in data]
+    return [str(row["survey_group_id"]) for row in data if row.get("survey_group_id") is not None]
 
 
 def get_survey_answers(group_id: str) -> List[Dict[str, Any]]:

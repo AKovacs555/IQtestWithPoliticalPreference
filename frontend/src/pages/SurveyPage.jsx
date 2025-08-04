@@ -72,8 +72,8 @@ export default function SurveyPage() {
       await submitSurvey(formatted, uid);
       if (uid) {
         await completeSurvey(uid);
-        localStorage.setItem('survey_completed', 'true');
       }
+      localStorage.setItem('survey_completed', 'true');
       navigate('/test');
     } catch (e) {
       setError(e.message);

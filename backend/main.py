@@ -647,12 +647,12 @@ async def survey_start(
     user_nationality = nationality or (user.get("nationality") if user else None)
     answered_ids: set[str] = set()
     if user_id:
-        answered_ids = set(get_answered_survey_ids(user_id))
+        answered_ids = {str(gid) for gid in get_answered_survey_ids(user_id)}
     items_raw = [
         q
         for q in surveys
         if (
-            q.get("group_id") not in answered_ids
+            str(q.get("group_id")) not in answered_ids
             and (
                 not q.get("target_countries")
                 or not user_nationality
@@ -757,14 +757,14 @@ async def survey_submit(payload: SurveySubmitRequest):
                 answer_rows.append(
                     {
                         "user_id": payload.user_id,
-                        "group_id": item.get("group_id"),
+                        "group_id": str(item.get("group_id")),
                         "option_index": sel,
                     }
                 )
             response_rows.append(
                 {
                     "user_id": payload.user_id,
-                    "survey_group_id": item.get("group_id"),
+                    "survey_group_id": str(item.get("group_id")),
                     "answer": {"id": ans.id, "selections": selections},
                 }
             )
