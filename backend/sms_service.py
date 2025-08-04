@@ -20,7 +20,7 @@ elif SMS_PROVIDER == "sns":
         import boto3
     except Exception:  # pragma: no cover - optional dependency
         boto3 = None
-    AWS_REGION = os.environ.get("AWS_REGION", "us-east-1")
+    AWS_REGION = os.environ.get("AWS_REGION", "ap-northeast-1")
     sms_client = boto3.client("sns", region_name=AWS_REGION) if boto3 else None
     COST_PER_SMS = 0.00645
 else:
@@ -39,5 +39,19 @@ def send_otp(phone: str, code: str) -> None:
             to=phone, channel="sms"
         )
     elif SMS_PROVIDER == "sns":
-        sms_client.publish(PhoneNumber=phone, Message=f"Your code is {code}")
+        attributes = {
+            "AWS.SNS.SMS.SMSType": {
+                "DataType": "String",
+                "StringValue": "Transactional",
+            },
+            "AWS.SNS.SMS.SenderID": {
+                "DataType": "String",
+                "StringValue": os.environ.get("SMS_SENDER_ID", "IQArena"),
+            },
+        }
+        sms_client.publish(
+            PhoneNumber=phone,
+            Message=f"Your code is {code}",
+            MessageAttributes=attributes,
+        )
     logger.info("Sent OTP via %s costing approx $%.4f", SMS_PROVIDER, COST_PER_SMS)
