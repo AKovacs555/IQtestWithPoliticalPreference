@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Layout from '../components/Layout';
 import { sendCode, verifyCode, registerAccount } from '../api';
+import ReactPhoneInput from 'react-phone-input-2';
+import 'react-phone-input-2/lib/style.css';
+import { useTranslation } from 'react-i18next';
 
 export default function SignupPage() {
   const [phone, setPhone] = useState('');
@@ -13,6 +16,8 @@ export default function SignupPage() {
   const [error, setError] = useState(null);
   const navigate = useNavigate();
   const location = useLocation();
+  const { t } = useTranslation();
+  const defaultCountry = import.meta.env.VITE_DEFAULT_PHONE_COUNTRY;
   const params = new URLSearchParams(location.search);
   const ref = params.get('ref');
 
@@ -52,11 +57,13 @@ export default function SignupPage() {
         {error && <p className="text-red-600">{error}</p>}
         {!codeSent && (
           <div className="space-y-2">
-            <input
-              className="w-full p-2 border rounded"
-              placeholder="Phone number"
+            <ReactPhoneInput
+              country={defaultCountry || undefined}
+              enableSearch={true}
               value={phone}
-              onChange={(e) => setPhone(e.target.value)}
+              onChange={setPhone}
+              placeholder={t('auth.phone_placeholder')}
+              inputStyle={{ width: '100%' }}
             />
             <button className="px-4 py-2 bg-primary text-white rounded" onClick={handleSend}>
               Send Code

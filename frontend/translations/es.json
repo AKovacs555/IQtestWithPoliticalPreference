@@ -26,6 +26,7 @@
   "upload.status.translating": "Traduciendo…",
   "upload.status.saving": "Guardando en la base de datos…",
   "warning.screenshot_detected": "Se detectó actividad sospechosa. La prueba finalizará.",
+  "auth.phone_placeholder": "Número de teléfono",
   "result.back_to_home": "Volver al inicio",
   "result.share_text": "¡Obtuve {{score}} de IQ y estoy en el percentil {{percentile}}!",
   "result.link_copied": "Enlace copiado",
