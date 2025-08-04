@@ -17,7 +17,7 @@ export default function SurveyPage() {
 
   useEffect(() => {
     if (!user) {
-      navigate('/signup');
+      navigate('/login');
       return;
     }
     const nat = localStorage.getItem('nationality');

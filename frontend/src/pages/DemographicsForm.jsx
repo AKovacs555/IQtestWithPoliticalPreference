@@ -35,7 +35,7 @@ export default function DemographicsForm() {
   };
 
   React.useEffect(() => {
-    if (!user) navigate('/signup');
+    if (!user) navigate('/login');
   }, [user, navigate]);
 
   if (!user) return null;
