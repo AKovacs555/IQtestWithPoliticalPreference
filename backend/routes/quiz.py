@@ -84,8 +84,9 @@ async def start_quiz(
                     query = query.gte("irt_b", lower)
                 if upper is not None:
                     query = query.lt("irt_b", upper)
-                # Order results randomly using PostgreSQL's random() function
-                rows = query.order("random()").execute().data
+                # Fetch all matching questions and randomize on the client side
+                rows = query.execute().data or []
+                random.shuffle(rows)
                 unique = []
                 seen = set()
                 for r in rows:
