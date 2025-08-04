@@ -66,9 +66,28 @@ def test_survey_start_filters_nationality(monkeypatch):
     ]
     monkeypatch.setattr('main.get_surveys', lambda lang: surveys)
     monkeypatch.setattr('main.get_parties', lambda: [])
+    monkeypatch.setattr('main.get_answered_survey_ids', lambda uid: [])
     with TestClient(app) as client:
         r = client.get(f'/survey/start?user_id={uid}')
         assert r.status_code == 200
         data = r.json()
         ids = {item['id'] for item in data['items']}
         assert ids == {'1', '3'}
+
+
+def test_survey_start_excludes_answered(monkeypatch):
+    uid = 'user4'
+    _create_user(uid)
+    surveys = [
+        {'id': 1, 'group_id': 'g1', 'statement': 'a', 'options': [], 'type': 'sa', 'exclusive_options': [], 'target_countries': []},
+        {'id': 2, 'group_id': 'g2', 'statement': 'b', 'options': [], 'type': 'sa', 'exclusive_options': [], 'target_countries': []},
+    ]
+    monkeypatch.setattr('main.get_surveys', lambda lang: surveys)
+    monkeypatch.setattr('main.get_parties', lambda: [])
+    monkeypatch.setattr('main.get_answered_survey_ids', lambda u: {'g1'})
+    with TestClient(app) as client:
+        r = client.get(f'/survey/start?user_id={uid}')
+        assert r.status_code == 200
+        data = r.json()
+        ids = {item['id'] for item in data['items']}
+        assert ids == {'2'}

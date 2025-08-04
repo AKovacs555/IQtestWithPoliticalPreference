@@ -65,11 +65,12 @@ class DummyTable:
 
 class DummySupabase:
     def __init__(self):
-        self.users = []
+        self.tables = {"users": []}
 
     def from_(self, table):
-        assert table == "users"
-        return DummyTable(self.users)
+        if table not in self.tables:
+            self.tables[table] = []
+        return DummyTable(self.tables[table])
 
 @pytest.fixture(autouse=True)
 def fake_supabase(monkeypatch):

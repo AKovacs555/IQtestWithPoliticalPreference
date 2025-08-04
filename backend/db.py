@@ -110,6 +110,27 @@ def insert_survey_answers(rows: List[Dict[str, Any]]) -> None:
     supabase.from_("survey_answers").insert(rows).execute()
 
 
+def insert_survey_responses(rows: List[Dict[str, Any]]) -> None:
+    """Insert full survey responses for each survey item."""
+    if not rows:
+        return
+    supabase = get_supabase()
+    supabase.from_("survey_responses").insert(rows).execute()
+
+
+def get_answered_survey_ids(user_id: str) -> List[str]:
+    """Return survey_group_ids already answered by the user."""
+    supabase = get_supabase()
+    resp = (
+        supabase.from_("survey_responses")
+        .select("survey_group_id")
+        .eq("user_id", user_id)
+        .execute()
+    )
+    data = resp.data or []
+    return [row["survey_group_id"] for row in data]
+
+
 def get_survey_answers(group_id: str) -> List[Dict[str, Any]]:
     supabase = get_supabase()
     resp = (
