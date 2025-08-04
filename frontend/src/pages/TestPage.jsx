@@ -18,6 +18,7 @@ export default function TestPage() {
   const [error, setError] = React.useState(null);
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
+  const isMobile = /Mobi|Android/i.test(navigator.userAgent);
   const watermark = React.useMemo(() => `${session?.slice(0,6) || ''}-${Date.now()}`,[session]);
 
   React.useEffect(() => {
@@ -51,10 +52,14 @@ export default function TestPage() {
   }, [i18n.language, navigate]);
 
   React.useEffect(() => {
-    if (questions.length > 0 && document.fullscreenElement == null) {
+    if (
+      questions.length > 0 &&
+      !isMobile &&
+      document.fullscreenElement == null
+    ) {
       document.documentElement.requestFullscreen().catch(() => {});
     }
-  }, [questions.length]);
+  }, [questions.length, isMobile]);
 
   React.useEffect(() => {
     const handleFs = () => {
@@ -110,10 +115,10 @@ export default function TestPage() {
           percentile: result.percentile,
           share: result.share_url,
         });
-        window.location.href = '/result?' + params.toString();
+        navigate('/result?' + params.toString());
       })();
     }
-  }, [timeLeft, loading, error]);
+  }, [timeLeft, loading, error, navigate]);
 
   React.useEffect(() => {
     let hideTime = null;
@@ -151,7 +156,7 @@ export default function TestPage() {
           percentile: data.percentile,
           share: data.share_url,
         });
-        window.location.href = '/result?' + params.toString();
+        navigate('/result?' + params.toString());
       } catch (err) {
         setError(err.message);
       }

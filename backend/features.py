@@ -114,18 +114,15 @@ def generate_share_image(user_id: str, iq: float, percentile: float) -> str:
     if supabase_url and supabase_key:
         try:
             from supabase import create_client
-        except Exception:
-            create_client = None
 
-        if create_client:
-            try:
-                supa = create_client(supabase_url, supabase_key)
-                supa.storage.from_(bucket).upload(
-                    filename, buf.getvalue(), {"content-type": "image/png"}
-                )
-                return supa.storage.from_(bucket).get_public_url(filename)
-            except Exception:
-                pass
+            supa = create_client(supabase_url, supabase_key)
+            supa.storage.from_(bucket).upload(
+                filename, buf.getvalue(), {"content-type": "image/png"}
+            )
+            return supa.storage.from_(bucket).get_public_url(filename)
+        except Exception:
+            # fall back to writing under static/share below
+            pass
 
     # fallback to local static path
     out_dir = os.path.join(os.path.dirname(__file__), "..", "static", "share")
