@@ -39,6 +39,7 @@ export default function AdminQuestions() {
   const [imageFiles, setImageFiles] = useState<FileList | null>(null);
   const [uploadStatus, setUploadStatus] = useState<string | null>(null);
   const [isImporting, setIsImporting] = useState(false);
+  const [approvalFilter, setApprovalFilter] = useState<'all' | 'approved' | 'unapproved'>('all');
   const { t } = useTranslation();
 
   const apiBase = import.meta.env.VITE_API_BASE || '';
@@ -46,8 +47,16 @@ export default function AdminQuestions() {
     console.warn('VITE_API_BASE is not set');
   }
 
-  const filterByLanguage = (data: QuestionVariant[], lang: string) =>
-    lang === 'ja' ? data : data.filter(q => q.lang === lang);
+  const filterByLanguageAndApproval = (
+    data: QuestionVariant[],
+    lang: string,
+    filter: 'all' | 'approved' | 'unapproved'
+  ) => {
+    const byLang = lang === 'ja' ? data : data.filter(q => q.lang === lang);
+    if (filter === 'approved') return byLang.filter(q => q.approved === true);
+    if (filter === 'unapproved') return byLang.filter(q => q.approved === false);
+    return byLang;
+  };
 
   const fetchQuestions = async (lang: string): Promise<QuestionVariant[]> => {
     if (!token) return [];
@@ -65,13 +74,16 @@ export default function AdminQuestions() {
       const data = await res.json();
       sorted = data.sort((a: any, b: any) => a.id - b.id);
       setAllQuestions(sorted);
-      setDisplayedQuestions(filterByLanguage(sorted, lang));
+      setDisplayedQuestions(filterByLanguageAndApproval(sorted, lang, approvalFilter));
     }
     setStatus(null);
     return sorted;
   };
 
   useEffect(() => { if (token) fetchQuestions(selectedLang); }, [token, selectedLang]);
+  useEffect(() => {
+    setDisplayedQuestions(filterByLanguageAndApproval(allQuestions, selectedLang, approvalFilter));
+  }, [allQuestions, selectedLang, approvalFilter]);
 
   const handleLangChange = (lang: string) => {
     setSelectedLang(lang);
@@ -144,6 +156,31 @@ export default function AdminQuestions() {
     await fetchQuestions(selectedLang);
   };
 
+  const handleBulkApprove = async (approved: boolean) => {
+    if (!token || selected.size === 0) return;
+    const ids = Array.from(selected);
+    setStatus('updating');
+    const res = await fetch(`${apiBase}/admin/questions/approve_batch`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Admin-Api-Key': token,
+      },
+      body: JSON.stringify({ ids, approved }),
+    });
+    if (res.ok) {
+      const updated = allQuestions.map(q =>
+        selected.has(q.id) ? { ...q, approved } : q
+      );
+      setAllQuestions(updated);
+      setDisplayedQuestions(filterByLanguageAndApproval(updated, selectedLang, approvalFilter));
+      setSelected(new Set());
+    } else if (res.status === 401) {
+      setStatus('Invalid admin API key.');
+    }
+    setStatus(null);
+  };
+
   const toggleApprove = async (groupId: string) => {
     const res = await fetch(`${apiBase}/admin/questions/${groupId}/toggle_approved`, {
       method: 'POST',
@@ -159,7 +196,7 @@ export default function AdminQuestions() {
         q.group_id === groupId ? { ...q, approved: data.approved } : q
       );
       setAllQuestions(updated);
-      setDisplayedQuestions(filterByLanguage(updated, selectedLang));
+      setDisplayedQuestions(filterByLanguageAndApproval(updated, selectedLang, approvalFilter));
     }
   };
 
@@ -278,7 +315,21 @@ export default function AdminQuestions() {
         {allQuestions.length > 0 && (
           <>
         <div className="flex items-center space-x-2 mb-2">
-          <button className="btn btn-error btn-sm" onClick={removeSelected}>Delete Selected</button>
+          <button
+            className="btn btn-primary btn-sm"
+            onClick={() => handleBulkApprove(true)}
+            disabled={selected.size === 0}
+          >
+            Approve Selected
+          </button>
+          <button
+            className="btn btn-secondary btn-sm"
+            onClick={() => handleBulkApprove(false)}
+            disabled={selected.size === 0}
+          >
+            Disapprove Selected
+          </button>
+          <button className="btn btn-error btn-sm" onClick={removeSelected} disabled={selected.size === 0}>Delete Selected</button>
           <button className="btn btn-error btn-sm" onClick={removeAll}>Delete All Questions</button>
           <select
             className="select select-bordered select-sm"
@@ -288,6 +339,19 @@ export default function AdminQuestions() {
             {languageOptions.map(l => (
               <option key={l} value={l}>{l}</option>
             ))}
+          </select>
+          <select
+            className="select select-bordered select-sm"
+            value={approvalFilter}
+            onChange={e => {
+              const value = e.target.value as 'all' | 'approved' | 'unapproved';
+              setApprovalFilter(value);
+              setDisplayedQuestions(filterByLanguageAndApproval(allQuestions, selectedLang, value));
+            }}
+          >
+            <option value="all">All</option>
+            <option value="approved">Approved Only</option>
+            <option value="unapproved">Unapproved Only</option>
           </select>
         </div>
             <table className="table w-full">
