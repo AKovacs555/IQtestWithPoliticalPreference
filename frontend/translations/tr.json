@@ -26,6 +26,7 @@
   "upload.status.translating": "Çevriliyor…",
   "upload.status.saving": "Veritabanına kaydediliyor…",
   "warning.screenshot_detected": "Şüpheli etkinlik tespit edildi. Test sonlandırılacak.",
+  "auth.phone_placeholder": "Telefon numarası",
   "result.back_to_home": "Ana sayfaya dön",
   "result.share_text": "IQ'm {{score}} ve {{percentile}}. yüzdelikteyim!",
   "result.link_copied": "Bağlantı kopyalandı",

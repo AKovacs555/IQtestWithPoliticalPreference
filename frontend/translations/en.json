@@ -47,6 +47,7 @@
   "select_survey_for_dashboard": "Select survey for dashboard",
   "saved": "Saved",
   "dashboard.select_survey": "Select survey",
+  "auth.phone_placeholder": "Phone number",
   "result.back_to_home": "Back to Home",
   "result.share_text": "I scored {{score}} IQ and am in the {{percentile}} percentile!",
   "result.link_copied": "Link copied!",

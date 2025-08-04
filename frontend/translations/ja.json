@@ -47,6 +47,7 @@
   "select_survey_for_dashboard": "ダッシュボード用のアンケートを選択",
   "saved": "保存しました",
   "dashboard.select_survey": "アンケートを選択",
+  "auth.phone_placeholder": "電話番号",
   "result.back_to_home": "ホームに戻る",
   "result.share_text": "IQは{{score}}、上位{{percentile}}%でした！",
   "result.link_copied": "リンクをコピーしました",

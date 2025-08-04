@@ -5,6 +5,7 @@ import secrets
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 import bcrypt
+import phonenumbers
 
 from backend.sms_service import send_otp
 from backend.deps.auth import create_token
@@ -40,12 +41,13 @@ class LoginPayload(BaseModel):
 
 
 def normalize_phone(phone: str) -> str:
-    # Remove spaces and dashes
-    p = phone.strip().replace(" ", "").replace("-", "")
-    # If no '+' prefix, assume it's a Japanese number and prepend +81
-    if not p.startswith("+"):
-        p = "+81" + p.lstrip("0")
-    return p
+    """Parse and format the phone number into E.164."""
+    try:
+        p = phone if phone.startswith("+") else f"+{phone}"
+        parsed = phonenumbers.parse(p, None)
+        return phonenumbers.format_number(parsed, phonenumbers.PhoneNumberFormat.E164)
+    except phonenumbers.NumberParseException:
+        return phone
 
 
 def _save_code(phone: str, code: str) -> None:
