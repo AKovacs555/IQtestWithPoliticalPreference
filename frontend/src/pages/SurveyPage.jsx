@@ -41,7 +41,7 @@ export default function SurveyPage() {
         setItems(list);
       })
       .catch(e => {
-        if (e.message && e.message.includes('nationality_required')) {
+        if (e.code === 'nationality_required') {
           navigate('/select-nationality');
           return;
         }
