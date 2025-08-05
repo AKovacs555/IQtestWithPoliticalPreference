@@ -54,6 +54,7 @@ const Quiz = () => {
   const [suspicious, setSuspicious] = React.useState(false);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState(null);
+  const [submitting, setSubmitting] = React.useState(false);
   const { t } = useTranslation();
   const navigate = useNavigate();
   const watermark = React.useMemo(() => `${session?.slice(0,6) || ''}-${Date.now()}`,[session]);
@@ -108,25 +109,34 @@ const Quiz = () => {
     return () => clearInterval(t);
   }, []);
 
+  const submit = async (list) => {
+    if (submitting) return;
+    setSubmitting(true);
+    try {
+      // console.log('submitQuiz called');
+      const result = await submitQuiz(session, list);
+      const params = new URLSearchParams({ session_id: session });
+      if (result.share_url) params.set('share', result.share_url);
+      navigate('/result?' + params.toString());
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   React.useEffect(() => {
     if (timeLeft === 0 && !loading && !error) {
       (async () => {
-        const result = await submitQuiz(
-          session,
+        await submit(
           answers.map((ans, idx) => ({
             id: questions[idx].id,
             answer: ans ?? -1,
           }))
         );
-        const params = new URLSearchParams({
-          score: result.iq,
-          percentile: result.percentile,
-          share: result.share_url,
-        });
-        navigate('/result?' + params.toString());
       })();
     }
-  }, [timeLeft, loading, error, navigate]);
+  }, [timeLeft, loading, error]);
 
   React.useEffect(() => {
     let hideTime = null;
@@ -149,26 +159,14 @@ const Quiz = () => {
   }, []);
 
   const select = async (i) => {
+    if (submitting) return;
     const a = [...answers];
     a[current] = i;
     setAnswers(a);
     if (current + 1 < questions.length) {
       setCurrent(c => c + 1);
     } else {
-      try {
-        const data = await submitQuiz(
-          session,
-          a.map((ans, idx) => ({ id: questions[idx].id, answer: ans }))
-        );
-        const params = new URLSearchParams({
-          score: data.iq,
-          percentile: data.percentile,
-          share: data.share_url,
-        });
-        navigate('/result?' + params.toString());
-      } catch (err) {
-        setError(err.message);
-      }
+      await submit(a.map((ans, idx) => ({ id: questions[idx].id, answer: ans })));
     }
   };
 
@@ -194,6 +192,7 @@ const Quiz = () => {
                   question={questions[current]}
                   onSelect={select}
                   watermark={watermark}
+                  disabled={submitting}
                 />
               )}
             </>
@@ -211,12 +210,10 @@ const Quiz = () => {
 
 const Result = () => {
   const params = new URLSearchParams(window.location.search);
-  const scoreParam = params.get('score');
-  const percentileParam = params.get('percentile');
+  const sessionId = params.get('session_id');
   const shareParam = params.get('share');
-  const score = scoreParam ? Number(scoreParam) : NaN;
-  const percentile = percentileParam ? Number(percentileParam) : NaN;
   const share = shareParam && shareParam !== 'null' && shareParam !== 'undefined' ? shareParam : null;
+  const [result, setResult] = React.useState(null);
   const ref = React.useRef();
   const [avg, setAvg] = React.useState(null);
   const { t } = useTranslation();
@@ -227,6 +224,20 @@ const Result = () => {
   }, []);
 
   useShareMeta(share);
+
+  useEffect(() => {
+    if (!sessionId) return;
+    fetch(`${API_BASE}/quiz/result?session_id=${sessionId}`)
+      .then(res => res.json())
+      .then(data => {
+        // console.log('result data:', data);
+        setResult(data);
+      })
+      .catch(() => {});
+  }, [sessionId]);
+
+  const score = result?.iq;
+  const percentile = result?.percentile;
 
   useEffect(() => {
     if (!ref.current || !Number.isFinite(score)) return;
