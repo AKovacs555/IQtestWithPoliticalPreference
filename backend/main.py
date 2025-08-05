@@ -590,6 +590,14 @@ async def survey_start(
         surveys = get_surveys("en")
     user = get_user(user_id) if user_id else None
     user_nationality = nationality or (user.get("nationality") if user else None)
+    if not user_nationality:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "error": "nationality_required",
+                "message": "Please select your nationality before taking the survey.",
+            },
+        )
     answered_ids: set[str] = set()
     if user_id:
         answered_ids = {str(gid) for gid in get_answered_survey_ids(user_id)}
