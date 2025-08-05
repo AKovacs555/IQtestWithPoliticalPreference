@@ -83,63 +83,90 @@ async def start_quiz(
         except ValueError as e:
             raise HTTPException(status_code=400, detail=str(e))
     else:
-        supabase = get_supabase_client()
+        questions = []
+        supabase = None
+        try:
+            supabase = get_supabase_client()
+        except Exception as e:  # pragma: no cover - missing configuration
+            logging.getLogger(__name__).warning("Supabase unavailable: %s", e)
+
         easy = int(round(NUM_QUESTIONS * 0.3))
         med = int(round(NUM_QUESTIONS * 0.4))
         hard = NUM_QUESTIONS - easy - med
 
-        if lang:
-            def fetch_subset(lower, upper, limit):
-                query = (
-                    supabase.table("questions")
-                    .select("*")
-                    .eq("lang", lang)
-                    .eq("approved", True)
-                )
-                if lower is not None:
-                    query = query.gte("irt_b", lower)
-                if upper is not None:
-                    query = query.lt("irt_b", upper)
-                # Fetch all matching questions and randomize on the client side
-                rows = query.execute().data or []
-                random.shuffle(rows)
-                unique = []
-                seen = set()
-                for r in rows:
-                    gid = r.get("group_id")
-                    if gid in seen:
-                        continue
-                    seen.add(gid)
-                    unique.append(r)
-                    if len(unique) == limit:
-                        break
-                if len(unique) < limit:
+        if supabase:
+            if lang:
+                def fetch_subset(lower, upper, limit):
+                    query = (
+                        supabase.table("questions")
+                        .select("*")
+                        .eq("lang", lang)
+                        .eq("approved", True)
+                    )
+                    if lower is not None:
+                        query = query.gte("irt_b", lower)
+                    if upper is not None:
+                        query = query.lt("irt_b", upper)
+                    # Fetch all matching questions and randomize on the client side
+                    rows = query.execute().data or []
+                    random.shuffle(rows)
+                    unique = []
+                    seen = set()
                     for r in rows:
+                        gid = r.get("group_id")
+                        if gid in seen:
+                            continue
+                        seen.add(gid)
+                        unique.append(r)
                         if len(unique) == limit:
                             break
-                        if r not in unique:
-                            unique.append(r)
-                if len(unique) < limit:
-                    logging.getLogger(__name__).warning(
-                        "fetch_subset returned %d questions but %d requested",
-                        len(unique),
-                        limit,
-                    )
-                return unique
+                    if len(unique) < limit:
+                        for r in rows:
+                            if len(unique) == limit:
+                                break
+                            if r not in unique:
+                                unique.append(r)
+                    if len(unique) < limit:
+                        logging.getLogger(__name__).warning(
+                            "fetch_subset returned %d questions but %d requested",
+                            len(unique),
+                            limit,
+                        )
+                    return unique
 
-            easy_qs = fetch_subset(None, -0.33, easy)
-            med_qs = fetch_subset(-0.33, 0.33, med)
-            hard_qs = fetch_subset(0.33, None, hard)
-            questions = easy_qs + med_qs + hard_qs
-            random.shuffle(questions)
-        else:
-            resp = supabase.rpc(
-                "fetch_exam",
-                {"_easy": easy, "_med": med, "_hard": hard},
-            ).execute()
-            if resp.error:
-                raise HTTPException(status_code=500, detail=resp.error.message)
-            questions = [q for q in resp.data if q.get("approved")]
+                easy_qs = fetch_subset(None, -0.33, easy)
+                med_qs = fetch_subset(-0.33, 0.33, med)
+                hard_qs = fetch_subset(0.33, None, hard)
+                questions = easy_qs + med_qs + hard_qs
+                random.shuffle(questions)
+            else:
+                resp = supabase.rpc(
+                    "fetch_exam",
+                    {"_easy": easy, "_med": med, "_hard": hard},
+                ).execute()
+                if resp.error:
+                    raise HTTPException(status_code=500, detail=resp.error.message)
+                questions = [q for q in resp.data if q.get("approved")]
+
+        if not questions:
+            # Fallback to bundled sample questions when Supabase is unavailable
+            pool_dir = Path(__file__).resolve().parents[1] / "data" / "iq_pool"
+            local_questions: list[dict] = []
+            for p in pool_dir.glob("*.json"):
+                try:
+                    with p.open() as f:
+                        items = json.load(f)
+                    for item in items:
+                        if lang and item.get("language") not in (None, lang):
+                            continue
+                        irt = item.get("irt") or {}
+                        item.setdefault("irt_a", irt.get("a"))
+                        item.setdefault("irt_b", irt.get("b"))
+                        local_questions.append(item)
+                except Exception:
+                    continue
+            random.shuffle(local_questions)
+            questions = local_questions[:NUM_QUESTIONS]
     session_id = secrets.token_hex(8)
     request.app.state.sessions[session_id] = {
         q["id"]: {"answer": q["answer"], "a": q.get("irt_a"), "b": q.get("irt_b")}
