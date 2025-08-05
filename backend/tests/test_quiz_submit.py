@@ -1,0 +1,36 @@
+from fastapi import FastAPI
+from fastapi.testclient import TestClient
+import sys, os
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
+
+import backend.routes.quiz as quiz
+from backend.routes.quiz import router, get_current_user
+
+
+def test_submit_quiz_handles_missing_user_scores(monkeypatch):
+    app = FastAPI()
+    app.include_router(router)
+    app.state.sessions = {"sess1": {1: {"answer": 0, "a": 1.0, "b": 0.0}}}
+    app.dependency_overrides[get_current_user] = lambda: {"hashed_id": "u1"}
+
+    class DummyTable:
+        def insert(self, data):
+            return self
+        def execute(self):
+            raise Exception("missing table")
+
+    class DummySupabase:
+        def table(self, name):
+            return DummyTable()
+
+    monkeypatch.setattr(quiz, "get_supabase_client", lambda: DummySupabase())
+    monkeypatch.setattr(quiz, "generate_share_image", lambda uid, iq, pct: "")
+
+    client = TestClient(app)
+    payload = {"session_id": "sess1", "answers": [{"id": 1, "answer": 0}]}
+    resp = client.post("/quiz/submit", json=payload)
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "iq" in data

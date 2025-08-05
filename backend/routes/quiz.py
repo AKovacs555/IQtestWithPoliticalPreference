@@ -181,14 +181,17 @@ async def submit_quiz(
     se = standard_error(theta, responses)
     share_url = generate_share_image(user["hashed_id"], iq, pct)
     supabase = get_supabase_client()
-    supabase.table("user_scores").insert(
-        {
-            "user_id": user["hashed_id"],
-            "session_id": payload.session_id,
-            "iq": iq,
-            "percentile": pct,
-        }
-    ).execute()
+    try:
+        supabase.table("user_scores").insert(
+            {
+                "user_id": user["hashed_id"],
+                "session_id": payload.session_id,
+                "iq": iq,
+                "percentile": pct,
+            }
+        ).execute()
+    except Exception as e:  # pragma: no cover - best effort only
+        logging.getLogger(__name__).warning("Could not store user score: %s", e)
 
     if payload.surveys:
         rows = [
