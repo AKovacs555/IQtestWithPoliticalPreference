@@ -29,6 +29,7 @@ class QuizQuestion(BaseModel):
     question: str
     options: List[str]
     image: str | None = None
+    option_images: List[str] | None = None
 
 class QuizStartResponse(BaseModel):
     session_id: str
@@ -152,6 +153,7 @@ async def start_quiz(
                 question=q["question"],
                 options=q["options"],
                 image=q.get("image"),
+                option_images=q.get("option_images"),
             )
         )
     pending = get_random_pending_surveys(

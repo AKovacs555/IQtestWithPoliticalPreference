@@ -9,6 +9,8 @@ export interface Question {
   id: number;
   question: string;
   options: string[];
+  image?: string;
+  option_images?: string[];
 }
 
 export async function fetchExam() {
