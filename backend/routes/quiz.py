@@ -194,6 +194,7 @@ async def submit_quiz(
         rows = [
             {
                 "user_id": user["hashed_id"],
+                "survey_id": s.answer.get("id"),
                 "survey_group_id": s.survey_group_id,
                 "answer": s.answer,
             }
