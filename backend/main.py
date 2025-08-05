@@ -121,7 +121,6 @@ from db import (
     get_supabase,
     get_surveys,
     get_parties,
-    insert_survey_answers,
     insert_survey_responses,
     get_survey_answers,
     get_answered_survey_ids,
@@ -676,7 +675,6 @@ async def survey_submit(payload: SurveySubmitRequest):
     lr_score = 0.0
     auth_score = 0.0
 
-    answer_rows: List[dict] = []
     response_rows: List[dict] = []
     for ans in payload.answers:
         item = questions.get(ans.id)
@@ -706,14 +704,6 @@ async def survey_submit(payload: SurveySubmitRequest):
         auth_score += weight * (item.get("auth") or 0)
 
         if payload.user_id:
-            for sel in selections:
-                answer_rows.append(
-                    {
-                        "user_id": payload.user_id,
-                        "group_id": str(item.get("group_id")),
-                        "option_index": sel,
-                    }
-                )
             response_rows.append(
                 {
                     "user_id": payload.user_id,
@@ -726,9 +716,6 @@ async def survey_submit(payload: SurveySubmitRequest):
     if n:
         lr_score /= n
         auth_score /= n
-
-    if answer_rows:
-        insert_survey_answers(answer_rows)
 
     if response_rows:
         insert_survey_responses(response_rows)

@@ -103,13 +103,6 @@ def delete_survey(group_id: str) -> None:
     supabase.from_("surveys").delete().eq("group_id", group_id).execute()
 
 
-def insert_survey_answers(rows: List[Dict[str, Any]]) -> None:
-    if not rows:
-        return
-    supabase = get_supabase()
-    supabase.from_("survey_answers").insert(rows).execute()
-
-
 def insert_survey_responses(rows: List[Dict[str, Any]]) -> None:
     """Insert full survey responses for each survey item."""
     if not rows:
@@ -132,14 +125,27 @@ def get_answered_survey_ids(user_id: str) -> List[str]:
 
 
 def get_survey_answers(group_id: str) -> List[Dict[str, Any]]:
+    """Return option selections for a survey group.
+
+    Previously answers were stored in a dedicated ``survey_answers`` table.
+    The application now records all responses in ``survey_responses``. This
+    helper derives the same structure expected by the statistics code by
+    expanding each selection into ``{user_id, option_index}`` rows.
+    """
     supabase = get_supabase()
     resp = (
-        supabase.from_("survey_answers")
-        .select("user_id, option_index")
-        .eq("group_id", group_id)
+        supabase.from_("survey_responses")
+        .select("user_id, answer")
+        .eq("survey_group_id", group_id)
         .execute()
     )
-    return resp.data or []
+    rows = resp.data or []
+    answers: List[Dict[str, Any]] = []
+    for row in rows:
+        selections = (row.get("answer") or {}).get("selections") or []
+        for sel in selections:
+            answers.append({"user_id": row.get("user_id"), "option_index": sel})
+    return answers
 
 
 def get_dashboard_default_survey() -> Optional[str]:
