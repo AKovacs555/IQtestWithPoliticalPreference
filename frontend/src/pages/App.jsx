@@ -115,8 +115,11 @@ const Quiz = () => {
     try {
       // console.log('submitQuiz called');
       const result = await submitQuiz(session, list);
-      const params = new URLSearchParams({ session_id: session });
-      if (result.share_url) params.set('share', result.share_url);
+      const params = new URLSearchParams({
+        iq: result.iq.toString(),
+        percentile: result.percentile.toString(),
+      });
+      if (result.share_url) params.set('share_url', result.share_url);
       navigate('/result?' + params.toString());
     } catch (err) {
       setError(err.message);
@@ -209,11 +212,17 @@ const Quiz = () => {
 // Survey component moved to SurveyPage.jsx
 
 const Result = () => {
-  const params = new URLSearchParams(window.location.search);
-  const sessionId = params.get('session_id');
-  const shareParam = params.get('share');
-  const share = shareParam && shareParam !== 'null' && shareParam !== 'undefined' ? shareParam : null;
-  const [result, setResult] = React.useState(null);
+  const location = useLocation();
+  console.log('location.search:', location.search);
+  const params = new URLSearchParams(location.search);
+  console.log('params:', Array.from(params.entries()));
+  const iqParam = params.get('iq');
+  const percentileParam = params.get('percentile');
+  const shareParam = params.get('share_url');
+  const share =
+    shareParam && shareParam !== 'null' && shareParam !== 'undefined' ? shareParam : null;
+  const score = iqParam ? Number(iqParam) : NaN;
+  const percentile = percentileParam ? Number(percentileParam) : NaN;
   const ref = React.useRef();
   const [avg, setAvg] = React.useState(null);
   const { t } = useTranslation();
@@ -224,20 +233,6 @@ const Result = () => {
   }, []);
 
   useShareMeta(share);
-
-  useEffect(() => {
-    if (!sessionId) return;
-    fetch(`${API_BASE}/quiz/result?session_id=${sessionId}`)
-      .then(res => res.json())
-      .then(data => {
-        // console.log('result data:', data);
-        setResult(data);
-      })
-      .catch(() => {});
-  }, [sessionId]);
-
-  const score = result?.iq;
-  const percentile = result?.percentile;
 
   useEffect(() => {
     if (!ref.current || !Number.isFinite(score)) return;

@@ -46,3 +46,4 @@ def test_submit_quiz_handles_missing_user_scores(monkeypatch):
     assert resp.status_code == 200
     data = resp.json()
     assert "iq" in data
+    assert "percentile" in data
