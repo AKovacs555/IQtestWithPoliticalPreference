@@ -4,6 +4,7 @@ import json
 import logging
 from pathlib import Path
 from typing import List, Optional
+from datetime import datetime
 from fastapi import APIRouter, HTTPException, Request, Depends
 import random
 from pydantic import BaseModel
@@ -182,7 +183,7 @@ async def submit_quiz(
     share_url = generate_share_image(user["hashed_id"], iq, pct)
     supabase = get_supabase_client()
     try:
-        supabase.table("user_scores").insert(
+        supabase.from_("user_scores").insert(
             {
                 "user_id": user["hashed_id"],
                 "session_id": payload.session_id,
@@ -192,6 +193,20 @@ async def submit_quiz(
         ).execute()
     except Exception as e:  # pragma: no cover - best effort only
         logging.getLogger(__name__).warning("Could not store user score: %s", e)
+    try:
+        scores = (user.get("scores") or []) + [
+            {
+                "iq": iq,
+                "percentile": pct,
+                "timestamp": datetime.utcnow().isoformat(),
+            }
+        ]
+        plays = (user.get("plays") or 0) + 1
+        supabase.from_("users").update({"scores": scores, "plays": plays}).eq(
+            "hashed_id", user["hashed_id"]
+        ).execute()
+    except Exception as e:  # pragma: no cover - best effort only
+        logging.getLogger(__name__).warning("Could not update user record: %s", e)
 
     if payload.surveys:
         rows = [
