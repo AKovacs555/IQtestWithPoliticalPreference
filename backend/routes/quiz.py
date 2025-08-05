@@ -59,6 +59,14 @@ async def start_quiz(
     lang: str = "ja",
     user: dict = Depends(get_current_user),
 ):
+    if user and not user.get("nationality"):
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "error": "nationality_required",
+                "message": "Please select your nationality before taking the IQ test.",
+            },
+        )
     if user and not user.get("survey_completed"):
         raise HTTPException(
             status_code=400,

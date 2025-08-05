@@ -48,6 +48,10 @@ export default function TestPage() {
           navigate('/survey');
           return;
         }
+        if (err.message && err.message.includes('nationality_required')) {
+          navigate('/select-nationality');
+          return;
+        }
         setError(err.message);
       } finally {
         setLoading(false);

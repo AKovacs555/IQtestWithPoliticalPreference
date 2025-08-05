@@ -16,8 +16,15 @@ export default function Home() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const handleStart = () => {
-    if (!user) navigate('/login');
-    else navigate('/test');
+    if (!user) {
+      navigate('/login');
+    } else if (!localStorage.getItem('nationality')) {
+      navigate('/select-nationality');
+    } else if (localStorage.getItem('survey_completed') !== 'true') {
+      navigate('/survey');
+    } else {
+      navigate('/test');
+    }
   };
 
   useEffect(() => {
