@@ -119,8 +119,11 @@ export default function TestPage() {
     try {
       // console.log('submitQuiz called');
       const result = await submitQuiz(session, list);
-      const params = new URLSearchParams({ session_id: session });
-      if (result.share_url) params.set('share', result.share_url);
+      const params = new URLSearchParams({
+        iq: result.iq.toString(),
+        percentile: result.percentile.toString(),
+      });
+      if (result.share_url) params.set('share_url', result.share_url);
       navigate('/result?' + params.toString());
     } catch (err) {
       setError(err.message);
