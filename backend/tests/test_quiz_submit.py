@@ -16,14 +16,26 @@ def test_submit_quiz_handles_missing_user_scores(monkeypatch):
     app.dependency_overrides[get_current_user] = lambda: {"hashed_id": "u1"}
 
     class DummyTable:
+        def __init__(self, name):
+            self.name = name
+
         def insert(self, data):
             return self
+
+        def update(self, data):
+            return self
+
+        def eq(self, *args, **kwargs):
+            return self
+
         def execute(self):
-            raise Exception("missing table")
+            if self.name == "user_scores":
+                raise Exception("missing table")
+            return self
 
     class DummySupabase:
-        def table(self, name):
-            return DummyTable()
+        def from_(self, name):
+            return DummyTable(name)
 
     monkeypatch.setattr(quiz, "get_supabase_client", lambda: DummySupabase())
     monkeypatch.setattr(quiz, "generate_share_image", lambda uid, iq, pct: "")
