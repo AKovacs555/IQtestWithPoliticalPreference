@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import Layout from '../components/Layout';
 import { Link } from 'react-router-dom';
 import Select from 'react-select';
-import countryList from '../lib/countryList';
+import getCountryList from '../lib/countryList';
 import { useTranslation } from 'react-i18next';
 
 interface SurveyItem {
@@ -19,8 +19,8 @@ export default function AdminSurvey() {
   const [token, setToken] = useState(() => localStorage.getItem('adminToken') || '');
   const [items, setItems] = useState<SurveyItem[]>([]);
   const [languages, setLanguages] = useState<string[]>([]);
-  const { t } = useTranslation();
-  const [countries] = useState(() => countryList);
+  const { t, i18n } = useTranslation();
+  const [countries, setCountries] = useState(() => getCountryList(i18n.language));
 
   const [newLang, setNewLang] = useState('ja');
   const [newStatement, setNewStatement] = useState('');
@@ -84,6 +84,10 @@ export default function AdminSurvey() {
     load();
     loadDefault();
   }, [token]);
+
+  useEffect(() => {
+    setCountries(getCountryList(i18n.language));
+  }, [i18n.language]);
 
   const create = async () => {
     const exclusiveIndices = exclusiveOptions
@@ -243,10 +247,10 @@ export default function AdminSurvey() {
             isSearchable
             options={countries.map(c => ({
               value: c.code,
-              label: t(`country_names.${c.code}`, { defaultValue: c.name_en })
+              label: c.name,
             }))}
             value={countries
-              .map(c => ({ value: c.code, label: t(`country_names.${c.code}`, { defaultValue: c.name_en }) }))
+              .map(c => ({ value: c.code, label: c.name }))
               .filter(o => newTargets.includes(o.value))}
             onChange={vals => setNewTargets(vals.map(v => v.value))}
             placeholder={t('select_target_countries', { defaultValue: 'Select target countries' })}
@@ -299,10 +303,10 @@ export default function AdminSurvey() {
               isSearchable
               options={countries.map(c => ({
                 value: c.code,
-                label: t(`country_names.${c.code}`, { defaultValue: c.name_en })
+                label: c.name,
               }))}
               value={countries
-                .map(c => ({ value: c.code, label: t(`country_names.${c.code}`, { defaultValue: c.name_en }) }))
+                .map(c => ({ value: c.code, label: c.name }))
                 .filter(o => editing.target_countries.includes(o.value))}
               onChange={vals =>
                 setEditing({
