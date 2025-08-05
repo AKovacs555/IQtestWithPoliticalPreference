@@ -5,7 +5,11 @@ async function handleJson(res) {
     let msg = `Request failed: ${res.status}`;
     try {
       const data = await res.json();
-      msg = data.detail || msg;
+      if (typeof data.detail === 'string') {
+        msg = data.detail;
+      } else if (data.detail && typeof data.detail === 'object') {
+        msg = data.detail.message || data.detail.error || JSON.stringify(data.detail);
+      }
     } catch {}
     throw new Error(msg);
   }
