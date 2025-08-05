@@ -16,7 +16,12 @@ class DummyTable:
         self._single = False
         self._limit = None
 
-    def select(self, *_):
+    def select(self, *columns):
+        # Mimic supabase by raising an error when selecting a missing column.
+        for col_group in columns:
+            for col in col_group.split(","):
+                if col.strip() == "id":
+                    raise ValueError("column 'id' does not exist")
         self._select = True
         return self
 

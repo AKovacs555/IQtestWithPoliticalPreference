@@ -4,7 +4,7 @@ from backend.main import app
 
 def test_register_and_login(fake_supabase):
     with TestClient(app) as client:
-        payload = {"email": "user@example.com", "password": "secret"}
+        payload = {"username": "user1", "email": "user@example.com", "password": "secret"}
         r = client.post("/auth/register", json=payload)
         assert r.status_code == 200
         data = r.json()
