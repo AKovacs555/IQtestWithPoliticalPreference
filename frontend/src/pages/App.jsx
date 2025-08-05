@@ -17,7 +17,7 @@ import SelectNationality from './SelectNationality';
 import SelectParty from './SelectParty';
 import SurveyPage from './SurveyPage';
 import Dashboard from './Dashboard';
-import { Chart } from 'chart.js/auto';
+import Chart from 'chart.js/auto';
 import QuestionCard from '../components/QuestionCard';
 import Settings from './Settings.jsx';
 import DemographicsForm from './DemographicsForm.jsx';
@@ -211,9 +211,12 @@ const Quiz = () => {
 
 const Result = () => {
   const params = new URLSearchParams(window.location.search);
-  const score = params.get('score');
-  const percentile = params.get('percentile');
-  const share = params.get('share');
+  const scoreParam = params.get('score');
+  const percentileParam = params.get('percentile');
+  const shareParam = params.get('share');
+  const score = scoreParam ? Number(scoreParam) : NaN;
+  const percentile = percentileParam ? Number(percentileParam) : NaN;
+  const share = shareParam && shareParam !== 'null' && shareParam !== 'undefined' ? shareParam : null;
   const ref = React.useRef();
   const [avg, setAvg] = React.useState(null);
   const { t } = useTranslation();
@@ -226,17 +229,17 @@ const Result = () => {
   useShareMeta(share);
 
   useEffect(() => {
-    if (!ref.current) return;
+    if (!ref.current || !Number.isFinite(score)) return;
     const ctx = ref.current.getContext('2d');
     new Chart(ctx, {
       type: 'bar',
       data: {
         labels: ['IQ'],
-        datasets: [{ data: [score], backgroundColor: 'rgb(75,192,192)' }]
+        datasets: [{ data: [score], backgroundColor: 'rgb(75,192,192)' }],
       },
-      options: { scales: { y: { beginAtZero: true } } }
+      options: { scales: { y: { beginAtZero: true } } },
     });
-  }, []);
+  }, [score]);
 
   useEffect(() => {
     fetch(`${API_BASE}/leaderboard`)
@@ -260,8 +263,8 @@ const Result = () => {
       <Layout>
         <div className="text-center space-y-4 p-6 max-w-md mx-auto rounded-2xl backdrop-blur-md bg-white/60 shadow-lg">
           <h2 className="text-2xl font-bold">Your Results</h2>
-          <p>IQ: {Number(score).toFixed(2)}</p>
-          <p>Percentile: {Number(percentile).toFixed(1)}%</p>
+          <p>IQ: {Number.isFinite(score) ? score.toFixed(2) : 'N/A'}</p>
+          <p>Percentile: {Number.isFinite(percentile) ? percentile.toFixed(1) : 'N/A'}%</p>
           <span className="text-xs text-gray-500" title="Scores are for entertainment and may not reflect a clinical IQ">what's this?</span>
           {avg && <p className="text-sm">Overall average IQ: {avg.toFixed(1)}</p>}
           <canvas ref={ref} height="120"></canvas>
