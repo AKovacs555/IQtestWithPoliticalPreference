@@ -164,6 +164,7 @@ class QuizQuestion(BaseModel):
     question: str
     options: List[str]
     image: Optional[str] = None
+    option_images: Optional[List[str]] = None
 
 
 class QuizStartResponse(BaseModel):
@@ -490,6 +491,7 @@ def _to_model(q) -> QuizQuestion:
         question=q["question"],
         options=q["options"],
         image=q.get("image"),
+        option_images=q.get("option_images"),
     )
 
 
