@@ -44,11 +44,11 @@ export default function TestPage() {
         setQuestions(data.questions);
         setCurrent(0);
       } catch (err) {
-        if (err.message && err.message.includes('survey_required')) {
+        if (err.code === 'survey_required') {
           navigate('/survey');
           return;
         }
-        if (err.message && err.message.includes('nationality_required')) {
+        if (err.code === 'nationality_required') {
           navigate('/select-nationality');
           return;
         }
