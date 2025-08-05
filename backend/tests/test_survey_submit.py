@@ -75,6 +75,7 @@ def test_survey_submit_persists_answers_and_marks_completion(monkeypatch):
     assert len(supa.tables.get('survey_responses', [])) == 1
     assert supa.tables['survey_responses'][0] == {
         'user_id': uid,
+        'survey_id': '1',
         'survey_group_id': 'g1',
         'answer': {"id": "1", "selections": [0]},
     }

@@ -104,7 +104,11 @@ def delete_survey(group_id: str) -> None:
 
 
 def insert_survey_responses(rows: List[Dict[str, Any]]) -> None:
-    """Insert full survey responses for each survey item."""
+    """Insert full survey responses for each survey item.
+
+    Each row should contain ``user_id``, ``survey_id``, ``survey_group_id`` and
+    ``answer``.
+    """
     if not rows:
         return
     supabase = get_supabase()

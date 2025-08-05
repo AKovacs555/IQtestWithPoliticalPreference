@@ -707,6 +707,7 @@ async def survey_submit(payload: SurveySubmitRequest):
             response_rows.append(
                 {
                     "user_id": payload.user_id,
+                    "survey_id": ans.id,
                     "survey_group_id": str(item.get("group_id")),
                     "answer": {"id": ans.id, "selections": selections},
                 }
