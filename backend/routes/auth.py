@@ -6,7 +6,7 @@ from pydantic import BaseModel
 import bcrypt
 
 from backend.deps.auth import create_token
-from backend.deps.supabase_client import get_supabase_client
+import backend.db as db
 
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -27,11 +27,11 @@ class LoginPayload(BaseModel):
 @router.post("/register")
 async def register(payload: RegisterPayload):
     """Create a new user using a username/email and password."""
-    supabase = get_supabase_client()
+    supabase = db.get_supabase()
 
     if payload.username:
         resp = (
-            supabase.table("users")
+            supabase.from_("users")
             .select("id")
             .eq("username", payload.username)
             .execute()
@@ -40,7 +40,7 @@ async def register(payload: RegisterPayload):
             raise HTTPException(status_code=400, detail="Username already taken")
 
     resp = (
-        supabase.table("users").select("id").eq("email", payload.email).execute()
+        supabase.from_("users").select("id").eq("email", payload.email).execute()
     )
     if resp.data:
         raise HTTPException(status_code=400, detail="Email already registered")
@@ -65,7 +65,7 @@ async def register(payload: RegisterPayload):
     if payload.referral_code:
         try:
             ref_resp = (
-                supabase.table("users")
+                supabase.from_("users")
                 .select("hashed_id")
                 .eq("referral_code", payload.referral_code)
                 .limit(1)
@@ -77,7 +77,7 @@ async def register(payload: RegisterPayload):
         except Exception:
             pass
 
-    supabase.table("users").insert(data).execute()
+    supabase.from_("users").insert(data).execute()
     token = create_token(hashed_id)
     return {"token": token, "user_id": hashed_id}
 
@@ -85,10 +85,10 @@ async def register(payload: RegisterPayload):
 @router.post("/login")
 async def login(payload: LoginPayload):
     """Authenticate a user using an email or username and password."""
-    supabase = get_supabase_client()
+    supabase = db.get_supabase()
     id_field = "email" if "@" in payload.identifier else "username"
     resp = (
-        supabase.table("users")
+        supabase.from_("users")
         .select("*")
         .eq(id_field, payload.identifier)
         .limit(1)
