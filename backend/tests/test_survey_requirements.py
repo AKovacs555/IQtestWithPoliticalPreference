@@ -66,6 +66,26 @@ def test_quiz_requires_nationality(monkeypatch):
         assert 'questions' in r.json()
 
 
+def test_survey_start_requires_nationality(monkeypatch):
+    uid = 'user_no_nat'
+    _create_user(uid)
+    surveys = [
+        {'id': 1, 'statement': 'a', 'options': [], 'type': 'sa', 'exclusive_options': [], 'target_countries': []},
+    ]
+    monkeypatch.setattr('main.get_surveys', lambda lang: surveys)
+    monkeypatch.setattr('main.get_parties', lambda: [])
+    monkeypatch.setattr('main.get_answered_survey_ids', lambda u: [])
+    with TestClient(app) as client:
+        r = client.get(f'/survey/start?user_id={uid}')
+        assert r.status_code == 400
+        assert r.json()['detail']['error'] == 'nationality_required'
+    db.update_user(uid, {'nationality': 'US'})
+    with TestClient(app) as client:
+        r = client.get(f'/survey/start?user_id={uid}')
+        assert r.status_code == 200
+        assert 'items' in r.json()
+
+
 def test_survey_complete_endpoint():
     uid = 'user2'
     _create_user(uid)
@@ -98,7 +118,7 @@ def test_survey_start_filters_nationality(monkeypatch):
 
 def test_survey_start_excludes_answered(monkeypatch):
     uid = 'user4'
-    _create_user(uid)
+    _create_user(uid, {'nationality': 'US'})
     surveys = [
         {'id': 1, 'group_id': 'g1', 'statement': 'a', 'options': [], 'type': 'sa', 'exclusive_options': [], 'target_countries': []},
         {'id': 2, 'group_id': 'g2', 'statement': 'b', 'options': [], 'type': 'sa', 'exclusive_options': [], 'target_countries': []},
