@@ -40,7 +40,13 @@ export default function SurveyPage() {
         }
         setItems(list);
       })
-      .catch(e => setError(e.message))
+      .catch(e => {
+        if (e.message && e.message.includes('nationality_required')) {
+          navigate('/select-nationality');
+          return;
+        }
+        setError(e.message);
+      })
       .finally(() => setLoading(false));
   }, [user, i18n.language, navigate]);
 
