@@ -28,6 +28,7 @@ import TestPage from './TestPage.jsx';
 import { AnimatePresence, motion } from 'framer-motion';
 import SignupPage from './SignupPage.jsx';
 import LoginPage from './LoginPage.jsx';
+const API_BASE = import.meta.env.VITE_API_BASE || "";
 
 const PageTransition = ({ children }) => (
   <motion.div
@@ -225,6 +226,7 @@ const Result = () => {
   useShareMeta(share);
 
   useEffect(() => {
+    if (!ref.current) return;
     const ctx = ref.current.getContext('2d');
     new Chart(ctx, {
       type: 'bar',
