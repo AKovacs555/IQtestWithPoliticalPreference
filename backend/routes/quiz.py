@@ -3,7 +3,7 @@ import secrets
 import json
 import logging
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 from fastapi import APIRouter, HTTPException, Request, Depends
 import random
 from pydantic import BaseModel
@@ -13,6 +13,7 @@ from backend.scoring import estimate_theta, iq_score, ability_summary, standard_
 from backend.irt import percentile
 from backend.features import generate_share_image
 from backend.deps.auth import get_current_user
+from backend.db import get_answered_survey_ids, insert_survey_responses
 
 router = APIRouter(prefix="/quiz", tags=["quiz"])
 
@@ -31,14 +32,21 @@ class QuizQuestion(BaseModel):
 class QuizStartResponse(BaseModel):
     session_id: str
     questions: List[QuizQuestion]
+    pending_surveys: Optional[List[dict]] = None
 
 class QuizAnswer(BaseModel):
     id: int
     answer: int
 
+class SurveyAnswer(BaseModel):
+    survey_group_id: str
+    answer: dict
+
+
 class QuizSubmitRequest(BaseModel):
     session_id: str
     answers: List[QuizAnswer]
+    surveys: Optional[List[SurveyAnswer]] = None
 
 @router.get("/sets")
 async def quiz_sets():
@@ -137,7 +145,10 @@ async def start_quiz(
                 image=q.get("image"),
             )
         )
-    return {"session_id": session_id, "questions": models}
+    pending = get_random_pending_surveys(
+        user["hashed_id"], user.get("nationality"), limit=3
+    )
+    return {"session_id": session_id, "questions": models, "pending_surveys": pending}
 
 @router.post("/submit")
 async def submit_quiz(
@@ -162,11 +173,84 @@ async def submit_quiz(
     se = standard_error(theta, responses)
     share_url = generate_share_image(user["hashed_id"], iq, pct)
     supabase = get_supabase_client()
-    supabase.table("user_scores").insert({
-        "user_id": user["hashed_id"],
-        "session_id": payload.session_id,
+    supabase.table("user_scores").insert(
+        {
+            "user_id": user["hashed_id"],
+            "session_id": payload.session_id,
+            "iq": iq,
+            "percentile": pct,
+        }
+    ).execute()
+
+    if payload.surveys:
+        rows = [
+            {
+                "user_id": user["hashed_id"],
+                "survey_group_id": s.survey_group_id,
+                "answer": s.answer,
+            }
+            for s in payload.surveys
+        ]
+        insert_survey_responses(rows)
+
+    if user.get("referrer_id"):
+        try:
+            ref_id = user["referrer_id"]
+            limit_resp = (
+                supabase.table("settings")
+                .select("invitation_reward_limit")
+                .limit(1)
+                .execute()
+            )
+            limit = (
+                (limit_resp.data or [{}])[0].get("invitation_reward_limit")
+                or int(os.getenv("INVITATION_REWARD_LIMIT", "0"))
+            )
+            count_resp = (
+                supabase.table("invitation_rewards")
+                .select("id")
+                .eq("referrer_id", ref_id)
+                .execute()
+            )
+            count = len(count_resp.data or [])
+            if count < int(limit):
+                supabase.table("users").update({"free_tests": "free_tests + 1"}).eq(
+                    "hashed_id", ref_id
+                ).execute()
+                supabase.table("invitation_rewards").insert(
+                    {"referrer_id": ref_id, "referred_id": user["hashed_id"]}
+                ).execute()
+        except Exception:
+            pass
+    request.app.state.sessions.pop(payload.session_id, None)
+    return {
+        "theta": theta,
         "iq": iq,
         "percentile": pct,
-    }).execute()
-    request.app.state.sessions.pop(payload.session_id, None)
-    return {"theta": theta, "iq": iq, "percentile": pct, "ability": ability, "se": se, "share_url": share_url}
+        "ability": ability,
+        "se": se,
+        "share_url": share_url,
+    }
+
+
+def get_random_pending_surveys(
+    user_id: str, nationality: Optional[str], limit: int = 3
+) -> List[dict]:
+    """Return up to ``limit`` approved surveys the user hasn't answered."""
+    try:
+        supabase = get_supabase_client()
+        answered = set(get_answered_survey_ids(user_id))
+        resp = supabase.table("surveys").select("*").eq("approved", True).execute()
+    except Exception:
+        return []
+    surveys = resp.data or []
+    eligible: List[dict] = []
+    for s in surveys:
+        countries = s.get("target_countries") or []
+        if countries and nationality not in countries:
+            continue
+        if str(s.get("group_id")) in answered:
+            continue
+        eligible.append(s)
+    random.shuffle(eligible)
+    return eligible[:limit]

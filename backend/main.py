@@ -70,6 +70,10 @@ from routes.admin_users import router as admin_users_router
 from routes.quiz import router as quiz_router
 from routes.user import router as user_router
 from routes.auth import router as auth_router
+from routes.custom_survey import (
+    router as custom_survey_router,
+    admin_router as custom_survey_admin_router,
+)
 import json
 
 app = FastAPI()
@@ -98,6 +102,8 @@ app.include_router(admin_users_router)
 app.include_router(quiz_router)
 app.include_router(user_router)
 app.include_router(auth_router)
+app.include_router(custom_survey_router)
+app.include_router(custom_survey_admin_router)
 
 # SMS provider handled by sms_service module
 

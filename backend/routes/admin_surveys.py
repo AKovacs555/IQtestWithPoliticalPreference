@@ -14,6 +14,7 @@ from backend.db import (
     set_dashboard_default_survey,
 )
 from backend.utils.translation import translate_survey, SUPPORTED_LANGUAGES
+from backend.deps.supabase_client import get_supabase_client
 
 
 router = APIRouter(prefix="/admin/surveys", tags=["admin-surveys"])
@@ -37,6 +38,17 @@ def check_admin(admin_key: Optional[str] = Header(None, alias="X-Admin-Api-Key")
     if admin_key != expected:
         logger.warning("Invalid admin key provided")
         raise HTTPException(status_code=401, detail="Unauthorized")
+
+
+def grant_free_tests(countries: list[str]) -> None:
+    """Increment free test credits for users from given countries."""
+    if not countries:
+        return
+    supabase = get_supabase_client()
+    # Supabase Python client doesn't support increment directly, so use raw string
+    supabase.table("users").update({"free_tests": "free_tests + 1"}).in_(
+        "nationality", countries
+    ).execute()
 
 
 @router.get("/languages", dependencies=[Depends(check_admin)])
@@ -80,6 +92,7 @@ async def create_survey(payload: dict):
             )
 
     insert_surveys(rows)
+    grant_free_tests(payload.get("target_countries", []))
     return base_entry
 
 
