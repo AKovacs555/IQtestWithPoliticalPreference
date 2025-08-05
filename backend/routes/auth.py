@@ -32,7 +32,7 @@ async def register(payload: RegisterPayload):
     if payload.username:
         resp = (
             supabase.from_("users")
-            .select("id")
+            .select("hashed_id")
             .eq("username", payload.username)
             .execute()
         )
@@ -40,7 +40,7 @@ async def register(payload: RegisterPayload):
             raise HTTPException(status_code=400, detail="Username already taken")
 
     resp = (
-        supabase.from_("users").select("id").eq("email", payload.email).execute()
+        supabase.from_("users").select("hashed_id").eq("email", payload.email).execute()
     )
     if resp.data:
         raise HTTPException(status_code=400, detail="Email already registered")
