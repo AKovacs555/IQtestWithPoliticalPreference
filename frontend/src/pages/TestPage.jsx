@@ -17,6 +17,7 @@ export default function TestPage() {
   const [blackout, setBlackout] = React.useState(false);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState(null);
+  const [submitting, setSubmitting] = React.useState(false);
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -112,22 +113,31 @@ export default function TestPage() {
     return () => clearInterval(t);
   }, []);
 
+  const submit = async (list) => {
+    if (submitting) return;
+    setSubmitting(true);
+    try {
+      // console.log('submitQuiz called');
+      const result = await submitQuiz(session, list);
+      const params = new URLSearchParams({ session_id: session });
+      if (result.share_url) params.set('share', result.share_url);
+      navigate('/result?' + params.toString());
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   React.useEffect(() => {
     if (timeLeft === 0 && !loading && !error) {
       (async () => {
-        const result = await submitQuiz(
-          session,
+        await submit(
           answers.map((ans, idx) => ({ id: questions[idx].id, answer: ans ?? -1 }))
         );
-        const params = new URLSearchParams({
-          score: result.iq,
-          percentile: result.percentile,
-          share: result.share_url,
-        });
-        navigate('/result?' + params.toString());
       })();
     }
-  }, [timeLeft, loading, error, navigate]);
+  }, [timeLeft, loading, error]);
 
   React.useEffect(() => {
     let hideTime = null;
@@ -149,26 +159,14 @@ export default function TestPage() {
   }, []);
 
   const select = async (i) => {
+    if (submitting) return;
     const a = [...answers];
     a[current] = i;
     setAnswers(a);
     if (current + 1 < questions.length) {
       setCurrent(c => c + 1);
     } else {
-      try {
-        const data = await submitQuiz(
-          session,
-          a.map((ans, idx) => ({ id: questions[idx].id, answer: ans }))
-        );
-        const params = new URLSearchParams({
-          score: data.iq,
-          percentile: data.percentile,
-          share: data.share_url,
-        });
-        navigate('/result?' + params.toString());
-      } catch (err) {
-        setError(err.message);
-      }
+      await submit(a.map((ans, idx) => ({ id: questions[idx].id, answer: ans })));
     }
   };
 
@@ -203,6 +201,7 @@ export default function TestPage() {
                 question={questions[current]}
                 onSelect={select}
                 watermark={watermark}
+                disabled={submitting}
               />
             )}
           </>

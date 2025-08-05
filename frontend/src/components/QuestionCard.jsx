@@ -1,7 +1,7 @@
 import React from 'react';
 import QuestionCanvas from './QuestionCanvas';
 
-export default function QuestionCard({ question, onSelect, watermark }) {
+export default function QuestionCard({ question, onSelect, watermark, disabled = false }) {
   const { question: text, options } = question;
   return (
     <div className="relative space-y-6 p-6 bg-white/70 dark:bg-slate-800/60 backdrop-blur-md rounded-2xl shadow-lg text-gray-900 dark:text-slate-100">
@@ -27,7 +27,8 @@ export default function QuestionCard({ question, onSelect, watermark }) {
           <button
             key={i}
             onClick={() => onSelect(i)}
-            className="w-full py-3 rounded-md bg-primary text-white hover:bg-blue-600 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary"
+            disabled={disabled}
+            className={`w-full py-3 rounded-md bg-primary text-white hover:bg-blue-600 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
             {i + 1}
           </button>
