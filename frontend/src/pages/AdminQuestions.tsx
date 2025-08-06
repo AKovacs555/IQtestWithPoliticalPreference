@@ -284,6 +284,7 @@ export default function AdminQuestions() {
           <Link to="/admin/questions" className="tab tab-bordered tab-active">Questions</Link>
           <Link to="/admin/surveys" className="tab tab-bordered">Surveys</Link>
           <Link to="/admin/users" className="tab tab-bordered">Users</Link>
+          <Link to="/admin/settings" className="tab tab-bordered">Settings</Link>
         </nav>
         <div className="space-y-2">
           <input

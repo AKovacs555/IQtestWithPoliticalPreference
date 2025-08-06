@@ -36,6 +36,7 @@ export default function Navbar() {
     { to: '/admin/upload', label: 'Upload' },
     { to: '/admin/questions', label: 'Questions' },
     { to: '/admin/sets', label: t('admin_sets.title') },
+    { to: '/admin/settings', label: 'Settings' },
   ];
 
   return (
