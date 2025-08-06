@@ -30,14 +30,12 @@ from tools.generate_questions import import_dir
 
 from backend.sms_service import send_otp, SMS_PROVIDER
 from features import (
-    leaderboard_by_party,
     generate_share_image,
     update_normative_distribution,
     dp_average,
     MIN_BUCKET_SIZE,
 )
 from demographics import collect_demographics
-from party import update_party_affiliation
 from dp import add_laplace
 
 from questions import (
@@ -126,7 +124,6 @@ from db import (
     get_all_users,
     get_supabase,
     get_surveys,
-    get_parties,
     insert_survey_responses,
     get_survey_answers,
     get_answered_survey_ids,
@@ -232,11 +229,6 @@ class SurveyAnswer(BaseModel):
 class SurveySubmitRequest(BaseModel):
     answers: List[SurveyAnswer]
     user_id: Optional[str] = None
-
-
-class PartySelection(BaseModel):
-    user_id: str
-    party_ids: List[int]
 
 
 class DemographicInfo(BaseModel):
@@ -631,7 +623,6 @@ async def survey_start(
             )
         )
     ]
-    parties_data = get_parties()
     items = [
         SurveyItem(
             id=str(i["id"]),
@@ -642,8 +633,7 @@ async def survey_start(
         )
         for i in items_raw
     ]
-    parties = [PartyItem(id=p["id"], name=p["name"]) for p in parties_data]
-    return {"items": items, "parties": parties}
+    return {"items": items, "parties": []}
 
 
 @app.get("/surveys")
@@ -784,16 +774,6 @@ async def user_demographics(info: DemographicInfo):
     return {"status": "ok"}
 
 
-@app.post("/user/party")
-async def user_party(selection: PartySelection):
-    """Record user's supported parties. Allows multiple selections."""
-    if not selection.party_ids:
-        raise HTTPException(status_code=400, detail="No party selected")
-    try:
-        await update_party_affiliation(selection.user_id, selection.party_ids)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    return {"status": "ok"}
 
 
 @app.get("/user/stats/{user_id}", response_model=UserStats)
@@ -843,14 +823,6 @@ async def analytics(event: dict):
     log_event(event)
     EVENTS.append(event)
     return {}
-
-
-@app.get("/leaderboard")
-async def leaderboard():
-    """Return party IQ leaderboard with differential privacy noise."""
-    epsilon = float(os.getenv("DP_EPSILON", "1.0"))
-    data = await leaderboard_by_party(epsilon)
-    return {"leaderboard": data}
 
 
 @app.get("/stats/iq_histogram")
@@ -953,20 +925,17 @@ async def stats_distribution(user_id: str, epsilon: float = 1.0):
     if user_score is not None and scores:
         rank = sum(1 for s in scores if s <= user_score)
         percentile = rank / len(scores) * 100
-    party_means = await leaderboard_by_party(epsilon)
     return {
         "histogram": histogram,
         "mean": mean,
         "user_score": user_score,
         "percentile": percentile,
-        "party_means": party_means,
     }
 
 
 @app.get("/data/iq")
 async def dp_data_api(
     api_key: str,
-    party_id: int | None = None,
     age_band: str | None = None,
     gender: str | None = None,
     income_band: str | None = None,
@@ -986,10 +955,6 @@ async def dp_data_api(
         if gender and demo.get("gender") != gender:
             continue
         if income_band and demo.get("income_band") != income_band:
-            continue
-        latest_parties = user.get("party_log")
-        latest_parties = latest_parties[-1]["party_ids"] if latest_parties else []
-        if party_id is not None and party_id not in latest_parties:
             continue
         for s in (user.get("scores") or []):
             scores.append(s.get("iq"))

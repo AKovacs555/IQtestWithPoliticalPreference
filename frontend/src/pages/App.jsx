@@ -15,9 +15,7 @@ import Home from './Home';
 import Pricing from './Pricing';
 import Leaderboard from './Leaderboard';
 import SelectSet from './SelectSet';
-import PartySelect from './PartySelect';
 import SelectNationality from './SelectNationality';
-import SelectParty from './SelectParty';
 import SurveyPage from './SurveyPage';
 import Dashboard from './Dashboard';
 import Chart from 'chart.js/auto';
@@ -359,11 +357,7 @@ export default function App() {
         <Route path="/leaderboard" element={<Leaderboard />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/settings/:userId" element={<Settings />} />
-        <Route path="/history/:userId" element={<History />} />
-        <Route path="/party" element={<PartySelect />} />
-        <Route path="/select-nationality" element={<SelectNationality />} />
-        <Route path="/select-party" element={<SelectParty />} />
-        <Route path="/signup" element={<SignupPage />} />
+        <Route path="/history/:userId" element={<History />} />        <Route path="/select-nationality" element={<SelectNationality />} />        <Route path="/signup" element={<SignupPage />} />
         <Route path="/login" element={<LoginPage />} />
         {showAdmin && (<><Route path="/admin/questions" element={<AdminQuestions />} />
         <Route path="/admin/question-stats" element={<AdminQuestionStats />} />

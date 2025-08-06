@@ -86,35 +86,12 @@ export async function completeSurvey(userId) {
   return handleJson(res);
 }
 
-export async function getParties() {
-  const { parties } = await getSurvey();
-  return parties || [];
-}
-
-export async function submitPartySelection(userId, partyIds) {
-  const res = await fetch(`${API_BASE}/user/party`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...authHeaders() },
-    body: JSON.stringify({ user_id: userId, party_ids: partyIds })
-  });
-  if (!res.ok) {
-    const { detail } = await res.json();
-    throw new Error(detail || 'Party selection failed');
-  }
-  return true;
-}
-
 export async function setNationality(userId, nationality) {
   const res = await fetch(`${API_BASE}/user/nationality`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...authHeaders() },
     body: JSON.stringify({ user_id: userId, nationality })
   });
-  return handleJson(res);
-}
-
-export async function getPartiesForCountry(country) {
-  const res = await fetch(`${API_BASE}/user/parties/${country}`);
   return handleJson(res);
 }
 

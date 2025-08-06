@@ -20,7 +20,7 @@ flowchart LR
     end
 
     A -->|Phone Verification| B
-    B -->|Nationality & Party| C
+    B -->|Nationality| C
     C -->|Randomised Questions| C
     C -->|Results & Survey| E
     C -->|Notifications| F
@@ -31,9 +31,9 @@ flowchart LR
 
 ### Components
 
-- **Frontend** – React SPA served by Vercel. Handles user interactions for phone verification, nationality and party selection, IQ testing, survey submission, and displaying results.
+- **Frontend** – React SPA served by Vercel. Handles user interactions for phone verification, nationality selection, IQ testing, survey submission, and displaying results.
 - **Backend** – FastAPI application hosted on Render. Exposes REST endpoints consumed by the frontend. Business logic is organised into routers and services with Supabase repositories.
-- **Supabase** – Stores users, questions, survey responses, parties and IQ results. Acts as the authentication provider.
+- **Supabase** – Stores users, questions, survey responses and IQ results. Acts as the authentication provider.
 - **Twilio / AWS SNS** – Sends one‑time passwords for phone verification and system notifications.
 - **OpenAI** – Provides translation for survey content and notifications.
 - **Payment Provider** – Handles optional donations and monetisation flows.
@@ -41,7 +41,7 @@ flowchart LR
 ### Request Flow
 
 1. **Phone Verification** – User enters phone number; backend sends OTP via Twilio/AWS SNS. Supabase stores verification state.
-2. **Nationality & Party Selection** – Frontend retrieves available nationalities and parties from Supabase via backend APIs.
+2. **Nationality Selection** – Frontend retrieves available nationalities from Supabase via backend APIs.
 3. **IQ Test Execution** – Backend serves randomised questions. Answers are recorded and an IQ score is computed.
 4. **Survey & Results** – User completes a follow‑up survey. Results and optional payments are stored, and notifications are dispatched.
 5. **Admin Dashboard** – Administrators access aggregated data and manage question pools and survey content.

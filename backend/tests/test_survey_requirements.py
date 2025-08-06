@@ -74,7 +74,6 @@ def test_survey_start_requires_nationality(monkeypatch):
         {'id': 1, 'statement': 'a', 'options': [], 'type': 'sa', 'exclusive_options': [], 'target_countries': []},
     ]
     monkeypatch.setattr('main.get_surveys', lambda lang: surveys)
-    monkeypatch.setattr('main.get_parties', lambda: [])
     monkeypatch.setattr('main.get_answered_survey_ids', lambda u: [])
     with TestClient(app) as client:
         r = client.get(f'/survey/start?user_id={uid}')
@@ -107,7 +106,6 @@ def test_survey_start_filters_nationality(monkeypatch):
         {'id': 3, 'statement': 'all', 'options': [], 'type': 'sa', 'exclusive_options': [], 'target_countries': []},
     ]
     monkeypatch.setattr('main.get_surveys', lambda lang: surveys)
-    monkeypatch.setattr('main.get_parties', lambda: [])
     monkeypatch.setattr('main.get_answered_survey_ids', lambda uid: [])
     with TestClient(app) as client:
         r = client.get(f'/survey/start?user_id={uid}')
@@ -125,7 +123,6 @@ def test_survey_start_excludes_answered(monkeypatch):
         {'id': 2, 'group_id': 'g2', 'statement': 'b', 'options': [], 'type': 'sa', 'exclusive_options': [], 'target_countries': []},
     ]
     monkeypatch.setattr('main.get_surveys', lambda lang: surveys)
-    monkeypatch.setattr('main.get_parties', lambda: [])
     monkeypatch.setattr('main.get_answered_survey_ids', lambda u: {'g1'})
     with TestClient(app) as client:
         r = client.get(f'/survey/start?user_id={uid}')
