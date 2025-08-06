@@ -18,7 +18,7 @@ interface SurveyItem {
 
 export default function AdminSurvey() {
   const { user } = useAuth();
-  if (!user?.is_admin) {
+  if (!user || !user.is_admin) {
     return <div>Admin access required</div>;
   }
   const [token, setToken] = useState(() => localStorage.getItem('adminToken') || '');

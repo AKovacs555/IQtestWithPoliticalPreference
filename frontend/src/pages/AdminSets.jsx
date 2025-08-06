@@ -11,14 +11,16 @@ const GITHUB_REPO = import.meta.env.VITE_GITHUB_REPO;
 export default function AdminSets() {
   const { t } = useTranslation();
   const { user } = useAuth();
+  if (!user || !user.is_admin) {
+    return <div>Admin access required</div>;
+  }
   const [sets, setSets] = useState([]);
 
   useEffect(() => {
-    if (!user || !user.is_admin) return;
     fetch(`${API_BASE}/quiz/sets`)
       .then(res => res.json())
       .then(d => setSets(d.sets || []));
-  }, [user]);
+  }, []);
 
   const upload = async (e) => {
     const file = e.target.files?.[0];
@@ -45,14 +47,6 @@ export default function AdminSets() {
       alert(await res.text());
     }
   };
-
-  if (!user || !user.is_admin) {
-    return (
-      <Layout>
-        <div className="p-4">Admin access required</div>
-      </Layout>
-    );
-  }
 
   return (
     <Layout>
