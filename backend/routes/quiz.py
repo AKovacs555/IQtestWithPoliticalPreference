@@ -89,7 +89,8 @@ async def start_quiz(
         hard = NUM_QUESTIONS - easy - med
 
         if lang:
-            def fetch_subset(lower, upper, limit):
+            def fetch_subset(lower, upper, limit, seen_groups=None):
+                seen_groups = seen_groups or set()
                 query = (
                     supabase.table("questions")
                     .select("*")
@@ -104,12 +105,11 @@ async def start_quiz(
                 rows = query.execute().data or []
                 random.shuffle(rows)
                 unique = []
-                seen = set()
                 for r in rows:
                     gid = r.get("group_id")
-                    if gid in seen:
+                    if gid in seen_groups:
                         continue
-                    seen.add(gid)
+                    seen_groups.add(gid)
                     unique.append(r)
                     if len(unique) == limit:
                         break
@@ -117,7 +117,8 @@ async def start_quiz(
                     for r in rows:
                         if len(unique) == limit:
                             break
-                        if r not in unique:
+                        if r not in unique and r.get("group_id") not in seen_groups:
+                            seen_groups.add(r.get("group_id"))
                             unique.append(r)
                 if len(unique) < limit:
                     logging.getLogger(__name__).warning(
@@ -127,10 +128,13 @@ async def start_quiz(
                     )
                 return unique
 
-            easy_qs = fetch_subset(None, -0.33, easy)
-            med_qs = fetch_subset(-0.33, 0.33, med)
-            hard_qs = fetch_subset(0.33, None, hard)
+            seen_groups: set[str] = set()
+            easy_qs = fetch_subset(None, -0.33, easy, seen_groups)
+            med_qs = fetch_subset(-0.33, 0.33, med, seen_groups)
+            hard_qs = fetch_subset(0.33, None, hard, seen_groups)
             questions = easy_qs + med_qs + hard_qs
+            if len(questions) < NUM_QUESTIONS:
+                questions += fetch_subset(None, None, NUM_QUESTIONS - len(questions), seen_groups)
             random.shuffle(questions)
         else:
             resp = supabase.rpc(
