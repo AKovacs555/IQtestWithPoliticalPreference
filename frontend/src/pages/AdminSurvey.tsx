@@ -18,6 +18,9 @@ interface SurveyItem {
 
 export default function AdminSurvey() {
   const { user } = useAuth();
+  if (!user?.is_admin) {
+    return <div>Admin access required</div>;
+  }
   const [token, setToken] = useState(() => localStorage.getItem('adminToken') || '');
   const [tokenInput, setTokenInput] = useState('');
   const [items, setItems] = useState<SurveyItem[]>([]);
@@ -39,14 +42,6 @@ export default function AdminSurvey() {
   const apiBase = import.meta.env.VITE_API_BASE || '';
   if (!apiBase) {
     console.warn('VITE_API_BASE is not set');
-  }
-
-  if (!user || !user.is_admin) {
-    return (
-      <Layout>
-        <div className="p-4">Admin access required</div>
-      </Layout>
-    );
   }
 
   if (!token) {
