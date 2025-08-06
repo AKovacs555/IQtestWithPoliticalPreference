@@ -22,7 +22,6 @@ import QuestionCard from '../components/QuestionCard';
 import Settings from './Settings.jsx';
 import DemographicsForm from './DemographicsForm.jsx';
 import History from './History.jsx';
-import confetti from 'canvas-confetti';
 import { getQuizStart, submitQuiz } from '../api';
 import { AnimatePresence, motion } from 'framer-motion';
 import SignupPage from './SignupPage.jsx';
@@ -233,7 +232,10 @@ const Result = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    confetti({ particleCount: 150, spread: 70 });
+    (async () => {
+      const confetti = (await import('canvas-confetti')).default;
+      confetti({ particleCount: 150, spread: 70 });
+    })();
   }, []);
 
   useShareMeta(share);
