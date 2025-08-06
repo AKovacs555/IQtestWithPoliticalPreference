@@ -18,7 +18,6 @@ import SelectSet from './SelectSet';
 import SelectNationality from './SelectNationality';
 import SurveyPage from './SurveyPage';
 import Dashboard from './Dashboard';
-import Chart from 'chart.js/auto';
 import QuestionCard from '../components/QuestionCard';
 import Settings from './Settings.jsx';
 import DemographicsForm from './DemographicsForm.jsx';
@@ -228,7 +227,6 @@ const Result = () => {
     shareParam && shareParam !== 'null' && shareParam !== 'undefined' ? shareParam : null;
   const score = iqParam ? Number(iqParam) : NaN;
   const percentile = percentileParam ? Number(percentileParam) : NaN;
-  const ref = React.useRef();
   const [avg, setAvg] = React.useState(null);
   const { t } = useTranslation();
   const price = import.meta.env.VITE_PRO_PRICE_MONTHLY;
@@ -239,19 +237,6 @@ const Result = () => {
   }, []);
 
   useShareMeta(share);
-
-  useEffect(() => {
-    if (!ref.current || !Number.isFinite(score)) return;
-    const ctx = ref.current.getContext('2d');
-    new Chart(ctx, {
-      type: 'bar',
-      data: {
-        labels: ['IQ'],
-        datasets: [{ data: [score], backgroundColor: 'rgb(75,192,192)' }],
-      },
-      options: { scales: { y: { beginAtZero: true } } },
-    });
-  }, [score]);
 
   useEffect(() => {
     fetch(`${API_BASE}/leaderboard`)
@@ -279,7 +264,6 @@ const Result = () => {
           <p>Percentile: {Number.isFinite(percentile) ? percentile.toFixed(1) : 'N/A'}%</p>
           <span className="text-xs text-gray-500" title="Scores are for entertainment and may not reflect a clinical IQ">what's this?</span>
           {avg && <p className="text-sm">Overall average IQ: {avg.toFixed(1)}</p>}
-          <canvas ref={ref} height="120"></canvas>
           {share && <img src={share} alt="IQ share card" className="mx-auto rounded" />}
           {share && (
             <div className="space-x-2">
