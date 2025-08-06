@@ -19,7 +19,7 @@ backend_dir = os.path.dirname(__file__)
 repo_root = os.path.join(backend_dir, "..")
 sys.path.extend([backend_dir, repo_root])
 
-from fastapi import FastAPI, HTTPException, Header
+from fastapi import FastAPI, HTTPException, Depends
 import io
 import contextlib
 from fastapi.middleware.cors import CORSMiddleware
@@ -29,6 +29,7 @@ import tempfile
 from tools.generate_questions import import_dir
 
 from backend.sms_service import send_otp, SMS_PROVIDER
+from backend.routes.dependencies import require_admin
 from features import (
     generate_share_image,
     update_normative_distribution,
@@ -969,11 +970,9 @@ async def dp_data_api(
     return {"count": len(scores), "avg_iq": mean}
 
 
-@app.post("/admin/update-norms")
-async def admin_update_norms(api_key: str):
+@app.post("/admin/update-norms", dependencies=[Depends(require_admin)])
+async def admin_update_norms():
     """Update normative distribution from stored user scores."""
-    if api_key != os.getenv("ADMIN_API_KEY", ""):
-        raise HTTPException(status_code=403, detail="Invalid API key")
 
     scores: List[float] = []
     users = get_all_users()
@@ -984,11 +983,9 @@ async def admin_update_norms(api_key: str):
     return {"added": len(scores)}
 
 
-@app.get("/admin/dif-report")
-async def admin_dif_report(api_key: str):
+@app.get("/admin/dif-report", dependencies=[Depends(require_admin)])
+async def admin_dif_report():
     """Return DIF report for question bias analysis."""
-    if api_key != os.getenv("ADMIN_API_KEY", ""):
-        raise HTTPException(status_code=403, detail="Invalid API key")
     path = os.getenv("DIF_DATA_FILE", "data/responses.csv")
     if not os.path.exists(path):
         raise HTTPException(status_code=404, detail="No data")
@@ -996,11 +993,9 @@ async def admin_dif_report(api_key: str):
     return {"dif": report}
 
 
-@app.post("/admin/upload-questions")
-async def admin_upload_questions(payload: QuestionUpload, x_admin_api_key: str = Header(...)):
+@app.post("/admin/upload-questions", dependencies=[Depends(require_admin)])
+async def admin_upload_questions(payload: QuestionUpload):
     """Import a list of questions using the CLI helper."""
-    if x_admin_api_key != os.getenv("ADMIN_API_KEY", ""):
-        raise HTTPException(status_code=401, detail="Invalid API key")
 
     if not isinstance(payload.questions, list):
         raise HTTPException(status_code=400, detail="Field 'questions' must be a list of objects")
@@ -1020,11 +1015,9 @@ async def admin_upload_questions(payload: QuestionUpload, x_admin_api_key: str =
     return {"status": "success", "log": log}
 
 
-@app.get("/admin/question-bank-info")
-async def admin_question_bank_info(x_admin_api_key: str = Header(...)):
+@app.get("/admin/question-bank-info", dependencies=[Depends(require_admin)])
+async def admin_question_bank_info():
     """Return metadata about the current question bank."""
-    if x_admin_api_key != os.getenv("ADMIN_API_KEY", ""):
-        raise HTTPException(status_code=401, detail="Invalid API key")
     bank_path = Path(__file__).resolve().parent / "data" / "question_bank.json"
     try:
         with bank_path.open() as f:

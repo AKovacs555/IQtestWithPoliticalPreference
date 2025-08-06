@@ -29,8 +29,6 @@ export default function AdminQuestions() {
   if (!user || !user.is_admin) {
     return <div>Admin access required</div>;
   }
-  const [token, setToken] = useState<string>(() => localStorage.getItem('adminToken') || '');
-  const [tokenInput, setTokenInput] = useState('');
   const [allQuestions, setAllQuestions] = useState<QuestionVariant[]>([]);
   const [displayedQuestions, setDisplayedQuestions] = useState<QuestionVariant[]>([]);
   const [selectedLang, setSelectedLang] = useState<string>('ja');
@@ -53,32 +51,6 @@ export default function AdminQuestions() {
     console.warn('VITE_API_BASE is not set');
   }
 
-  if (!token) {
-    return (
-      <Layout>
-        <div className="max-w-md mx-auto space-y-4 p-4">
-          <h2 className="text-xl font-bold">Admin API key</h2>
-          <form
-            onSubmit={e => {
-              e.preventDefault();
-              localStorage.setItem('adminToken', tokenInput);
-              setToken(tokenInput);
-            }}
-            className="space-y-2"
-          >
-            <input
-              value={tokenInput}
-              onChange={e => setTokenInput(e.target.value)}
-              placeholder="API key"
-              className="input input-bordered w-full"
-            />
-            <button type="submit" className="btn w-full">Save</button>
-          </form>
-        </div>
-      </Layout>
-    );
-  }
-
   const filterByLanguageAndApproval = (
     data: QuestionVariant[],
     lang: string,
@@ -91,16 +63,13 @@ export default function AdminQuestions() {
   };
 
   const fetchQuestions = async (lang: string): Promise<QuestionVariant[]> => {
-    if (!token) return [];
     setStatus('loading');
+    const authToken = localStorage.getItem('authToken');
+    const headers = authToken ? { Authorization: `Bearer ${authToken}` } : {};
     const res = await fetch(`${apiBase}/admin/questions/?lang=${lang}`, {
-      headers: { 'X-Admin-Api-Key': token },
+      headers,
       redirect: 'manual'
     });
-    if (res.status === 401) {
-      setStatus('Invalid admin API key. Please check your settings.');
-      return [];
-    }
     let sorted: QuestionVariant[] = [];
     if (res.ok) {
       const data = await res.json();
@@ -112,7 +81,7 @@ export default function AdminQuestions() {
     return sorted;
   };
 
-  useEffect(() => { if (token) fetchQuestions(selectedLang); }, [token, selectedLang]);
+  useEffect(() => { fetchQuestions(selectedLang); }, [selectedLang]);
   useEffect(() => {
     setDisplayedQuestions(filterByLanguageAndApproval(allQuestions, selectedLang, approvalFilter));
   }, [allQuestions, selectedLang, approvalFilter]);
@@ -141,15 +110,15 @@ export default function AdminQuestions() {
   const saveEdit = async () => {
     if (!editingQuestion) return;
     setStatus('saving');
+    const authToken = localStorage.getItem('authToken');
+    const headers = authToken
+      ? { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` }
+      : { 'Content-Type': 'application/json' };
     const res = await fetch(`${apiBase}/admin/questions/${editingQuestion.id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json', 'X-Admin-Api-Key': token },
+      headers,
       body: JSON.stringify(editingQuestion)
     });
-    if (res.status === 401) {
-      setStatus('Invalid admin API key. Please check your settings.');
-      return;
-    }
     setEditingQuestion(null);
     setIsEditModalOpen(false);
     setStatus(null);
@@ -158,14 +127,12 @@ export default function AdminQuestions() {
 
   const remove = async (id: number) => {
     if (!confirm('Delete this question?')) return;
+    const authToken = localStorage.getItem('authToken');
+    const headers = authToken ? { Authorization: `Bearer ${authToken}` } : {};
     const res = await fetch(`${apiBase}/admin/questions/${id}`, {
       method: 'DELETE',
-      headers: { 'X-Admin-Api-Key': token }
+      headers
     });
-    if (res.status === 401) {
-      setStatus('Invalid admin API key. Please check your settings.');
-      return;
-    }
     await fetchQuestions(selectedLang);
   };
 
@@ -174,30 +141,31 @@ export default function AdminQuestions() {
     if (!ids.length) return;
     if (!confirm('Delete selected questions?')) return;
     setStatus('deleting');
+    const authToken = localStorage.getItem('authToken');
+    const headers = authToken
+      ? { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` }
+      : { 'Content-Type': 'application/json' };
     const res = await fetch(`${apiBase}/admin/questions/delete_batch`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Admin-Api-Key': token },
+      headers,
       body: JSON.stringify(ids)
     });
-    if (res.status === 401) {
-      setStatus('Invalid admin API key. Please check your settings.');
-      return;
-    }
     setSelected(new Set());
     setStatus(null);
     await fetchQuestions(selectedLang);
   };
 
   const handleBulkApprove = async (approved: boolean) => {
-    if (!token || selected.size === 0) return;
+    if (selected.size === 0) return;
     const ids = Array.from(selected);
     setStatus('updating');
+    const authToken = localStorage.getItem('authToken');
+    const headers = authToken
+      ? { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` }
+      : { 'Content-Type': 'application/json' };
     const res = await fetch(`${apiBase}/admin/questions/approve_batch`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Admin-Api-Key': token,
-      },
+      headers,
       body: JSON.stringify({ ids, approved }),
     });
     if (res.ok) {
@@ -207,21 +175,17 @@ export default function AdminQuestions() {
       setAllQuestions(updated);
       setDisplayedQuestions(filterByLanguageAndApproval(updated, selectedLang, approvalFilter));
       setSelected(new Set());
-    } else if (res.status === 401) {
-      setStatus('Invalid admin API key.');
     }
     setStatus(null);
   };
 
   const toggleApprove = async (groupId: string) => {
+    const authToken = localStorage.getItem('authToken');
+    const headers = authToken ? { Authorization: `Bearer ${authToken}` } : {};
     const res = await fetch(`${apiBase}/admin/questions/${groupId}/toggle_approved`, {
       method: 'POST',
-      headers: { 'X-Admin-Api-Key': token }
+      headers
     });
-    if (res.status === 401) {
-      setStatus('Invalid admin API key. Please check your settings.');
-      return;
-    }
     if (res.ok) {
       const data = await res.json();
       const updated = allQuestions.map(q =>
@@ -238,14 +202,12 @@ export default function AdminQuestions() {
       window.confirm('Are you absolutely sure?')
     ) {
       setStatus('deleting');
+      const authToken = localStorage.getItem('authToken');
+      const headers = authToken ? { Authorization: `Bearer ${authToken}` } : {};
       const res = await fetch(`${apiBase}/admin/questions/delete_all`, {
         method: 'POST',
-        headers: { 'X-Admin-Api-Key': token },
+        headers,
       });
-      if (res.status === 401) {
-        setStatus('Invalid admin API key. Please check your settings.');
-        return;
-      }
       setStatus(null);
       await fetchQuestions(selectedLang);
     }
@@ -273,31 +235,27 @@ export default function AdminQuestions() {
         formData.append('images', file);
       });
     }
+    const authToken = localStorage.getItem('authToken');
+    const headers = authToken ? { Authorization: `Bearer ${authToken}` } : {};
     const res = await fetch(`${apiBase}/admin/import_questions_with_images`, {
       method: 'POST',
-      headers: { 'X-Admin-Api-Key': token },
+      headers,
       body: formData
     });
-    if (res.status === 401) {
-      setStatus('Invalid admin API key. Please check your settings.');
+    if (!res.ok) {
       setUploadStatus(null);
       setIsImporting(false);
+      alert('Error');
       return;
     }
     setUploadStatus('translating');
     const data = await res.json();
-    if (res.ok) {
-      setUploadStatus('saving');
-      await fetchQuestions('ja');
-      setSelectedLang('ja');
-      setUploadStatus(null);
-      setIsImporting(false);
-      alert(`Imported ${data.inserted}`);
-    } else {
-      setUploadStatus(null);
-      setIsImporting(false);
-      alert(data.detail || 'Error');
-    }
+    setUploadStatus('saving');
+    await fetchQuestions('ja');
+    setSelectedLang('ja');
+    setUploadStatus(null);
+    setIsImporting(false);
+    alert(`Imported ${data.inserted}`);
     setJsonFile(null);
     setImageFiles(null);
     if (jsonRef.current) jsonRef.current.value = '';

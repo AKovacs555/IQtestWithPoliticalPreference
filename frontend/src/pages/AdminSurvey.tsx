@@ -21,8 +21,6 @@ export default function AdminSurvey() {
   if (!user || !user.is_admin) {
     return <div>Admin access required</div>;
   }
-  const [token, setToken] = useState(() => localStorage.getItem('adminToken') || '');
-  const [tokenInput, setTokenInput] = useState('');
   const [items, setItems] = useState<SurveyItem[]>([]);
   const [languages, setLanguages] = useState<string[]>([]);
   const { t, i18n } = useTranslation();
@@ -44,41 +42,11 @@ export default function AdminSurvey() {
     console.warn('VITE_API_BASE is not set');
   }
 
-  if (!token) {
-    return (
-      <Layout>
-        <div className="max-w-md mx-auto space-y-4 p-4">
-          <h2 className="text-xl font-bold">Admin API key</h2>
-          <form
-            onSubmit={e => {
-              e.preventDefault();
-              localStorage.setItem('adminToken', tokenInput);
-              setToken(tokenInput);
-            }}
-            className="space-y-2"
-          >
-            <input
-              value={tokenInput}
-              onChange={e => setTokenInput(e.target.value)}
-              placeholder="API key"
-              className="input input-bordered w-full"
-            />
-            <button type="submit" className="btn w-full">Save</button>
-          </form>
-        </div>
-      </Layout>
-    );
-  }
-
   const loadLanguages = async () => {
-    if (!token) return;
-    const res = await fetch(`${apiBase}/admin/surveys/languages`, {
-      headers: { 'X-Admin-Api-Key': token }
-    });
-    if (res.status === 401) {
-      setStatus('Invalid admin API key. Please check your settings.');
-      return;
-    }
+    const authToken = localStorage.getItem('authToken');
+    const headers = authToken ? { Authorization: `Bearer ${authToken}` } : {};
+    const res = await fetch(`${apiBase}/admin/surveys/languages`, { headers });
+    if (!res.ok) return;
     const data = await res.json();
     setLanguages(data.languages || []);
     if (!data.languages?.includes(newLang)) {
@@ -87,14 +55,9 @@ export default function AdminSurvey() {
   };
 
   const load = async () => {
-    if (!token) return;
-    const res = await fetch(`${apiBase}/admin/surveys`, {
-      headers: { 'X-Admin-Api-Key': token }
-    });
-    if (res.status === 401) {
-      setStatus('Invalid admin API key. Please check your settings.');
-      return;
-    }
+    const authToken = localStorage.getItem('authToken');
+    const headers = authToken ? { Authorization: `Bearer ${authToken}` } : {};
+    const res = await fetch(`${apiBase}/admin/surveys`, { headers });
     if (res.ok) {
       const data = await res.json();
       setItems(data.questions || []);
@@ -102,9 +65,9 @@ export default function AdminSurvey() {
   };
 
   const loadDefault = async () => {
-    const res = await fetch(`${apiBase}/admin/dashboard-default-survey`, {
-      headers: token ? { 'X-Admin-Api-Key': token } : undefined,
-    });
+    const authToken = localStorage.getItem('authToken');
+    const headers = authToken ? { Authorization: `Bearer ${authToken}` } : {};
+    const res = await fetch(`${apiBase}/admin/dashboard-default-survey`, { headers });
     if (res.ok) {
       const data = await res.json();
       setDefaultSurvey(data.group_id || '');
@@ -115,7 +78,7 @@ export default function AdminSurvey() {
     loadLanguages();
     load();
     loadDefault();
-  }, [token]);
+  }, []);
 
   useEffect(() => {
     setCountries(getCountryList(i18n.language));
@@ -136,15 +99,15 @@ export default function AdminSurvey() {
       exclusive_options: exclusiveIndices,
       target_countries: newTargets,
     };
+    const authToken = localStorage.getItem('authToken');
+    const headers = authToken
+      ? { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` }
+      : { 'Content-Type': 'application/json' };
     const res = await fetch(`${apiBase}/admin/surveys`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Admin-Api-Key': token },
+      headers,
       body: JSON.stringify(payload)
     });
-    if (res.status === 401) {
-      setStatus('Invalid admin API key. Please check your settings.');
-      return;
-    }
     setNewStatement('');
     setNewOptions('');
     setExclusiveOptions('');
@@ -176,23 +139,27 @@ export default function AdminSurvey() {
         .filter((v: number) => !isNaN(v)),
       target_countries: editing.target_countries || [],
     };
+    const authToken = localStorage.getItem('authToken');
+    const headers = authToken
+      ? { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` }
+      : { 'Content-Type': 'application/json' };
     const res = await fetch(`${apiBase}/admin/surveys/${editing.group_id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json', 'X-Admin-Api-Key': token },
+      headers,
       body: JSON.stringify(payload)
     });
-    if (res.status === 401) {
-      setStatus('Invalid admin API key. Please check your settings.');
-      return;
-    }
     setEditing(null);
     load();
   };
 
   const saveDefault = async () => {
+    const authToken = localStorage.getItem('authToken');
+    const headers = authToken
+      ? { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` }
+      : { 'Content-Type': 'application/json' };
     const res = await fetch(`${apiBase}/admin/dashboard-default-survey`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Admin-Api-Key': token },
+      headers,
       body: JSON.stringify({ group_id: defaultSurvey }),
     });
     if (res.ok) {
@@ -202,14 +169,12 @@ export default function AdminSurvey() {
 
   const remove = async (groupId: string) => {
     if (!confirm('Delete?')) return;
+    const authToken = localStorage.getItem('authToken');
+    const headers = authToken ? { Authorization: `Bearer ${authToken}` } : {};
     const res = await fetch(`${apiBase}/admin/surveys/${groupId}`, {
       method: 'DELETE',
-      headers: { 'X-Admin-Api-Key': token }
+      headers,
     });
-    if (res.status === 401) {
-      setStatus('Invalid admin API key. Please check your settings.');
-      return;
-    }
     load();
   };
 

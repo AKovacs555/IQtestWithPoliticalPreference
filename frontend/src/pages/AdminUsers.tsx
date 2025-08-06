@@ -8,8 +8,6 @@ export default function AdminUsers() {
   if (!user || !user.is_admin) {
     return <div>Admin access required</div>;
   }
-  const [token, setToken] = useState(() => localStorage.getItem('adminToken') || '');
-  const [tokenInput, setTokenInput] = useState('');
   const [users, setUsers] = useState<any[]>([]);
   const [msg, setMsg] = useState('');
   const apiBase = import.meta.env.VITE_API_BASE || '';
@@ -18,69 +16,41 @@ export default function AdminUsers() {
   }
 
   const load = async () => {
-    if (!token) return;
-    const res = await fetch(`${apiBase}/admin/users`, {
-      headers: { 'X-Admin-Api-Key': token }
-    });
-    if (res.status === 401) {
-      setMsg('Invalid admin API key. Please check your settings.');
-      setUsers([]);
-      return;
-    }
+    const authToken = localStorage.getItem('authToken');
+    const headers = authToken ? { Authorization: `Bearer ${authToken}` } : {};
+    const res = await fetch(`${apiBase}/admin/users`, { headers });
     if (res.ok) {
       const data = await res.json();
       setUsers(data.users || []);
+    } else {
+      setUsers([]);
     }
   };
 
-  useEffect(() => { load(); }, [token]);
+  useEffect(() => {
+    load();
+  }, []);
 
   const update = async (id: string) => {
     const u = users.find(us => us.hashed_id === id);
     if (!u) return;
     setMsg('');
     try {
+      const authToken = localStorage.getItem('authToken');
+      const headers = authToken
+        ? { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` }
+        : { 'Content-Type': 'application/json' };
       const res = await fetch(`${apiBase}/admin/user/free_attempts`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Admin-Api-Key': token },
+        headers,
         body: JSON.stringify({ user_id: id, free_attempts: u.free_attempts })
       });
-      if (res.status === 401) {
-        setMsg('Invalid admin API key. Please check your settings.');
-        return;
-      }
       if (!res.ok) throw new Error();
       setMsg('Saved');
     } catch {
       setMsg('Error saving');
     }
   };
-
-  if (!token) {
-    return (
-      <Layout>
-        <div className="max-w-md mx-auto space-y-4 p-4">
-          <h2 className="text-xl font-bold">Admin API key</h2>
-          <form
-            onSubmit={e => {
-              e.preventDefault();
-              localStorage.setItem('adminToken', tokenInput);
-              setToken(tokenInput);
-            }}
-            className="space-y-2"
-          >
-            <input
-              value={tokenInput}
-              onChange={e => setTokenInput(e.target.value)}
-              placeholder="API key"
-              className="input input-bordered w-full"
-            />
-            <button type="submit" className="btn w-full">Save</button>
-          </form>
-        </div>
-      </Layout>
-    );
-  }
 
   return (
     <Layout>
@@ -104,7 +74,15 @@ export default function AdminUsers() {
                     type="number"
                     className="input input-bordered w-24"
                     value={u.free_attempts ?? 0}
-                    onChange={e => setUsers(us => us.map(x => x.hashed_id === u.hashed_id ? { ...x, free_attempts: parseInt(e.target.value, 10) } : x))}
+                    onChange={e =>
+                      setUsers(us =>
+                        us.map(x =>
+                          x.hashed_id === u.hashed_id
+                            ? { ...x, free_attempts: parseInt(e.target.value, 10) }
+                            : x
+                        )
+                      )
+                    }
                   />
                 </td>
                 <td>

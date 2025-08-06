@@ -1,4 +1,8 @@
 import pytest
+import os
+
+os.environ.setdefault("SUPABASE_URL", "http://localhost")
+os.environ.setdefault("SUPABASE_SERVICE_ROLE_KEY", "dummy")
 
 class DummyResponse:
     def __init__(self, data=None):
@@ -77,10 +81,18 @@ class DummySupabase:
             self.tables[table] = []
         return DummyTable(self.tables[table])
 
+    def table(self, name):
+        return self.from_(name)
+
+    def table(self, name):
+        return self.from_(name)
+
 @pytest.fixture(autouse=True)
 def fake_supabase(monkeypatch):
     supa = DummySupabase()
     monkeypatch.setattr("db.get_supabase", lambda: supa, raising=False)
     monkeypatch.setattr("backend.db.get_supabase", lambda: supa, raising=False)
     monkeypatch.setattr("main.get_supabase", lambda: supa, raising=False)
+    monkeypatch.setattr("backend.utils.settings.supabase", supa, raising=False)
+    monkeypatch.setattr("backend.routes.settings.supabase", supa, raising=False)
     return supa

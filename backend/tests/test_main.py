@@ -3,6 +3,8 @@ import sys, os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 from main import app
+from backend.deps.auth import User
+from backend.routes.dependencies import get_current_user
 
 def test_ping():
     with TestClient(app) as client:
@@ -19,25 +21,23 @@ def test_analytics_endpoint():
 
 
 def test_dif_report_auth():
+    app.dependency_overrides.clear()
     with TestClient(app) as client:
-        r = client.get('/admin/dif-report?api_key=bad')
-        assert r.status_code == 403
+        r = client.get('/admin/dif-report')
+        assert r.status_code == 401
 
 
 def test_upload_questions_auth():
-    os.environ["ADMIN_API_KEY"] = "secret"
+    app.dependency_overrides.clear()
     with TestClient(app) as client:
         r = client.post(
             "/admin/upload-questions",
             json={"questions": []},
-            headers={"X-Admin-Api-Key": "bad"},
         )
         assert r.status_code == 401
 
 
 def test_upload_questions_success(monkeypatch):
-    os.environ["ADMIN_API_KEY"] = "secret"
-
     stored = {}
     from pathlib import Path
 
@@ -66,16 +66,17 @@ def test_upload_questions_success(monkeypatch):
         "irt": {"a": 1.0, "b": 0.0}
     }
 
+    app.dependency_overrides[get_current_user] = lambda: User({"id": "u1", "is_admin": True})
     with TestClient(app) as client:
         r = client.post(
             "/admin/upload-questions",
             json={"questions": [item]},
-            headers={"X-Admin-Api-Key": "secret"},
         )
         assert r.status_code == 200
         data = r.json()
         assert data["status"] == "success"
         assert "Imported" in data.get("log", "")
+    app.dependency_overrides.clear()
 
 def test_history_sorted():
     from backend import db

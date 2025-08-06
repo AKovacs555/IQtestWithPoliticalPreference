@@ -35,7 +35,6 @@ The script uses environment variables for Supabase authentication and will fail 
 | --- | --- |
 | `SUPABASE_URL` | URL of the Supabase project |
 | `SUPABASE_API_KEY` | Service role or API key used by the backend |
-| `ADMIN_API_KEY` | Token required for admin endpoints |
 | `VITE_API_BASE` | Base URL of the backend API for the React frontend |
 
 Ensure these are set when running locally or in deployment so the admin panel and import script can access Supabase correctly.
