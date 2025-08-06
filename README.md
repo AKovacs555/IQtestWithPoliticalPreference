@@ -17,7 +17,6 @@ The following variables must be configured for local development and deployments
 - `SUPABASE_JWT_SECRET` – JWT secret from Supabase settings
 - `AWS_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` *or* Twilio credentials (`TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_VERIFY_SERVICE_SID`) depending on `SMS_PROVIDER`
 - `NOWPAYMENTS_API_KEY` (or PayPal client credentials) for payments
-- `ADMIN_API_KEY` – token required for admin endpoints
 For details on preparing question files and importing them into Supabase see [docs/import_tests.md](docs/import_tests.md).
 
 ## Admin access
@@ -35,7 +34,7 @@ Admin access works as follows:
 
 - `VITE_SHOW_ADMIN=true` controls whether admin routes are built and shown in the navigation.
 - Users must have `is_admin=true` in the Supabase `users` table. After updating the database, they need to log out and back in so the JWT includes the `is_admin` claim.
-- When visiting an admin page, the user is prompted for the `ADMIN_API_KEY`. This value must match the backend environment variable and is sent as the `X-Admin-Api-Key` header on requests.
+- Admin endpoints use the authenticated user's JWT and require `is_admin=true`; no separate API key is needed.
 
 
 ## Backend (FastAPI)
@@ -73,7 +72,6 @@ Admin access works as follows:
   - `DP_MIN_COUNT` – minimum records required before an aggregate is reported.
   - `DATA_API_KEY` – authentication token for the paid differential‑privacy API.
     - `SUPABASE_SHARE_BUCKET` – bucket name for storing generated share images.
-    - `ADMIN_API_KEY` – token for admin endpoints such as normative updates.
     - `FRONTEND_ORIGINS` – comma-separated list of allowed origins for CORS.
     - `AD_UNIT_ID_ANDROID`, `AD_UNIT_ID_IOS`, `ADMOB_APP_ID` – Google AdMob ad identifiers.
   - `AD_REWARD_POINTS` – points awarded per ad view.
@@ -143,7 +141,7 @@ AWS SNS を利用する場合は IAM コンソールでアクセスキーを発�
 - Pricing endpoints: `/pricing/{id}` shows the dynamic price for a user, `/play/record` registers a completed play and `/referral` adds a referral credit.
 - Demographic endpoint: `/user/demographics` records age, gender and income band.
 - Aggregated data is available via the authenticated `/data/iq` endpoint which returns differentially private averages.
-- Admins can bulk import questions by POSTing a JSON file to `/admin/import_questions` with the `X-Admin-Api-Key` header. A newer endpoint `/admin/import_questions_with_images` also accepts image files and uploads them to Supabase Storage. Each item may include an `image_filename` referencing an uploaded file or a direct `image` URL.
+- Admins can bulk import questions by POSTing a JSON file to `/admin/import_questions`. A newer endpoint `/admin/import_questions_with_images` also accepts image files and uploads them to Supabase Storage. Each item may include an `image_filename` referencing an uploaded file or a direct `image` URL.
 - Before using these endpoints ensure the `questions` table has `language` and `group_id` columns:
 ```sql
 ALTER TABLE questions ADD COLUMN IF NOT EXISTS language text;
@@ -151,8 +149,7 @@ ALTER TABLE questions ADD COLUMN IF NOT EXISTS group_id uuid;
 ```
 Update existing rows with the correct language code via the Supabase UI or SQL. Questions uploaded without a `language` field default to `ja` and will be automatically translated into English, Turkish, Russian and Chinese. All translations share the same `group_id` so edits and deletions propagate.
 - The web interface at `/#/admin/questions` offers a simple UI for this:
-  1. Enter your `ADMIN_API_KEY` and click **Load Questions**.
-  2. Select a JSON file and optional image files then click **Import Questions**. You can also edit/delete existing items.
+  1. Select a JSON file and optional image files then click **Import Questions**. You can also edit/delete existing items.
 - The question bank with psychometric metadata lives in `backend/data/question_bank.json`. Use `tools/generate_questions.py --import_dir=generated_questions` to merge question files you created with ChatGPT.
  - Individual question sets for the live quiz are stored under `questions/`. Each file must conform to `questions/schema.json` and can be fetched via `/quiz/start?set_id=set01`.
  - The backend reads these JSON files at runtime so new sets can be added via GitHub without redeploying the API. Non‑developers can simply upload a file like `set03.json` to the `questions/` folder using the web interface.
@@ -306,6 +303,6 @@ When a quiz is completed the backend creates a branded result image using Pillow
 
 ## Updating the normative distribution
 
-IQ percentiles rely on `backend/data/normative_distribution.json`. Trigger the `/admin/update-norms` endpoint weekly with `ADMIN_API_KEY` to append recent scores and keep only the latest 5000 values.
+IQ percentiles rely on `backend/data/normative_distribution.json`. Trigger the `/admin/update-norms` endpoint weekly to append recent scores and keep only the latest 5000 values.
 
 Screenshots of the new design can be found under [docs/screenshots](docs/screenshots/).

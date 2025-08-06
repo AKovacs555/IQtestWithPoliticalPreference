@@ -7,10 +7,6 @@ export default function AdminQuestionStats() {
   if (!user || !user.is_admin) {
     return <div>Admin access required</div>;
   }
-  const [token, setToken] = useState(
-    () => (typeof window !== 'undefined' ? localStorage.getItem('adminToken') || '' : '')
-  );
-  const [tokenInput, setTokenInput] = useState('');
   const apiBase = import.meta.env.VITE_API_BASE || '';
   const numQuestions = Number(import.meta.env.VITE_NUM_QUESTIONS || 20);
   const required = {
@@ -22,43 +18,16 @@ export default function AdminQuestionStats() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (!token) return;
-    fetch(`${apiBase}/admin/questions/stats`, {
-      headers: { 'X-Admin-Api-Key': token },
-    })
+    const authToken = localStorage.getItem('authToken');
+    const headers = authToken ? { Authorization: `Bearer ${authToken}` } : {};
+    fetch(`${apiBase}/admin/questions/stats`, { headers })
       .then((res) => {
         if (!res.ok) throw new Error('Failed to fetch');
         return res.json();
       })
       .then((data) => setStats(data))
       .catch((err) => setError(err.message));
-  }, [token, apiBase]);
-
-  if (!token) {
-    return (
-      <Layout>
-        <div className="max-w-md mx-auto space-y-4 p-4">
-          <h2 className="text-xl font-bold">Admin API key</h2>
-          <form
-            onSubmit={e => {
-              e.preventDefault();
-              localStorage.setItem('adminToken', tokenInput);
-              setToken(tokenInput);
-            }}
-            className="space-y-2"
-          >
-            <input
-              value={tokenInput}
-              onChange={e => setTokenInput(e.target.value)}
-              placeholder="API key"
-              className="input input-bordered w-full"
-            />
-            <button type="submit" className="btn w-full">Save</button>
-          </form>
-        </div>
-      </Layout>
-    );
-  }
+  }, [apiBase]);
 
   const languages = Object.keys(stats).sort();
 
