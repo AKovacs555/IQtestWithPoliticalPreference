@@ -36,8 +36,31 @@ def create_user(user_data: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def update_user(hashed_id: str, update_data: Dict[str, Any]) -> None:
+    """Update a user record with the allowed fields.
+
+    Unknown keys or ``None`` values are stripped from ``update_data`` before
+    sending the update to Supabase. The ``users`` table must include a
+    ``demographic_completed`` column if that field is provided.
+    """
+
     supabase = get_supabase()
-    supabase.from_("users").update(update_data).eq("hashed_id", hashed_id).execute()
+    allowed_fields = {
+        "plays",
+        "points",
+        "scores",
+        "party_log",
+        "referrals",
+        "demographic",
+        "demographic_completed",
+        "free_attempts",
+        "nationality",
+        "survey_completed",
+    }
+    data_to_update = {
+        k: v for k, v in update_data.items() if v is not None and k in allowed_fields
+    }
+    if data_to_update:
+        supabase.from_("users").update(data_to_update).eq("hashed_id", hashed_id).execute()
 
 
 def get_all_users() -> List[Dict[str, Any]]:
