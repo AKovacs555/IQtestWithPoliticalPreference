@@ -2,6 +2,7 @@ import os
 import logging
 from typing import Optional
 import asyncio
+from math import ceil
 from fastapi import APIRouter, Depends, HTTPException, Header
 from backend.deps.supabase_client import get_supabase_client
 from backend.utils.translation import translate_question
@@ -52,6 +53,52 @@ async def list_questions(lang: Optional[str] = None):
     except Exception as e:
         logger.error("Error fetching questions from Supabase: %s", e)
         raise HTTPException(status_code=500, detail="Failed to fetch questions")
+
+
+@router.get("/stats", dependencies=[Depends(check_admin)])
+async def question_stats():
+    supabase = get_supabase_client()
+    records = (
+        supabase.table("questions")
+        .select("lang, irt_b")
+        .eq("approved", True)
+        .execute()
+        .data
+    )
+
+    stats: dict[str, dict[str, int]] = {}
+    for r in records:
+        lang = r.get("lang")
+        irt_b = r.get("irt_b")
+        if lang not in stats:
+            stats[lang] = {"total": 0, "easy": 0, "medium": 0, "hard": 0}
+        stats[lang]["total"] += 1
+        if irt_b is None:
+            diff = "medium"
+        elif irt_b < -0.33:
+            diff = "easy"
+        elif irt_b < 0.33:
+            diff = "medium"
+        else:
+            diff = "hard"
+        stats[lang][diff] += 1
+
+    num_questions = int(os.getenv("NUM_QUESTIONS", "20"))
+    thresholds = {
+        "easy": ceil(num_questions * 0.3),
+        "medium": ceil(num_questions * 0.4),
+        "hard": ceil(num_questions * 0.3),
+    }
+
+    result = {}
+    for lang, counts in stats.items():
+        sufficient = {
+            diff: counts.get(diff, 0) >= threshold
+            for diff, threshold in thresholds.items()
+        }
+        result[lang] = {**counts, "sufficient": sufficient}
+
+    return result
 
 
 @router.post("/{group_id}/toggle_approved", dependencies=[Depends(check_admin)])
