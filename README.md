@@ -114,6 +114,12 @@ AWS SNS を利用する場合は IAM コンソールでアクセスキーを発�
 - OTP endpoints: `/auth/request-otp` and `/auth/verify-otp` support SMS via Twilio or SNS and fallback email codes through Supabase. Identifiers are hashed with per-record salts.
 - Quiz endpoints: `/quiz/sets` returns the list of available set IDs. `/quiz/start?set_id=<id>` begins a quiz and provides a session ID along with the questions for that set. `/quiz/submit` accepts all answers at once and returns the score, percentile and share URL. `/adaptive/start` and `/adaptive/answer` remain for legacy clients but are no longer used by the default frontend.
 - The quiz now samples questions by difficulty (30% easy, 40% medium, 30% hard) for a balanced test.
+- Difficulty bands are determined by each question's `irt_b` value:
+  - **easy**: `irt_b < -0.33`
+  - **medium**: `-0.33 ≤ irt_b < 0.33`
+  - **hard**: `irt_b ≥ 0.33`
+  Content creators should set `approved=true` and assign appropriate `irt_b` values when adding new questions so they are counted correctly.
+  Use the admin Question Stats page to verify each language has enough approved questions per band before deploying a quiz.
 - Pricing endpoints: `/pricing/{id}` shows the dynamic price for a user, `/play/record` registers a completed play and `/referral` adds a referral credit.
 - Demographic and party endpoints: `/user/demographics` records age, gender and income band. `/user/party` stores supported parties and enforces monthly change limits.
 - Aggregated data is available via `/leaderboard` and the authenticated `/data/iq` endpoint which returns differentially private averages.
