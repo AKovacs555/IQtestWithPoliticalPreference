@@ -1,8 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import Layout from '../components/Layout';
+import useAuth from '../hooks/useAuth';
 
 export default function AdminQuestionStats() {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('adminToken') || '' : '';
+  const { user } = useAuth();
+  const [token, setToken] = useState(
+    () => (typeof window !== 'undefined' ? localStorage.getItem('adminToken') || '' : '')
+  );
+  const [tokenInput, setTokenInput] = useState('');
   const apiBase = import.meta.env.VITE_API_BASE || '';
   const numQuestions = Number(import.meta.env.VITE_NUM_QUESTIONS || 20);
   const required = {
@@ -25,6 +30,40 @@ export default function AdminQuestionStats() {
       .then((data) => setStats(data))
       .catch((err) => setError(err.message));
   }, [token, apiBase]);
+
+  if (!user?.is_admin) {
+    return (
+      <Layout>
+        <p className="p-4">Admin access required</p>
+      </Layout>
+    );
+  }
+
+  if (!token) {
+    return (
+      <Layout>
+        <div className="max-w-md mx-auto space-y-4 p-4">
+          <h2 className="text-xl font-bold">Admin API key</h2>
+          <form
+            onSubmit={e => {
+              e.preventDefault();
+              localStorage.setItem('adminToken', tokenInput);
+              setToken(tokenInput);
+            }}
+            className="space-y-2"
+          >
+            <input
+              value={tokenInput}
+              onChange={e => setTokenInput(e.target.value)}
+              placeholder="API key"
+              className="input input-bordered w-full"
+            />
+            <button type="submit" className="btn w-full">Save</button>
+          </form>
+        </div>
+      </Layout>
+    );
+  }
 
   const languages = Object.keys(stats).sort();
 

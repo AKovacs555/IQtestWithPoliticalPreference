@@ -78,8 +78,8 @@ async def register(payload: RegisterPayload):
             pass
 
     supabase.from_("users").insert(data).execute()
-    token = create_token(hashed_id)
-    return {"token": token, "user_id": hashed_id}
+    token = create_token(hashed_id, False)
+    return {"token": token, "user_id": hashed_id, "is_admin": False}
 
 
 @router.post("/login")
@@ -101,6 +101,6 @@ async def login(payload: LoginPayload):
     stored = user.get("password_hash") or ""
     if not bcrypt.checkpw(payload.password.encode(), stored.encode()):
         raise HTTPException(status_code=401, detail="Invalid credentials")
-    token = create_token(user["hashed_id"])
-    return {"token": token, "user_id": user["hashed_id"]}
+    token = create_token(user["hashed_id"], bool(user.get("is_admin")))
+    return {"token": token, "user_id": user["hashed_id"], "is_admin": bool(user.get("is_admin"))}
 

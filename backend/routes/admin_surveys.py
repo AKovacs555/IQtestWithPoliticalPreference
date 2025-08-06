@@ -1,9 +1,8 @@
-import os
 import uuid
 import logging
 from typing import Optional
 
-from fastapi import APIRouter, Depends, Header, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 
 from backend.db import (
     get_surveys,
@@ -15,6 +14,7 @@ from backend.db import (
 )
 from backend.utils.translation import translate_survey, SUPPORTED_LANGUAGES
 from backend.deps.supabase_client import get_supabase_client
+from .dependencies import require_admin
 
 
 router = APIRouter(prefix="/admin/surveys", tags=["admin-surveys"])
@@ -24,20 +24,6 @@ logger = logging.getLogger(__name__)
 
 # Language options should mirror those available to end users
 LANGUAGES = ["ja", "en", "tr", "ru", "zh", "ko", "es", "fr", "it", "de", "ar"]
-
-
-def check_admin(admin_key: Optional[str] = Header(None, alias="X-Admin-Api-Key")):
-    expected_new = os.environ.get("ADMIN_API_KEY")
-    expected_old = os.environ.get("ADMIN_TOKEN")
-    expected = expected_new or expected_old
-    if expected is None:
-        logger.error("No ADMIN_API_KEY or ADMIN_TOKEN is set in the environment.")
-        raise HTTPException(
-            status_code=500, detail="Server misconfigured: missing admin key"
-        )
-    if admin_key != expected:
-        logger.warning("Invalid admin key provided")
-        raise HTTPException(status_code=401, detail="Unauthorized")
 
 
 def grant_free_tests(countries: list[str]) -> None:
@@ -51,19 +37,19 @@ def grant_free_tests(countries: list[str]) -> None:
     ).execute()
 
 
-@router.get("/languages", dependencies=[Depends(check_admin)])
+@router.get("/languages", dependencies=[Depends(require_admin)])
 async def list_languages():
     """Return the available languages for survey creation."""
     return {"languages": LANGUAGES}
 
 
-@router.get("/", dependencies=[Depends(check_admin)])
+@router.get("/", dependencies=[Depends(require_admin)])
 async def list_surveys(lang: str = "ja"):
     surveys = get_surveys(lang)
     return {"questions": surveys}
 
 
-@router.post("/", dependencies=[Depends(check_admin)])
+@router.post("/", dependencies=[Depends(require_admin)])
 async def create_survey(payload: dict):
     group_id = str(uuid.uuid4())
     base_entry = {**payload, "group_id": group_id}
@@ -96,7 +82,7 @@ async def create_survey(payload: dict):
     return base_entry
 
 
-@router.put("/{group_id}", dependencies=[Depends(check_admin)])
+@router.put("/{group_id}", dependencies=[Depends(require_admin)])
 async def edit_survey(group_id: str, payload: dict):
     update_survey(group_id, payload["lang"], payload)
 
@@ -124,20 +110,20 @@ async def edit_survey(group_id: str, payload: dict):
     return {"updated": True}
 
 
-@router.delete("/{group_id}", dependencies=[Depends(check_admin)])
+@router.delete("/{group_id}", dependencies=[Depends(require_admin)])
 async def remove_survey(group_id: str):
     delete_survey(group_id)
     return {"deleted": True}
 
 
-@router.get("/dashboard-default-survey")
+@router.get("/dashboard-default-survey", dependencies=[Depends(require_admin)])
 async def get_dashboard_default():
     group_id = get_dashboard_default_survey()
     return {"group_id": group_id}
 
 
 @router.post(
-    "/dashboard-default-survey", dependencies=[Depends(check_admin)]
+    "/dashboard-default-survey", dependencies=[Depends(require_admin)]
 )
 async def set_dashboard_default(payload: dict):
     set_dashboard_default_survey(payload.get("group_id"))

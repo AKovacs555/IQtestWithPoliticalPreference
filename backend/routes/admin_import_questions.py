@@ -3,9 +3,9 @@ import uuid
 import logging
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
-from backend.routes.admin_questions import check_admin
 from backend.deps.supabase_client import get_supabase_client
 from backend.utils.translation import translate_question
+from .dependencies import require_admin
 
 # Supported languages for automatic translation, including Turkish and Italian
 target_languages = ["en", "tr", "ru", "zh", "ko", "es", "fr", "it", "de", "ar"]
@@ -15,7 +15,7 @@ router = APIRouter(prefix="/admin", tags=["admin-questions"])
 logger = logging.getLogger(__name__)
 
 
-@router.post("/import_questions", dependencies=[Depends(check_admin)])
+@router.post("/import_questions", dependencies=[Depends(require_admin)])
 async def import_questions(file: UploadFile = File(...)):
     if not file:
         raise HTTPException(status_code=400, detail="File required")
@@ -117,7 +117,7 @@ async def import_questions(file: UploadFile = File(...)):
     return {"inserted": inserted}
 
 
-@router.post("/import_questions_with_images", dependencies=[Depends(check_admin)])
+@router.post("/import_questions_with_images", dependencies=[Depends(require_admin)])
 async def import_questions_with_images(
     json_file: UploadFile = File(...), images: List[UploadFile] = File(default=None)
 ):

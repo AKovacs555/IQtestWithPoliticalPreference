@@ -3,45 +3,28 @@ import logging
 from typing import Optional
 import asyncio
 from math import ceil
-from fastapi import APIRouter, Depends, HTTPException, Header
+from fastapi import APIRouter, Depends, HTTPException
 from backend.deps.supabase_client import get_supabase_client
 from backend.utils.translation import translate_question
+from .dependencies import require_admin
 
 logger = logging.getLogger(__name__)
 
 # Supported languages for translating questions from Japanese
 TARGET_LANGS = ["en", "tr", "ru", "zh", "ko", "es", "fr", "it", "de", "ar"]
 
-router = APIRouter(prefix="/admin/questions", tags=["admin-questions"])
+router = APIRouter(
+    prefix="/admin/questions",
+    tags=["admin-questions"],
+)
 
 
-def check_admin(admin_key: Optional[str] = Header(None, alias="X-Admin-Api-Key")):
-    """
-    Validate the provided admin API key against environment variables.
-    Accepts either ADMIN_API_KEY or (for backward compatibility) ADMIN_TOKEN.
-    Raises 500 if neither is configured, and 401 if the key is wrong.
-    """
-    expected_new = os.environ.get("ADMIN_API_KEY")
-    expected_old = os.environ.get("ADMIN_TOKEN")
-    expected = expected_new or expected_old
-    if expected is None:
-        logging.error("No ADMIN_API_KEY or ADMIN_TOKEN is set in the environment.")
-        raise HTTPException(
-            status_code=500, detail="Server misconfigured: missing admin key"
-        )
-    if admin_key != expected:
-        logging.warning(
-            f"Invalid admin key provided: {admin_key[:4]}… (expected length {len(expected)})"
-        )
-        raise HTTPException(status_code=401, detail="Unauthorized")
-
-
-@router.get("", dependencies=[Depends(check_admin)])
+@router.get("", dependencies=[Depends(require_admin)])
 async def list_questions_no_slash():
     return await list_questions()
 
 
-@router.get("/", dependencies=[Depends(check_admin)])
+@router.get("/", dependencies=[Depends(require_admin)])
 async def list_questions(lang: Optional[str] = None):
     supabase = get_supabase_client()
     try:
@@ -55,7 +38,7 @@ async def list_questions(lang: Optional[str] = None):
         raise HTTPException(status_code=500, detail="Failed to fetch questions")
 
 
-@router.get("/stats", dependencies=[Depends(check_admin)])
+@router.get("/stats", dependencies=[Depends(require_admin)])
 async def question_stats():
     supabase = get_supabase_client()
     records = (
@@ -101,7 +84,7 @@ async def question_stats():
     return result
 
 
-@router.post("/{group_id}/toggle_approved", dependencies=[Depends(check_admin)])
+@router.post("/{group_id}/toggle_approved", dependencies=[Depends(require_admin)])
 async def toggle_approved(group_id: str):
     supabase = get_supabase_client()
     records = (
@@ -112,7 +95,7 @@ async def toggle_approved(group_id: str):
     return {"group_id": group_id, "approved": new_status}
 
 
-@router.post("/approve_batch", dependencies=[Depends(check_admin)])
+@router.post("/approve_batch", dependencies=[Depends(require_admin)])
 async def approve_batch(payload: dict):
     """
     Bulk approve or disapprove questions.
@@ -132,7 +115,7 @@ async def approve_batch(payload: dict):
         raise HTTPException(status_code=400, detail="No IDs provided")
 
 
-@router.put("/{question_id}", dependencies=[Depends(check_admin)])
+@router.put("/{question_id}", dependencies=[Depends(require_admin)])
 async def update_question(question_id: int, payload: dict):
     if not isinstance(payload.get("options"), list) or len(payload["options"]) != 4:
         raise HTTPException(status_code=400, detail="Options must be a list of 4 items")
@@ -180,7 +163,7 @@ async def update_question(question_id: int, payload: dict):
     return {"updated": True}
 
 
-@router.delete("/{question_id}", dependencies=[Depends(check_admin)])
+@router.delete("/{question_id}", dependencies=[Depends(require_admin)])
 async def delete_question(question_id: int):
     supabase = get_supabase_client()
     record = (
@@ -197,7 +180,7 @@ async def delete_question(question_id: int):
     return {"deleted": True}
 
 
-@router.post("/delete_batch", dependencies=[Depends(check_admin)])
+@router.post("/delete_batch", dependencies=[Depends(require_admin)])
 async def delete_questions_batch(ids: list[int]):
     if not isinstance(ids, list) or not all(isinstance(i, int) for i in ids):
         raise HTTPException(status_code=400, detail="ids must be list of ints")
@@ -206,7 +189,7 @@ async def delete_questions_batch(ids: list[int]):
     return {"deleted": len(ids)}
 
 
-@router.post("/delete_all", dependencies=[Depends(check_admin)])
+@router.post("/delete_all", dependencies=[Depends(require_admin)])
 async def delete_all_questions():
     supabase = get_supabase_client()
     supabase.table("questions").delete().neq("id", 0).execute()
