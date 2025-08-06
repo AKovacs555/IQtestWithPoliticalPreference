@@ -340,8 +340,14 @@ const Result = () => {
 };
 
 export default function App() {
-  const { user } = useAuth();
-  const showAdmin = (import.meta.env.VITE_SHOW_ADMIN === 'true' || import.meta.env.DEV) && user?.is_admin;
+  // Admin routes should always be registered when the build enables them.
+  // Individual pages handle permission checks and show an access message
+  // when a non-admin visits the route. Previously, admin routes were only
+  // added when `user?.is_admin` was truthy which resulted in a blank page
+  // if a non-admin attempted to access an `/admin/*` path directly. By
+  // removing the user check here, the routes exist for everyone and the
+  // components can render an informative error instead of nothing.
+  const showAdmin = import.meta.env.VITE_SHOW_ADMIN === 'true' || import.meta.env.DEV;
   const location = useLocation();
   return (
     <AnimatePresence mode="wait">
@@ -354,11 +360,13 @@ export default function App() {
         <Route path="/survey" element={<SurveyPage />} />
         <Route path="/pricing" element={<Pricing />} />
         <Route path="/result" element={<Result />} />
-        <Route path="/leaderboard" element={<Leaderboard />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/settings/:userId" element={<Settings />} />
-        <Route path="/history/:userId" element={<History />} />        <Route path="/select-nationality" element={<SelectNationality />} />        <Route path="/signup" element={<SignupPage />} />
-        <Route path="/login" element={<LoginPage />} />
+          <Route path="/leaderboard" element={<Leaderboard />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/settings/:userId" element={<Settings />} />
+          <Route path="/history/:userId" element={<History />} />
+          <Route path="/select-nationality" element={<SelectNationality />} />
+          <Route path="/signup" element={<SignupPage />} />
+          <Route path="/login" element={<LoginPage />} />
         {showAdmin && (<><Route path="/admin/questions" element={<AdminQuestions />} />
         <Route path="/admin/question-stats" element={<AdminQuestionStats />} />
         <Route path="/admin/surveys" element={<AdminSurvey />} />
