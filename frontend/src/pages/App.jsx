@@ -27,6 +27,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import SignupPage from './SignupPage.jsx';
 import LoginPage from './LoginPage.jsx';
 import TestPage from './TestPage.jsx';
+import Contact from './Contact.jsx';
 const API_BASE = import.meta.env.VITE_API_BASE || "";
 
 const PageTransition = ({ children }) => (
@@ -345,6 +346,7 @@ export default function App() {
         <Route path="/test" element={<TestPage />} />
         <Route path="/survey" element={<SurveyPage />} />
         <Route path="/pricing" element={<Pricing />} />
+        <Route path="/contact" element={<Contact />} />
         <Route path="/result" element={<Result />} />
           <Route path="/leaderboard" element={<Leaderboard />} />
           <Route path="/dashboard" element={<Dashboard />} />
