@@ -17,6 +17,5 @@
   "occupation.public": "Public Servant",
   "occupation.freelance": "Self-Employed/Freelancer",
   "occupation.unemployed": "Unemployed",
-  "occupation.other": "Other",
-  "party.select": "Select Your Party"
+  "occupation.other": "Other"
 }

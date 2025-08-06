@@ -44,15 +44,6 @@ export default function Settings() {
           </ul>
           <Link to={`/history/${userId}`} className="underline text-sm">Full History</Link>
         </div>
-        <div>
-          <h3 className="font-semibold">Party Changes</h3>
-          <ul className="list-disc list-inside text-sm">
-            {stats.party_log.map((p, i) => (
-              <li key={i}>{p.timestamp}: {p.party_ids.join(', ')}</li>
-            ))}
-          </ul>
-          <Link to="/party" className="underline text-sm">Update Party Preference</Link>
-        </div>
         <Link to="/" className="underline">Home</Link>
       </div>
     </Layout>

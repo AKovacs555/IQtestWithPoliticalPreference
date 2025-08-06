@@ -195,13 +195,22 @@ def set_dashboard_default_survey(group_id: str) -> None:
 
 
 def get_parties() -> List[Dict[str, Any]]:
-    supabase = get_supabase()
-    resp = supabase.from_("parties").select("*").execute()
-    return resp.data or []
+    """Return a list of parties.
+
+    Deprecated: the parties feature has been disabled and this function now
+    returns an empty list.
+    """
+
+    # Parties feature disabled; return empty list
+    return []
 
 
 def insert_parties(rows: List[Dict[str, Any]]) -> None:
-    if not rows:
-        return
-    supabase = get_supabase()
-    supabase.from_("parties").insert(rows).execute()
+    """Insert political parties into the database.
+
+    Deprecated: the parties feature has been disabled and this function now
+    performs no operation.
+    """
+
+    # Parties feature disabled; do nothing
+    return
