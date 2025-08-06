@@ -4,6 +4,9 @@ import useAuth from '../hooks/useAuth';
 
 export default function AdminQuestionStats() {
   const { user } = useAuth();
+  if (!user?.is_admin) {
+    return <div>Admin access required</div>;
+  }
   const [token, setToken] = useState(
     () => (typeof window !== 'undefined' ? localStorage.getItem('adminToken') || '' : '')
   );
@@ -30,14 +33,6 @@ export default function AdminQuestionStats() {
       .then((data) => setStats(data))
       .catch((err) => setError(err.message));
   }, [token, apiBase]);
-
-  if (!user || !user.is_admin) {
-    return (
-      <Layout>
-        <div className="p-4">Admin access required</div>
-      </Layout>
-    );
-  }
 
   if (!token) {
     return (

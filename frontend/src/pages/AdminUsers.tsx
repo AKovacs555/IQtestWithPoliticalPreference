@@ -5,6 +5,9 @@ import useAuth from '../hooks/useAuth';
 
 export default function AdminUsers() {
   const { user } = useAuth();
+  if (!user?.is_admin) {
+    return <div>Admin access required</div>;
+  }
   const [token, setToken] = useState(() => localStorage.getItem('adminToken') || '');
   const [tokenInput, setTokenInput] = useState('');
   const [users, setUsers] = useState<any[]>([]);
@@ -52,14 +55,6 @@ export default function AdminUsers() {
       setMsg('Error saving');
     }
   };
-
-  if (!user || !user.is_admin) {
-    return (
-      <Layout>
-        <div className="p-4">Admin access required</div>
-      </Layout>
-    );
-  }
 
   if (!token) {
     return (
