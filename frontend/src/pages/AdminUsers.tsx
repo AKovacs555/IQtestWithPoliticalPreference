@@ -1,9 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import Layout from '../components/Layout';
 import { Link } from 'react-router-dom';
+import useAuth from '../hooks/useAuth';
 
 export default function AdminUsers() {
+  const { user } = useAuth();
   const [token, setToken] = useState(() => localStorage.getItem('adminToken') || '');
+  const [tokenInput, setTokenInput] = useState('');
   const [users, setUsers] = useState<any[]>([]);
   const [msg, setMsg] = useState('');
   const apiBase = import.meta.env.VITE_API_BASE || '';
@@ -50,6 +53,40 @@ export default function AdminUsers() {
     }
   };
 
+  if (!user?.is_admin) {
+    return (
+      <Layout>
+        <p className="p-4">Admin access required</p>
+      </Layout>
+    );
+  }
+
+  if (!token) {
+    return (
+      <Layout>
+        <div className="max-w-md mx-auto space-y-4 p-4">
+          <h2 className="text-xl font-bold">Admin API key</h2>
+          <form
+            onSubmit={e => {
+              e.preventDefault();
+              localStorage.setItem('adminToken', tokenInput);
+              setToken(tokenInput);
+            }}
+            className="space-y-2"
+          >
+            <input
+              value={tokenInput}
+              onChange={e => setTokenInput(e.target.value)}
+              placeholder="API key"
+              className="input input-bordered w-full"
+            />
+            <button type="submit" className="btn w-full">Save</button>
+          </form>
+        </div>
+      </Layout>
+    );
+  }
+
   return (
     <Layout>
       <div className="max-w-xl mx-auto space-y-4">
@@ -59,12 +96,6 @@ export default function AdminUsers() {
           <Link to="/admin/users" className="tab tab-bordered tab-active">Users</Link>
           <Link to="/admin/settings" className="tab tab-bordered">Settings</Link>
         </nav>
-        <input
-          value={token}
-          onChange={e => { setToken(e.target.value); localStorage.setItem('adminToken', e.target.value); }}
-          placeholder="API key"
-          className="input input-bordered w-full"
-        />
         <table className="table w-full">
           <thead>
             <tr><th>ID</th><th>Free attempts</th><th></th></tr>

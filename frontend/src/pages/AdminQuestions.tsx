@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import Layout from '../components/Layout';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
+import useAuth from '../hooks/useAuth';
 const languageOptions = ['ja', 'en', 'tr', 'ru', 'zh', 'ko', 'es', 'fr', 'it', 'de', 'ar'];
 
 interface QuestionVariant {
@@ -24,7 +25,9 @@ interface QuestionGroup {
 }
 
 export default function AdminQuestions() {
+  const { user } = useAuth();
   const [token, setToken] = useState<string>(() => localStorage.getItem('adminToken') || '');
+  const [tokenInput, setTokenInput] = useState('');
   const [allQuestions, setAllQuestions] = useState<QuestionVariant[]>([]);
   const [displayedQuestions, setDisplayedQuestions] = useState<QuestionVariant[]>([]);
   const [selectedLang, setSelectedLang] = useState<string>('ja');
@@ -45,6 +48,40 @@ export default function AdminQuestions() {
   const apiBase = import.meta.env.VITE_API_BASE || '';
   if (!apiBase) {
     console.warn('VITE_API_BASE is not set');
+  }
+
+  if (!user?.is_admin) {
+    return (
+      <Layout>
+        <p className="p-4">Admin access required</p>
+      </Layout>
+    );
+  }
+
+  if (!token) {
+    return (
+      <Layout>
+        <div className="max-w-md mx-auto space-y-4 p-4">
+          <h2 className="text-xl font-bold">Admin API key</h2>
+          <form
+            onSubmit={e => {
+              e.preventDefault();
+              localStorage.setItem('adminToken', tokenInput);
+              setToken(tokenInput);
+            }}
+            className="space-y-2"
+          >
+            <input
+              value={tokenInput}
+              onChange={e => setTokenInput(e.target.value)}
+              placeholder="API key"
+              className="input input-bordered w-full"
+            />
+            <button type="submit" className="btn w-full">Save</button>
+          </form>
+        </div>
+      </Layout>
+    );
   }
 
   const filterByLanguageAndApproval = (
@@ -272,11 +309,6 @@ export default function AdminQuestions() {
     if (imgRef.current) imgRef.current.value = '';
   };
 
-  const handleLogin = () => {
-    localStorage.setItem('adminToken', token);
-    fetchQuestions(selectedLang);
-  };
-
   return (
     <Layout>
       <div className="space-y-4 max-w-xl mx-auto">
@@ -286,21 +318,10 @@ export default function AdminQuestions() {
           <Link to="/admin/users" className="tab tab-bordered">Users</Link>
           <Link to="/admin/settings" className="tab tab-bordered">Settings</Link>
         </nav>
-        <div className="space-y-2">
-          <input
-            type="text"
-            className="input input-bordered"
-            placeholder="Admin Token"
-            value={token}
-            onChange={e => setToken(e.target.value)}
-          />
-          <button className="btn" onClick={handleLogin}>Load Questions</button>
-        </div>
         {status && (
           <div className="alert alert-info text-sm">{status}</div>
         )}
-        {token && (
-          <div className="space-y-2">
+        <div className="space-y-2">
             <div className="space-y-1">
               <input type="file" accept="application/json" ref={jsonRef} onChange={handleJsonChange} />
               <input type="file" multiple ref={imgRef} onChange={handleImagesChange} />
@@ -311,8 +332,7 @@ export default function AdminQuestions() {
                 {t(`upload.status.${uploadStatus}`)}
               </div>
             )}
-          </div>
-        )}
+        </div>
         {allQuestions.length > 0 && (
           <>
         <div className="flex items-center space-x-2 mb-2">

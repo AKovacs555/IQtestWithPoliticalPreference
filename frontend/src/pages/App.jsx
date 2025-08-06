@@ -342,7 +342,8 @@ const Result = () => {
 };
 
 export default function App() {
-  const showAdmin = import.meta.env.VITE_SHOW_ADMIN === 'true' || import.meta.env.DEV;
+  const { user } = useAuth();
+  const showAdmin = (import.meta.env.VITE_SHOW_ADMIN === 'true' || import.meta.env.DEV) && user?.is_admin;
   const location = useLocation();
   return (
     <AnimatePresence mode="wait">
