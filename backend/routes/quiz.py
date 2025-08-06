@@ -9,7 +9,11 @@ from fastapi import APIRouter, HTTPException, Request, Depends
 import random
 from pydantic import BaseModel
 from backend.deps.supabase_client import get_supabase_client
-from backend.questions import available_sets, get_balanced_random_questions_by_set
+from backend.questions import (
+    available_sets,
+    get_balanced_random_questions_by_set,
+    get_balanced_random_questions_global,
+)
 from backend.scoring import estimate_theta, iq_score, ability_summary, standard_error
 from backend.irt import percentile
 from backend.features import generate_share_image
@@ -144,6 +148,13 @@ async def start_quiz(
             if resp.error:
                 raise HTTPException(status_code=500, detail=resp.error.message)
             questions = [q for q in resp.data if q.get("approved")]
+
+    if not questions:
+        try:
+            questions = get_balanced_random_questions_global(NUM_QUESTIONS, lang)
+        except Exception:
+            logging.getLogger(__name__).error("No questions available for language %s", lang)
+            raise HTTPException(status_code=500, detail="No questions available")
     session_id = secrets.token_hex(8)
     request.app.state.sessions[session_id] = {
         q["id"]: {"answer": q["answer"], "a": q.get("irt_a"), "b": q.get("irt_b")}
