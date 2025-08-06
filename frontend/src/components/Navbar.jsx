@@ -12,7 +12,7 @@ export default function Navbar() {
   const userId =
     typeof window !== 'undefined' ? localStorage.getItem('user_id') : null;
   const { user } = useAuth();
-  const showAdmin = (import.meta.env.VITE_SHOW_ADMIN === 'true' || import.meta.env.DEV) && user?.is_admin;
+  const showAdmin = import.meta.env.VITE_SHOW_ADMIN === 'true' || import.meta.env.DEV;
   const { t } = useTranslation();
   const navigate = useNavigate();
   const handleStart = () => {
