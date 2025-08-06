@@ -14,10 +14,11 @@ export default function AdminSets() {
   const [sets, setSets] = useState([]);
 
   useEffect(() => {
+    if (!user || !user.is_admin) return;
     fetch(`${API_BASE}/quiz/sets`)
       .then(res => res.json())
       .then(d => setSets(d.sets || []));
-  }, []);
+  }, [user]);
 
   const upload = async (e) => {
     const file = e.target.files?.[0];
@@ -45,10 +46,10 @@ export default function AdminSets() {
     }
   };
 
-  if (!user?.is_admin) {
+  if (!user || !user.is_admin) {
     return (
       <Layout>
-        <p className="p-4">Admin access required</p>
+        <div className="p-4">Admin access required</div>
       </Layout>
     );
   }

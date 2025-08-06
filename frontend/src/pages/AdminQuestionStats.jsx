@@ -31,10 +31,10 @@ export default function AdminQuestionStats() {
       .catch((err) => setError(err.message));
   }, [token, apiBase]);
 
-  if (!user?.is_admin) {
+  if (!user || !user.is_admin) {
     return (
       <Layout>
-        <p className="p-4">Admin access required</p>
+        <div className="p-4">Admin access required</div>
       </Layout>
     );
   }

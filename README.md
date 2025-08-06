@@ -29,7 +29,13 @@ Run the following SQL in Supabase if the column is missing:
 alter table public.users add column if not exists is_admin boolean not null default false;
 ```
 
-Set `is_admin` to `true` for any accounts that should manage content. Admin pages are only built when `VITE_SHOW_ADMIN` is `true`, and access requires both an authenticated admin user and the `ADMIN_API_KEY`. After signing in, admins will be prompted to enter the API key in the interface; the key is stored locally and sent as the `X-Admin-Api-Key` header on subsequent requests.
+Set `is_admin` to `true` for any accounts that should manage content.
+
+Admin access works as follows:
+
+- `VITE_SHOW_ADMIN=true` controls whether admin routes are built and shown in the navigation.
+- Users must have `is_admin=true` in the Supabase `users` table. After updating the database, they need to log out and back in so the JWT includes the `is_admin` claim.
+- When visiting an admin page, the user is prompted for the `ADMIN_API_KEY`. This value must match the backend environment variable and is sent as the `X-Admin-Api-Key` header on requests.
 
 
 ## Backend (FastAPI)
