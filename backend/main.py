@@ -69,6 +69,7 @@ from routes.admin_questions import router as admin_questions_router
 from routes.admin_import_questions import router as admin_import_router
 from routes.admin_surveys import router as admin_surveys_router
 from routes.admin_users import router as admin_users_router
+from routes.settings import router as settings_router
 from routes.quiz import router as quiz_router
 from routes.user import router as user_router
 from routes.auth import router as auth_router
@@ -78,6 +79,7 @@ from routes.custom_survey import (
     admin_router as custom_survey_admin_router,
 )
 import json
+from utils.settings import get_setting
 
 app = FastAPI()
 app.state.sessions = {}
@@ -101,6 +103,7 @@ app.include_router(admin_questions_router)
 app.include_router(admin_import_router)
 app.include_router(admin_surveys_router)
 app.include_router(admin_users_router)
+app.include_router(settings_router)
 
 # Public routers
 app.include_router(quiz_router)
@@ -115,8 +118,6 @@ app.include_router(custom_survey_admin_router)
 # Number of questions per quiz session
 NUM_QUESTIONS = int(os.getenv("NUM_QUESTIONS", "20"))
 
-# Maximum free attempts before payment is required
-MAX_FREE_ATTEMPTS = int(os.getenv("MAX_FREE_ATTEMPTS", "1"))
 
 from db import (
     get_user,
@@ -317,6 +318,7 @@ def _assign_variant(user: dict) -> int:
 
 @app.get("/pricing/{user_id}", response_model=PricingResponse)
 async def pricing(user_id: str, region: str = "US"):
+    max_free_attempts = await get_setting("max_free_attempts", 1)
     user = get_user(user_id)
     if not user:
         user = db_create_user(
@@ -329,12 +331,15 @@ async def pricing(user_id: str, region: str = "US"):
                 "scores": [],
                 "party_log": [],
                 "demographic": {},
-                "free_attempts": MAX_FREE_ATTEMPTS,
+                "free_attempts": max_free_attempts,
             }
         )
     elif "free_attempts" not in user:
-        user["free_attempts"] = MAX_FREE_ATTEMPTS
-        db_update_user(user_id, {"free_attempts": MAX_FREE_ATTEMPTS})
+        user["free_attempts"] = max_free_attempts
+        db_update_user(user_id, {"free_attempts": max_free_attempts})
+    elif user.get("free_attempts", 0) > max_free_attempts:
+        user["free_attempts"] = max_free_attempts
+        db_update_user(user_id, {"free_attempts": max_free_attempts})
     processor = select_processor(region)
     variant_idx = _assign_variant(user)
     log_event({"event": "pricing_shown", "user_id": user_id, "variant": variant_idx})
@@ -344,7 +349,7 @@ async def pricing(user_id: str, region: str = "US"):
         "price": price,
         "retry_price": retry_price,
         "plays": user.get("plays", 0),
-        "free_attempts": user.get("free_attempts", MAX_FREE_ATTEMPTS),
+        "free_attempts": min(user.get("free_attempts", max_free_attempts), max_free_attempts),
         "processor": processor,
         "pro_price": PRO_PRICE_MONTHLY,
         "variant": variant_idx,
@@ -379,6 +384,7 @@ async def nowpayments_callback(payment_id: str):
 
 @app.post("/play/record")
 async def record_play(action: UserAction):
+    max_free_attempts = await get_setting("max_free_attempts", 1)
     user = get_user(action.user_id)
     if not user:
         user = db_create_user(
@@ -391,18 +397,24 @@ async def record_play(action: UserAction):
                 "scores": [],
                 "party_log": [],
                 "demographic": {},
-                "free_attempts": MAX_FREE_ATTEMPTS,
+                "free_attempts": max_free_attempts,
             }
         )
     paid = False
-    if user.get("free_attempts", MAX_FREE_ATTEMPTS) > 0:
-        user["free_attempts"] = user.get("free_attempts", MAX_FREE_ATTEMPTS) - 1
+    remaining = min(user.get("free_attempts", max_free_attempts), max_free_attempts)
+    if user.get("free_attempts", max_free_attempts) != remaining:
+        user["free_attempts"] = remaining
+    if remaining > 0:
+        user["free_attempts"] = remaining - 1
     else:
         if user.get("points", 0) >= RETRY_POINT_COST:
             user["points"] -= RETRY_POINT_COST
             paid = True
         else:
-            raise HTTPException(status_code=402, detail="Payment required")
+            raise HTTPException(
+                status_code=402,
+                detail={"error": "max_free_attempts_reached", "message": "Please upgrade"},
+            )
     user["plays"] = user.get("plays", 0) + 1
     db_update_user(action.user_id, {
         "plays": user["plays"],
@@ -787,6 +799,7 @@ async def user_party(selection: PartySelection):
 @app.get("/user/stats/{user_id}", response_model=UserStats)
 async def user_stats(user_id: str):
     """Return play counts and history for a user."""
+    max_free_attempts = await get_setting("max_free_attempts", 1)
     user = get_user(user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -795,7 +808,7 @@ async def user_stats(user_id: str):
         "referrals": user.get("referrals", 0),
         "scores": user.get("scores") or [],
         "party_log": user.get("party_log") or [],
-        "free_attempts": user.get("free_attempts", MAX_FREE_ATTEMPTS),
+        "free_attempts": min(user.get("free_attempts", max_free_attempts), max_free_attempts),
     }
 
 

@@ -8,6 +8,7 @@ import AdminQuestions from './AdminQuestions';
 import AdminSurvey from './AdminSurvey';
 import AdminUsers from './AdminUsers';
 import AdminSets from './AdminSets';
+import AdminSettings from './AdminSettings.jsx';
 import ProgressBar from '../components/ProgressBar';
 import Home from './Home';
 import Pricing from './Pricing';
@@ -361,7 +362,8 @@ export default function App() {
         {showAdmin && (<><Route path="/admin/questions" element={<AdminQuestions />} />
         <Route path="/admin/surveys" element={<AdminSurvey />} />
         <Route path="/admin/users" element={<AdminUsers />} />
-        <Route path="/admin/sets" element={<AdminSets />} /></>)}
+        <Route path="/admin/sets" element={<AdminSets />} />
+        <Route path="/admin/settings" element={<AdminSettings />} /></>)}
       </Routes>
     </AnimatePresence>
   );

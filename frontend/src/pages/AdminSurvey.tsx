@@ -188,6 +188,7 @@ export default function AdminSurvey() {
           <Link to="/admin/questions" className="tab tab-bordered">Questions</Link>
           <Link to="/admin/surveys" className="tab tab-bordered tab-active">Surveys</Link>
           <Link to="/admin/users" className="tab tab-bordered">Users</Link>
+          <Link to="/admin/settings" className="tab tab-bordered">Settings</Link>
         </nav>
         <input
           value={token}
