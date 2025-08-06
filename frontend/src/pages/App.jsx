@@ -28,6 +28,7 @@ import { getQuizStart, submitQuiz } from '../api';
 import { AnimatePresence, motion } from 'framer-motion';
 import SignupPage from './SignupPage.jsx';
 import LoginPage from './LoginPage.jsx';
+import TestPage from './TestPage.jsx';
 const API_BASE = import.meta.env.VITE_API_BASE || "";
 
 const PageTransition = ({ children }) => (
@@ -342,8 +343,9 @@ export default function App() {
       <Routes location={location} key={location.pathname}>
         <Route path="/" element={<Home />} />
         <Route path="/select-set" element={<SelectSet />} />
-        <Route path="/start" element={<DemographicsForm />} />
-        <Route path="/quiz" element={<Quiz />} />
+        <Route path="/demographics" element={<DemographicsForm />} />
+        <Route path="/quiz" element={<TestPage />} />
+        <Route path="/test" element={<TestPage />} />
         <Route path="/survey" element={<SurveyPage />} />
         <Route path="/pricing" element={<Pricing />} />
         <Route path="/result" element={<Result />} />

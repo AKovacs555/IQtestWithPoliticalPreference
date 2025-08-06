@@ -101,7 +101,8 @@ def test_history_sorted():
             }
         ],
         'party_log': [],
-        'demographic': {}
+        'demographic': {},
+        'demographic_completed': False
     })
     with TestClient(app) as client:
         r = client.get(f'/user/history/{user_id}')

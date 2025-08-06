@@ -29,6 +29,7 @@ export default function DemographicsForm() {
         occupation,
       })
     }).then(() => {
+      localStorage.setItem('demographic_completed', 'true');
       const path = setId ? `/quiz?set=${setId}` : '/quiz';
       navigate(path);
     });

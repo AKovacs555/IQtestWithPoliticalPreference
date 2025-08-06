@@ -20,6 +20,7 @@ def _create_user(uid, extra=None):
         'scores': [],
         'party_log': [],
         'demographic': {},
+        'demographic_completed': False,
         'free_attempts': 0,
         'survey_completed': False,
     }
@@ -41,7 +42,7 @@ def test_quiz_requires_survey_completion(monkeypatch):
         r = client.get('/quiz/start?set_id=set1', headers={"Authorization": f"Bearer {token}"})
         assert r.status_code == 400
         assert r.json()['detail']['error'] == 'survey_required'
-        db.update_user(uid, {'survey_completed': True})
+        db.update_user(uid, {'survey_completed': True, 'demographic_completed': True})
         r = client.get('/quiz/start?set_id=set1', headers={"Authorization": f"Bearer {token}"})
         assert r.status_code == 200
         assert 'questions' in r.json()
@@ -60,7 +61,7 @@ def test_quiz_requires_nationality(monkeypatch):
         r = client.get('/quiz/start?set_id=set1', headers={"Authorization": f"Bearer {token}"})
         assert r.status_code == 400
         assert r.json()['detail']['error'] == 'nationality_required'
-        db.update_user(uid, {'nationality': 'US'})
+        db.update_user(uid, {'nationality': 'US', 'demographic_completed': True})
         r = client.get('/quiz/start?set_id=set1', headers={"Authorization": f"Bearer {token}"})
         assert r.status_code == 200
         assert 'questions' in r.json()
