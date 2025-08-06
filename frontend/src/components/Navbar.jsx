@@ -30,6 +30,7 @@ export default function Navbar() {
     { to: '/pricing', label: t('nav.pricing') },
     { to: '/select-nationality', label: t('nav.nationality') },
     { to: '/dashboard', label: t('dashboard.title') },
+    { to: '/contact', label: t('nav.contact', { defaultValue: 'Contact' }) },
   ];
 
   const adminLinks = [
