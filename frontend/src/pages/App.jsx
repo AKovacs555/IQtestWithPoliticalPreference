@@ -77,6 +77,10 @@ const Quiz = () => {
       navigate('/survey');
       return;
     }
+    if (localStorage.getItem('demographic_completed') !== 'true') {
+      navigate('/demographics');
+      return;
+    }
     async function load() {
       try {
         const data = await getQuizStart(setId, undefined);
