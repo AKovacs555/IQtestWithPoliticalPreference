@@ -14,8 +14,10 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Add the repository root (parent directory of backend) to the Python path
-sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
+# Ensure the backend package and repository root are on the Python path
+backend_dir = os.path.dirname(__file__)
+repo_root = os.path.join(backend_dir, "..")
+sys.path.extend([backend_dir, repo_root])
 
 from fastapi import FastAPI, HTTPException, Header
 import io
@@ -26,7 +28,7 @@ from pathlib import Path
 import tempfile
 from tools.generate_questions import import_dir
 
-from sms_service import send_otp, SMS_PROVIDER
+from backend.sms_service import send_otp, SMS_PROVIDER
 from features import (
     leaderboard_by_party,
     generate_share_image,
