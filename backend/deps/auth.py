@@ -4,15 +4,23 @@ from typing import Optional
 
 import jwt
 from fastapi import HTTPException, Header
-
 from backend.db import get_user
 
 JWT_SECRET = os.getenv("JWT_SECRET", "change-me")
 ALGORITHM = "HS256"
 
 
-def create_token(user_id: str) -> str:
-    payload = {"user_id": user_id, "iat": int(time.time())}
+class User(dict):
+    """Dict-like user object allowing attribute access."""
+
+    def __getattr__(self, item):
+        return self.get(item)
+
+
+def create_token(user_id: str, is_admin: bool = False) -> str:
+    """Generate a signed JWT containing the user's id and admin flag."""
+
+    payload = {"user_id": user_id, "is_admin": is_admin, "iat": int(time.time())}
     return jwt.encode(payload, JWT_SECRET, algorithm=ALGORITHM)
 
 
@@ -23,12 +31,14 @@ def decode_token(token: str) -> dict:
         raise HTTPException(status_code=401, detail="Invalid token")
 
 
-def get_current_user(authorization: Optional[str] = Header(None)):
+def get_current_user(authorization: Optional[str] = Header(None)) -> User:
+    """Resolve the current user from the Authorization header."""
+
     if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Unauthorized")
     token = authorization.split(" ", 1)[1]
     payload = decode_token(token)
-    user = get_user(payload["user_id"])
-    if not user:
+    user_data = get_user(payload["user_id"])
+    if not user_data:
         raise HTTPException(status_code=401, detail="User not found")
-    return user
+    return User(user_data)

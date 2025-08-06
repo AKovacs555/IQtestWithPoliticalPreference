@@ -9,6 +9,7 @@ The following variables must be configured for local development and deployments
 - `VITE_API_BASE` – backend API base URL
 - `VITE_SUPABASE_URL` – Supabase project URL for the frontend
 - `VITE_SUPABASE_ANON_KEY` – Supabase anon key for the frontend
+- `VITE_SHOW_ADMIN` – set to `true` to include admin pages in the build
 - `SUPABASE_API_KEY` – service role or API key for Supabase access
 - `SUPABASE_SERVICE_ROLE_KEY` – service role key used by backend jobs
 - `SUPABASE_JWT_SECRET` – JWT secret from Supabase settings
@@ -16,6 +17,17 @@ The following variables must be configured for local development and deployments
 - `NOWPAYMENTS_API_KEY` (or PayPal client credentials) for payments
 - `ADMIN_API_KEY` – token required for admin endpoints
 For details on preparing question files and importing them into Supabase see [docs/import_tests.md](docs/import_tests.md).
+
+## Admin access
+
+To grant administrative privileges, the `users` table in Supabase must include an `is_admin` boolean column with a default of `false`.
+Run the following SQL in Supabase if the column is missing:
+
+```sql
+alter table public.users add column if not exists is_admin boolean not null default false;
+```
+
+Set `is_admin` to `true` for any accounts that should manage content. Admin pages are only built when `VITE_SHOW_ADMIN` is `true`, and access requires both an authenticated admin user and the `ADMIN_API_KEY`. After signing in, admins will be prompted to enter the API key in the interface; the key is stored locally and sent as the `X-Admin-Api-Key` header on subsequent requests.
 
 
 ## Backend (FastAPI)

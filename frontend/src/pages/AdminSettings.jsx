@@ -26,6 +26,14 @@ export default function AdminSettings() {
 
   useEffect(() => { fetchSetting(); }, [fetchSetting]);
 
+  if (!user?.is_admin) {
+    return (
+      <Layout>
+        <p className="p-4">Admin access required</p>
+      </Layout>
+    );
+  }
+
   const save = async () => {
     if (!user) return;
     setMsg('');
