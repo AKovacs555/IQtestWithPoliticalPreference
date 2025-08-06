@@ -1,0 +1,49 @@
+{
+  "questions": [
+    {
+      "id": "q1",
+      "type": "matrix",
+      "prompt": "Select the image that completes the pattern",
+      "image": "iq-images/raven/q1.png",
+      "options": [
+        {"id": 0, "image": "iq-images/raven/q1_opt0.png"},
+        {"id": 1, "image": "iq-images/raven/q1_opt1.png"},
+        {"id": 2, "image": "iq-images/raven/q1_opt2.png"},
+        {"id": 3, "image": "iq-images/raven/q1_opt3.png"}
+      ],
+      "answer": 3,
+      "difficulty": 1,
+      "tags": ["nonverbal", "spatial"]
+    },
+    {
+      "id": "q2",
+      "type": "matrix",
+      "prompt": "Which option completes the sequence?",
+      "image": "iq-images/raven/q2.png",
+      "options": [
+        {"id": 0, "image": "iq-images/raven/q2_opt0.png"},
+        {"id": 1, "image": "iq-images/raven/q2_opt1.png"},
+        {"id": 2, "image": "iq-images/raven/q2_opt2.png"},
+        {"id": 3, "image": "iq-images/raven/q2_opt3.png"}
+      ],
+      "answer": 1,
+      "difficulty": 2,
+      "tags": ["nonverbal", "logic"]
+    },
+    {
+      "id": "q3",
+      "type": "matrix",
+      "prompt": "Choose the figure that fits",
+      "image": "iq-images/raven/q3.png",
+      "options": [
+        {"id": 0, "image": "iq-images/raven/q3_opt0.png"},
+        {"id": 1, "image": "iq-images/raven/q3_opt1.png"},
+        {"id": 2, "image": "iq-images/raven/q3_opt2.png"},
+        {"id": 3, "image": "iq-images/raven/q3_opt3.png"}
+      ],
+      "answer": 0,
+      "difficulty": 3,
+      "tags": ["spatial"]
+    }
+  ]
+}

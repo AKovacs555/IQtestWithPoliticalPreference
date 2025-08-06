@@ -7,6 +7,7 @@ import Layout from '../components/Layout';
 import AdminQuestions from './AdminQuestions';
 import AdminSurvey from './AdminSurvey';
 import AdminUsers from './AdminUsers';
+import AdminSets from './AdminSets';
 import ProgressBar from '../components/ProgressBar';
 import Home from './Home';
 import Pricing from './Pricing';
@@ -24,7 +25,6 @@ import DemographicsForm from './DemographicsForm.jsx';
 import History from './History.jsx';
 import confetti from 'canvas-confetti';
 import { getQuizStart, submitQuiz } from '../api';
-import TestPage from './TestPage.jsx';
 import { AnimatePresence, motion } from 'framer-motion';
 import SignupPage from './SignupPage.jsx';
 import LoginPage from './LoginPage.jsx';
@@ -226,6 +226,7 @@ const Result = () => {
   const ref = React.useRef();
   const [avg, setAvg] = React.useState(null);
   const { t } = useTranslation();
+  const price = import.meta.env.VITE_PRO_PRICE_MONTHLY;
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -317,12 +318,13 @@ const Result = () => {
           >
             {t('result.back_to_home')}
           </button>
-          <div className="mt-4">
+          <div className="mt-4 space-y-2">
+            <p>{t('result.pro_prompt', { price })}</p>
             <a
-              href="/premium.html"
+              href="/pricing"
               className="px-4 py-2 rounded-md bg-primary text-white text-sm hover:bg-primary/90 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary"
             >
-              Upgrade to Pro Pass
+              {t('pricing.subscribe')}
             </a>
           </div>
           <p className="text-sm text-gray-600">This test is for research and entertainment.</p>
@@ -333,6 +335,7 @@ const Result = () => {
 };
 
 export default function App() {
+  const showAdmin = import.meta.env.VITE_SHOW_ADMIN === 'true' || import.meta.env.DEV;
   const location = useLocation();
   return (
     <AnimatePresence mode="wait">
@@ -341,7 +344,6 @@ export default function App() {
         <Route path="/select-set" element={<SelectSet />} />
         <Route path="/start" element={<DemographicsForm />} />
         <Route path="/quiz" element={<Quiz />} />
-        <Route path="/test" element={<TestPage />} />
         <Route path="/survey" element={<SurveyPage />} />
         <Route path="/pricing" element={<Pricing />} />
         <Route path="/result" element={<Result />} />
@@ -354,9 +356,10 @@ export default function App() {
         <Route path="/select-party" element={<SelectParty />} />
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/login" element={<LoginPage />} />
-        <Route path="/admin/questions" element={<AdminQuestions />} />
+        {showAdmin && (<><Route path="/admin/questions" element={<AdminQuestions />} />
         <Route path="/admin/surveys" element={<AdminSurvey />} />
         <Route path="/admin/users" element={<AdminUsers />} />
+        <Route path="/admin/sets" element={<AdminSets />} /></>)}
       </Routes>
     </AnimatePresence>
   );

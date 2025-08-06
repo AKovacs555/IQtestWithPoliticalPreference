@@ -51,11 +51,17 @@
   "result.back_to_home": "Back to Home",
   "result.share_text": "I scored {{score}} IQ and am in the {{percentile}} percentile!",
   "result.link_copied": "Link copied!",
-  "result.share": "Share"
-  ,"nav": {
+  "result.share": "Share",
+  "nav": {
     "leaderboard": "Leaderboard",
     "pricing": "Pricing",
     "nationality": "Nationality",
     "take_quiz": "Take Quiz"
-  }
+  },
+  "result.pro_prompt": "Upgrade to Pro Pass for {{price}} JPY/month to unlock extra attempts, ad-free mode and advanced analytics.",
+  "admin_sets.title": "Question Sets",
+  "admin_sets.upload": "Upload JSON set",
+  "admin_sets.uploaded": "Uploaded",
+  "admin_sets.missing_token": "GitHub token or repo info missing",
+  "admin_sets.note": "Images must be uploaded to Supabase storage manually."
 }

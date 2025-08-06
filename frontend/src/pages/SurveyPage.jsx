@@ -26,7 +26,7 @@ export default function SurveyPage() {
       return;
     }
     if (localStorage.getItem('survey_completed') === 'true') {
-      navigate('/test');
+      navigate('/start');
       return;
     }
     const uid = localStorage.getItem('user_id');
@@ -35,7 +35,7 @@ export default function SurveyPage() {
         const list = d.items || [];
         if (!list.length) {
           localStorage.setItem('survey_completed', 'true');
-          navigate('/test');
+          navigate('/start');
           return;
         }
         setItems(list);
@@ -86,7 +86,7 @@ export default function SurveyPage() {
         await completeSurvey(uid);
       }
       localStorage.setItem('survey_completed', 'true');
-      navigate('/test');
+      navigate('/start');
     } catch (e) {
       setError(e.message);
     }

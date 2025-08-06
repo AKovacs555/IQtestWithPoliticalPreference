@@ -17,7 +17,9 @@ export default function Navbar() {
   const navigate = useNavigate();
   const handleStart = () => {
     if (!user) navigate('/login');
-    else navigate('/test');
+    else if (!localStorage.getItem('nationality')) navigate('/select-nationality');
+    else if (localStorage.getItem('survey_completed') !== 'true') navigate('/survey');
+    else navigate('/start');
   };
 
   const links = [
@@ -30,6 +32,7 @@ export default function Navbar() {
   const adminLinks = [
     { to: '/admin/upload', label: 'Upload' },
     { to: '/admin/questions', label: 'Questions' },
+    { to: '/admin/sets', label: t('admin_sets.title') },
   ];
 
   return (
