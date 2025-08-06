@@ -17,10 +17,15 @@ export default function SelectParty() {
       navigate('/select-nationality');
       return;
     }
+    const demDone = localStorage.getItem('demographic_completed') === 'true';
+    if (demDone) {
+      navigate('/quiz');
+      return;
+    }
     fetch(`${apiBase}/user/parties/${nationality}`)
       .then(r => r.json())
       .then(d => setParties(d.parties || []));
-  }, [nationality]);
+  }, [nationality, navigate]);
 
   const toggle = (id) => {
     setSelected(s => {
@@ -39,7 +44,8 @@ export default function SelectParty() {
       body: JSON.stringify({ user_id: userId, party_ids: selected })
     });
     alert(t('select_party.saved'));
-    navigate('/start');
+    const demDone = localStorage.getItem('demographic_completed') === 'true';
+    navigate(demDone ? '/quiz' : '/demographics');
   };
 
   return (

@@ -28,7 +28,8 @@ async def collect_demographics(
                 "income_band": income_band,
                 "occupation": occupation,
                 "updated": datetime.utcnow().isoformat(),
-            }
+            },
+            "demographic_completed": True,
         },
     )
 

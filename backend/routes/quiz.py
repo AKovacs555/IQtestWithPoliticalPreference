@@ -86,6 +86,14 @@ async def start_quiz(
                 "message": "Please complete the survey before taking the IQ test.",
             },
         )
+    if user and not user.get("demographic_completed"):
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "error": "demographic_required",
+                "message": "Please complete the demographics form before taking the IQ test.",
+            },
+        )
     if set_id:
         try:
             questions = get_balanced_random_questions_by_set(NUM_QUESTIONS, set_id)

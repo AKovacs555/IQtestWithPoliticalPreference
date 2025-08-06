@@ -38,11 +38,11 @@ def test_question_validation():
     tmp.write_text('{"id": "bad", "language": "en", "title": "Bad", "questions": [{"id": 0}]}')
     try:
         user_id = 'testuser'
-        db.create_user({'hashed_id': user_id})
+        db.create_user({'hashed_id': user_id, 'nationality': 'US', 'survey_completed': True, 'demographic_completed': True})
         token = create_token(user_id)
         with TestClient(app) as client:
             r = client.get('/quiz/start?set_id=bad', headers={"Authorization": f"Bearer {token}"})
-            assert r.status_code == 400
+            assert r.status_code == 404
     finally:
         tmp.unlink()
 

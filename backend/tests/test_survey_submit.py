@@ -18,6 +18,7 @@ def _create_user(uid):
         'scores': [],
         'party_log': [],
         'demographic': {},
+        'demographic_completed': False,
         'free_attempts': 0,
         'survey_completed': False,
     }
