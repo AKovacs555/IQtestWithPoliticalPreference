@@ -51,11 +51,17 @@
   "result.back_to_home": "ホームに戻る",
   "result.share_text": "IQは{{score}}、上位{{percentile}}%でした！",
   "result.link_copied": "リンクをコピーしました",
-  "result.share": "シェア"
-  ,"nav": {
+  "result.share": "シェア",
+  "nav": {
     "leaderboard": "ランキング",
     "pricing": "料金",
     "nationality": "国籍",
     "take_quiz": "テストを受ける"
-  }
+  },
+  "result.pro_prompt": "追加の受験、広告なし、詳細分析を利用するには月額{{price}}円のPro Passにアップグレードしてください。",
+  "admin_sets.title": "問題セット",
+  "admin_sets.upload": "JSONセットをアップロード",
+  "admin_sets.uploaded": "アップロードしました",
+  "admin_sets.missing_token": "GitHubトークンまたはリポジトリ情報が不足しています",
+  "admin_sets.note": "画像は別途Supabaseストレージにアップロードしてください。"
 }

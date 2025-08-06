@@ -9,11 +9,16 @@ from fastapi import APIRouter, HTTPException, Request, Depends
 import random
 from pydantic import BaseModel
 from backend.deps.supabase_client import get_supabase_client
-from backend.questions import (
-    available_sets,
-    get_balanced_random_questions_by_set,
-    get_balanced_random_questions_global,
+from backend.questions_loader import (
+    get_question_sets,
+    get_questions_for_set,
 )
+# Backwards compatibility for tests
+def get_balanced_random_questions_by_set(n: int, set_id: str, lang: str | None = None):
+    return get_questions_for_set(set_id, n, lang)
+
+from backend.questions import get_balanced_random_questions_global
+
 from backend.scoring import estimate_theta, iq_score, ability_summary, standard_error
 from backend.irt import percentile
 from backend.features import generate_share_image
@@ -29,7 +34,7 @@ with _dist_path.open() as f:
     NORMATIVE_DIST = json.load(f)
 
 class QuizQuestion(BaseModel):
-    id: int
+    id: str
     question: str
     options: List[str]
     image: str | None = None
@@ -41,7 +46,7 @@ class QuizStartResponse(BaseModel):
     pending_surveys: Optional[List[dict]] = None
 
 class QuizAnswer(BaseModel):
-    id: int
+    id: str | int
     answer: int
 
 class SurveyAnswer(BaseModel):
@@ -56,7 +61,7 @@ class QuizSubmitRequest(BaseModel):
 
 @router.get("/sets")
 async def quiz_sets():
-    return {"sets": available_sets()}
+    return {"sets": get_question_sets()}
 
 @router.get("/start", response_model=QuizStartResponse)
 async def start_quiz(
@@ -85,7 +90,7 @@ async def start_quiz(
         try:
             questions = get_balanced_random_questions_by_set(NUM_QUESTIONS, set_id)
         except ValueError as e:
-            raise HTTPException(status_code=400, detail=str(e))
+            raise HTTPException(status_code=404, detail=str(e))
     else:
         supabase = get_supabase_client()
         easy = int(round(NUM_QUESTIONS * 0.3))
@@ -157,18 +162,18 @@ async def start_quiz(
             raise HTTPException(status_code=500, detail="No questions available")
     session_id = secrets.token_hex(8)
     request.app.state.sessions[session_id] = {
-        q["id"]: {"answer": q["answer"], "a": q.get("irt_a"), "b": q.get("irt_b")}
+        str(q["id"]): {"answer": q["answer"], "a": q.get("irt_a"), "b": q.get("irt_b")}
         for q in questions
     }
     models = []
     for q in questions:
         models.append(
             QuizQuestion(
-                id=q["id"],
-                question=q["question"],
-                options=q["options"],
+                id=str(q["id"]),
+                question=q.get("question") or q.get("prompt", ""),
+                options=[str(o.get("id")) for o in q.get("options", [])] if q.get("options") and isinstance(q.get("options")[0], dict) else q.get("options", []),
                 image=q.get("image"),
-                option_images=q.get("option_images"),
+                option_images=[o.get("image") for o in q.get("options", [])] if q.get("options") and isinstance(q.get("options")[0], dict) else q.get("option_images"),
             )
         )
     pending = get_random_pending_surveys(
@@ -187,7 +192,7 @@ async def submit_quiz(
         raise HTTPException(status_code=400, detail="Expected all answers")
     responses = []
     for item in payload.answers:
-        info = session.get(item.id)
+        info = session.get(str(item.id)) or (session.get(int(item.id)) if isinstance(item.id, (int, str)) and str(item.id).isdigit() else None)
         if not info:
             continue
         correct = item.answer == info["answer"]

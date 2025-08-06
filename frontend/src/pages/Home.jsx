@@ -23,7 +23,7 @@ export default function Home() {
     } else if (localStorage.getItem('survey_completed') !== 'true') {
       navigate('/survey');
     } else {
-      navigate('/test');
+      navigate('/start');
     }
   };
 

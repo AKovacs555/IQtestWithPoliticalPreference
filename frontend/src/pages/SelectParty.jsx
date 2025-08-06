@@ -39,7 +39,7 @@ export default function SelectParty() {
       body: JSON.stringify({ user_id: userId, party_ids: selected })
     });
     alert(t('select_party.saved'));
-    navigate('/test');
+    navigate('/start');
   };
 
   return (

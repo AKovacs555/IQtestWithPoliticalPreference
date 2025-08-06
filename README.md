@@ -6,11 +6,15 @@ This project provides an IQ quiz and political preference survey using a respons
 
 The following variables must be configured for local development and deployments:
 
-- `SUPABASE_URL` – URL of the Supabase instance
+- `VITE_API_BASE` – backend API base URL
+- `VITE_SUPABASE_URL` – Supabase project URL for the frontend
+- `VITE_SUPABASE_ANON_KEY` – Supabase anon key for the frontend
 - `SUPABASE_API_KEY` – service role or API key for Supabase access
+- `SUPABASE_SERVICE_ROLE_KEY` – service role key used by backend jobs
+- `SUPABASE_JWT_SECRET` – JWT secret from Supabase settings
+- `AWS_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` *or* Twilio credentials (`TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_VERIFY_SERVICE_SID`) depending on `SMS_PROVIDER`
+- `NOWPAYMENTS_API_KEY` (or PayPal client credentials) for payments
 - `ADMIN_API_KEY` – token required for admin endpoints
-- `VITE_API_BASE` – base URL of the backend API used by the React app
-
 For details on preparing question files and importing them into Supabase see [docs/import_tests.md](docs/import_tests.md).
 
 
@@ -75,6 +79,28 @@ Supabase、NOWPayments、AWS SNS、Google AdMob のアカウントを作成し�
 - NOWPayments: 個人商人アカウントを作成し、API キーを生成してコールバック URL を設定
 - Google AdMob: アプリ ID と広告ユニット ID を作成してコピー
 - AWS SNS: IAM ユーザーのアクセスキーを使用
+
+### APIキー取得手順
+
+1. **Supabase**
+   1. プロジェクトダッシュボードで *Project Settings → API* を開き、`VITE_SUPABASE_URL` と `VITE_SUPABASE_ANON_KEY` を取得します。
+   2. 同ページの *service_role* キーを `SUPABASE_SERVICE_ROLE_KEY` として保存し、`SUPABASE_API_KEY` としても利用します。
+   3. *Authentication → Settings* で JWT Secret をコピーし `SUPABASE_JWT_SECRET` に設定します。
+2. **バックエンドURL**
+   - Render などでデプロイした FastAPI のURLを `VITE_API_BASE` に設定します。
+3. **SMS プロバイダ**
+   - *Twilio* を使用する場合:
+     1. Twilio コンソールで Verify サービスを作成します。
+     2. `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_VERIFY_SERVICE_SID` を `.env` に設定します。
+   - *AWS SNS* を使用する場合:
+     1. AWS コンソールで IAM ユーザーを作成しアクセスキーを取得します。
+     2. `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION` を設定します。
+4. **決済プロバイダ**
+   - NOWPayments の場合:
+     1. ダッシュボードで API キーを発行し `NOWPAYMENTS_API_KEY` に設定します。
+     2. コールバックURLを登録し `NOWPAYMENTS_CALLBACK_URL` を設定します。
+   - PayPal を利用する場合は Developer ダッシュボードから client ID と secret を取得して設定してください。
+
 ### 広告設定
 
 1. AdMob コンソールでアプリを登録し、報酬付き動画広告ユニットを作成します。

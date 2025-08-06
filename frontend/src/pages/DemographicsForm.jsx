@@ -29,7 +29,7 @@ export default function DemographicsForm() {
         occupation,
       })
     }).then(() => {
-      const path = setId ? `/quiz?set=${setId}` : '/test';
+      const path = setId ? `/quiz?set=${setId}` : '/quiz';
       navigate(path);
     });
   };
