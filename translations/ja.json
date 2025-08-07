@@ -17,5 +17,7 @@
   "occupation.public": "公務員",
   "occupation.freelance": "自営業/フリーランス",
   "occupation.unemployed": "無職",
-  "occupation.other": "その他"
+  "occupation.other": "その他",
+  "approve_all": "すべて承認",
+  "unapprove_all": "すべて未承認"
 }

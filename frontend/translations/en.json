@@ -60,5 +60,7 @@
   "admin_sets.upload": "Upload JSON set",
   "admin_sets.uploaded": "Uploaded",
   "admin_sets.missing_token": "GitHub token or repo info missing",
-  "admin_sets.note": "Images must be uploaded to Supabase storage manually."
+  "admin_sets.note": "Images must be uploaded to Supabase storage manually.",
+  "approve_all": "Approve All",
+  "unapprove_all": "Unapprove All"
 }
