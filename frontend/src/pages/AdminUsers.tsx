@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import Layout from '../components/Layout';
 import { Link } from 'react-router-dom';
-import useAuth from '../hooks/useAuth';
+// import useAuth from '../hooks/useAuth';
 
 export default function AdminUsers() {
-  const { user } = useAuth();
-  if (!user || !user.is_admin) {
-    return <div>Admin access required</div>;
-  }
+  // const { user } = useAuth();
+  // if (!user || !user.is_admin) {
+  //   return <div>Admin access required</div>;
+  // }
   const [users, setUsers] = useState<any[]>([]);
   const [msg, setMsg] = useState('');
   const apiBase = import.meta.env.VITE_API_BASE || '';
