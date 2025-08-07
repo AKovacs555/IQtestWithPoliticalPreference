@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import Layout from '../components/Layout';
+// Layout is provided by AdminLayout.
 // import useAuth from '../hooks/useAuth';
 
 export default function AdminQuestionStats() {
@@ -32,8 +32,7 @@ export default function AdminQuestionStats() {
   const languages = Object.keys(stats).sort();
 
   return (
-    <Layout>
-      <div className="space-y-4 max-w-2xl mx-auto">
+    <div className="space-y-4 max-w-2xl mx-auto">
         <h1 className="text-2xl font-bold">Question Stats</h1>
         <p>
           Based on {numQuestions} questions and difficulty ratios (0.3 easy / 0.4 medium / 0.3 hard), each language should have at
@@ -70,6 +69,5 @@ export default function AdminQuestionStats() {
           </tbody>
         </table>
       </div>
-    </Layout>
   );
 }

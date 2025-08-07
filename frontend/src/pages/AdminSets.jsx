@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import Layout from '../components/Layout';
+// Layout is provided by AdminLayout.
 import { useTranslation } from 'react-i18next';
 // import useAuth from '../hooks/useAuth';
 
@@ -48,19 +48,17 @@ export default function AdminSets() {
     }
   };
 
-  return (
-    <Layout>
+    return (
       <div className="p-4 space-y-4 max-w-md mx-auto">
-        <h2 className="text-xl font-bold">{t('admin_sets.title')}</h2>
-        <ul className="list-disc pl-5">
-          {sets.map(s => <li key={s}>{s}</li>)}
-        </ul>
-        <div>
-          <label className="block mb-2">{t('admin_sets.upload')}</label>
-          <input type="file" accept="application/json" onChange={upload} />
+          <h2 className="text-xl font-bold">{t('admin_sets.title')}</h2>
+          <ul className="list-disc pl-5">
+            {sets.map(s => <li key={s}>{s}</li>)}
+          </ul>
+          <div>
+            <label className="block mb-2">{t('admin_sets.upload')}</label>
+            <input type="file" accept="application/json" onChange={upload} />
+          </div>
+          <p className="text-sm text-gray-600">{t('admin_sets.note')}</p>
         </div>
-        <p className="text-sm text-gray-600">{t('admin_sets.note')}</p>
-      </div>
-    </Layout>
-  );
-}
+    );
+  }

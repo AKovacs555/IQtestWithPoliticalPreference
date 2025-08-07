@@ -31,9 +31,8 @@ export default function Navbar() {
     { to: '/dashboard', label: t('dashboard.title') },
     { to: '/contact', label: t('nav.contact', { defaultValue: 'Contact' }) },
   ];
-
+  // Removed "Upload" link to avoid cluttering the top navigation.
   const adminLinks = [
-    { to: '/admin/upload', label: 'Upload' },
     { to: '/admin/questions', label: 'Questions' },
     { to: '/admin/question-stats', label: 'Question Stats' },
     { to: '/admin/sets', label: t('admin_sets.title') },
