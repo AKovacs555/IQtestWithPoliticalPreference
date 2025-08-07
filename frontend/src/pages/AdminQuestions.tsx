@@ -179,6 +179,27 @@ export default function AdminQuestions() {
     setStatus(null);
   };
 
+  const approveAll = async (approved: boolean) => {
+    setStatus('updating');
+    const authToken = localStorage.getItem('authToken');
+    const headers = authToken
+      ? { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` }
+      : { 'Content-Type': 'application/json' };
+    const res = await fetch(`${apiBase}/admin/questions/approve_all`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ approved }),
+    });
+    if (res.ok) {
+      const updatedQuestions = allQuestions.map(q => ({ ...q, approved }));
+      setAllQuestions(updatedQuestions);
+      setDisplayedQuestions(
+        filterByLanguageAndApproval(updatedQuestions, selectedLang, approvalFilter)
+      );
+    }
+    setStatus(null);
+  };
+
   const toggleApprove = async (groupId: string) => {
     const authToken = localStorage.getItem('authToken');
     const headers = authToken ? { Authorization: `Bearer ${authToken}` } : {};
@@ -303,7 +324,25 @@ export default function AdminQuestions() {
           >
             Disapprove Selected
           </button>
-          <button className="btn btn-error btn-sm" onClick={removeSelected} disabled={selected.size === 0}>Delete Selected</button>
+          <button
+            className="btn btn-success btn-sm"
+            onClick={() => approveAll(true)}
+          >
+            Approve All
+          </button>
+          <button
+            className="btn btn-warning btn-sm"
+            onClick={() => approveAll(false)}
+          >
+            Unapprove All
+          </button>
+          <button
+            className="btn btn-error btn-sm"
+            onClick={removeSelected}
+            disabled={selected.size === 0}
+          >
+            Delete Selected
+          </button>
           <button className="btn btn-error btn-sm" onClick={removeAll}>Delete All Questions</button>
           <select
             className="select select-bordered select-sm"

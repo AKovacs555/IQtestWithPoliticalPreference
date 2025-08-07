@@ -17,5 +17,7 @@
   "occupation.public": "Public Servant",
   "occupation.freelance": "Self-Employed/Freelancer",
   "occupation.unemployed": "Unemployed",
-  "occupation.other": "Other"
+  "occupation.other": "Other",
+  "approve_all": "Approve All",
+  "unapprove_all": "Unapprove All"
 }

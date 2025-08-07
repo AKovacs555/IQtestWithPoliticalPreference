@@ -115,6 +115,20 @@ async def approve_batch(payload: dict):
         raise HTTPException(status_code=400, detail="No IDs provided")
 
 
+@router.post("/approve_all", dependencies=[Depends(require_admin)])
+async def approve_all(payload: dict):
+    """
+    Approve or disapprove all questions.
+    Expects JSON body: {"approved": true} or {"approved": false}
+    """
+    if "approved" not in payload:
+        raise HTTPException(status_code=400, detail="Missing 'approved' field.")
+    approved = payload["approved"]
+    supabase = get_supabase_client()
+    supabase.table("questions").update({"approved": approved}).execute()
+    return {"updated": True, "approved": approved}
+
+
 @router.put("/{question_id}", dependencies=[Depends(require_admin)])
 async def update_question(question_id: int, payload: dict):
     if not isinstance(payload.get("options"), list) or len(payload["options"]) != 4:

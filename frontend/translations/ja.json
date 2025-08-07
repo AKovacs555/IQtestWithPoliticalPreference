@@ -60,5 +60,7 @@
   "admin_sets.upload": "JSONセットをアップロード",
   "admin_sets.uploaded": "アップロードしました",
   "admin_sets.missing_token": "GitHubトークンまたはリポジトリ情報が不足しています",
-  "admin_sets.note": "画像は別途Supabaseストレージにアップロードしてください。"
+  "admin_sets.note": "画像は別途Supabaseストレージにアップロードしてください。",
+  "approve_all": "すべて承認",
+  "unapprove_all": "すべて未承認"
 }
