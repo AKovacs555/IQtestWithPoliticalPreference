@@ -30,7 +30,7 @@ export default function DemographicsForm() {
       })
     }).then(() => {
       localStorage.setItem('demographic_completed', 'true');
-      const path = setId ? `/quiz?set=${setId}` : '/quiz';
+      const path = setId ? `/survey?set=${setId}` : '/survey';
       navigate(path);
     });
   };
@@ -102,7 +102,7 @@ export default function DemographicsForm() {
           className="w-full px-4 py-2 rounded-md bg-primary text-white"
           onClick={save}
         >
-          Start Quiz
+          Next
         </button>
       </div>
     </Layout>

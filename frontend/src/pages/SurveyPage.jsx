@@ -25,9 +25,13 @@ export default function SurveyPage() {
       navigate('/select-nationality');
       return;
     }
+    const demDone = localStorage.getItem('demographic_completed') === 'true';
+    if (!demDone) {
+      navigate('/demographics');
+      return;
+    }
     if (localStorage.getItem('survey_completed') === 'true') {
-      const demDone = localStorage.getItem('demographic_completed') === 'true';
-      navigate(demDone ? '/quiz' : '/demographics');
+      navigate('/quiz');
       return;
     }
     const uid = localStorage.getItem('user_id');
@@ -36,8 +40,7 @@ export default function SurveyPage() {
         const list = d.items || [];
         if (!list.length) {
           localStorage.setItem('survey_completed', 'true');
-          const demDone = localStorage.getItem('demographic_completed') === 'true';
-          navigate(demDone ? '/quiz' : '/demographics');
+          navigate('/quiz');
           return;
         }
         setItems(list);

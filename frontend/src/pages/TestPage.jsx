@@ -34,6 +34,10 @@ export default function TestPage() {
       navigate('/select-nationality');
       return;
     }
+    if (localStorage.getItem('demographic_completed') !== 'true') {
+      navigate('/demographics');
+      return;
+    }
     if (localStorage.getItem('survey_completed') !== 'true') {
       navigate('/survey');
       return;
@@ -45,6 +49,10 @@ export default function TestPage() {
         setQuestions(data.questions);
         setCurrent(0);
       } catch (err) {
+        if (err.code === 'demographic_required') {
+          navigate('/demographics');
+          return;
+        }
         if (err.code === 'survey_required') {
           navigate('/survey');
           return;

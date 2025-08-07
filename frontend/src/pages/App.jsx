@@ -79,12 +79,12 @@ const Quiz = () => {
       navigate('/select-nationality');
       return;
     }
-    if (localStorage.getItem('survey_completed') !== 'true') {
-      navigate('/survey');
-      return;
-    }
     if (localStorage.getItem('demographic_completed') !== 'true') {
       navigate('/demographics');
+      return;
+    }
+    if (localStorage.getItem('survey_completed') !== 'true') {
+      navigate('/survey');
       return;
     }
     async function load() {
