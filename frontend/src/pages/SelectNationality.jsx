@@ -30,8 +30,9 @@ export default function SelectNationality() {
     });
     localStorage.setItem('nationality', country);
     localStorage.setItem('survey_completed', 'false');
+    localStorage.setItem('demographic_completed', 'false');
     alert(t('select_country.saved'));
-    navigate('/survey');
+    navigate('/demographics');
   };
 
   const filtered = list.filter(c =>

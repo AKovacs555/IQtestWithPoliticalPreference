@@ -18,11 +18,12 @@ export default function Home() {
       navigate('/login');
     } else if (!localStorage.getItem('nationality')) {
       navigate('/select-nationality');
+    } else if (localStorage.getItem('demographic_completed') !== 'true') {
+      navigate('/demographics');
     } else if (localStorage.getItem('survey_completed') !== 'true') {
       navigate('/survey');
     } else {
-      const demDone = localStorage.getItem('demographic_completed') === 'true';
-      navigate(demDone ? '/quiz' : '/demographics');
+      navigate('/quiz');
     }
   };
 
