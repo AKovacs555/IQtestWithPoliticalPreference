@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import Select from 'react-select';
 import getCountryList from '../lib/countryList';
 import { useTranslation } from 'react-i18next';
-// import useAuth from '../hooks/useAuth';
+import useAuth from '../hooks/useAuth';
 
 interface SurveyItem {
   group_id: string;
@@ -17,10 +17,10 @@ interface SurveyItem {
 }
 
 export default function AdminSurvey() {
-  // const { user } = useAuth();
-  // if (!user || !user.is_admin) {
-  //   return <div>Admin access required</div>;
-  // }
+  const { user } = useAuth();
+  if (!user || !user.is_admin) {
+    return <div className="p-4 text-center">Admin access required</div>;
+  }
   const [items, setItems] = useState<SurveyItem[]>([]);
   const [languages, setLanguages] = useState<string[]>([]);
   const { t, i18n } = useTranslation();

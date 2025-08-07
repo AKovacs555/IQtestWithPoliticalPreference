@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from "react";
 // Layout is provided by AdminLayout, so no need to import it here.
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
-// import useAuth from '../hooks/useAuth';
+import useAuth from '../hooks/useAuth';
 const languageOptions = [
   "ja",
   "en",
@@ -37,10 +37,10 @@ interface QuestionGroup {
 }
 
 export default function AdminQuestions() {
-  // const { user } = useAuth();
-  // if (!user || !user.is_admin) {
-  //   return <div>Admin access required</div>;
-  // }
+  const { user } = useAuth();
+  if (!user || !user.is_admin) {
+    return <div className="p-4 text-center">Admin access required</div>;
+  }
   const [allQuestions, setAllQuestions] = useState<QuestionVariant[]>([]);
   const [displayedQuestions, setDisplayedQuestions] = useState<
     QuestionVariant[]
