@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, lazy, Suspense } from 'react';
 import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import useShareMeta from '../hooks/useShareMeta';
@@ -28,7 +28,15 @@ import SignupPage from './SignupPage.jsx';
 import LoginPage from './LoginPage.jsx';
 import TestPage from './TestPage.jsx';
 import Contact from './Contact.jsx';
+import ErrorChunkReload from '../components/common/ErrorChunkReload';
 const API_BASE = import.meta.env.VITE_API_BASE || "";
+
+const AdminLayout = lazy(() =>
+  import('../layouts/AdminLayout').catch(err => {
+    console.error('Failed to load admin chunk', err);
+    return { default: () => <ErrorChunkReload chunk="admin" /> };
+  })
+);
 
 const PageTransition = ({ children }) => (
   <motion.div
@@ -334,7 +342,9 @@ export default function App() {
   // if a non-admin attempted to access an `/admin/*` path directly. By
   // removing the user check here, the routes exist for everyone and the
   // components can render an informative error instead of nothing.
-  const showAdmin = import.meta.env.VITE_SHOW_ADMIN === 'true' || import.meta.env.DEV;
+  const showAdmin =
+    import.meta.env.VITE_SHOW_ADMIN === 'true' ||
+    import.meta.env.MODE !== 'production';
   const location = useLocation();
   return (
     <AnimatePresence mode="wait">
@@ -355,12 +365,23 @@ export default function App() {
           <Route path="/select-nationality" element={<SelectNationality />} />
           <Route path="/signup" element={<SignupPage />} />
           <Route path="/login" element={<LoginPage />} />
-        {showAdmin && (<><Route path="/admin/questions" element={<AdminQuestions />} />
-        <Route path="/admin/question-stats" element={<AdminQuestionStats />} />
-        <Route path="/admin/surveys" element={<AdminSurvey />} />
-        <Route path="/admin/users" element={<AdminUsers />} />
-        <Route path="/admin/sets" element={<AdminSets />} />
-        <Route path="/admin/settings" element={<AdminSettings />} /></>)}
+        {showAdmin && (
+          <Route
+            path="/admin/*"
+            element={
+              <Suspense fallback={<div />}>
+                <AdminLayout />
+              </Suspense>
+            }
+          >
+            <Route path="questions" element={<AdminQuestions />} />
+            <Route path="question-stats" element={<AdminQuestionStats />} />
+            <Route path="surveys" element={<AdminSurvey />} />
+            <Route path="users" element={<AdminUsers />} />
+            <Route path="sets" element={<AdminSets />} />
+            <Route path="settings" element={<AdminSettings />} />
+          </Route>
+        )}
       </Routes>
     </AnimatePresence>
   );
