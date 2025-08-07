@@ -12,7 +12,6 @@ export default function Navbar() {
   const userId =
     typeof window !== 'undefined' ? localStorage.getItem('user_id') : null;
   const { user } = useAuth();
-  const showAdmin = import.meta.env.VITE_SHOW_ADMIN === 'true' || import.meta.env.DEV;
   const { t } = useTranslation();
   const navigate = useNavigate();
   const handleStart = () => {
@@ -95,13 +94,15 @@ export default function Navbar() {
                     {t('nav.logout', { defaultValue: 'Log out' })}
                   </button>
                 )}
-                {showAdmin && (
-                  adminLinks.map((link) => (
-                    <Link key={link.to} to={link.to} className="px-4 py-2 rounded-md hover:bg-gray-200 dark:hover:bg-slate-700 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary">
-                      {link.label}
-                    </Link>
-                  ))
-                )}
+                {adminLinks.map((link) => (
+                  <Link
+                    key={link.to}
+                    to={link.to}
+                    className="px-4 py-2 rounded-md hover:bg-gray-200 dark:hover:bg-slate-700 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary"
+                  >
+                    {link.label}
+                  </Link>
+                ))}
               </div>
               <div className="md:hidden flex items-center">
                 <Disclosure.Button className="inline-flex items-center justify-center rounded-md p-2 hover:bg-gray-200 dark:hover:bg-slate-700 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary">
@@ -159,13 +160,15 @@ export default function Navbar() {
                 {t('nav.logout', { defaultValue: 'Log out' })}
               </button>
             )}
-            {showAdmin && (
-              adminLinks.map((link) => (
-                <Link key={link.to} to={link.to} className="block px-4 py-2 rounded-md hover:bg-gray-200 dark:hover:bg-slate-700 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary">
-                  {link.label}
-                </Link>
-              ))
-            )}
+            {adminLinks.map((link) => (
+              <Link
+                key={link.to}
+                to={link.to}
+                className="block px-4 py-2 rounded-md hover:bg-gray-200 dark:hover:bg-slate-700 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary"
+              >
+                {link.label}
+              </Link>
+            ))}
           </Disclosure.Panel>
         </>
       )}

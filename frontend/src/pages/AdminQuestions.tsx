@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import Layout from '../components/Layout';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
-import useAuth from '../hooks/useAuth';
+// import useAuth from '../hooks/useAuth';
 const languageOptions = ['ja', 'en', 'tr', 'ru', 'zh', 'ko', 'es', 'fr', 'it', 'de', 'ar'];
 
 interface QuestionVariant {
@@ -25,10 +25,10 @@ interface QuestionGroup {
 }
 
 export default function AdminQuestions() {
-  const { user } = useAuth();
-  if (!user || !user.is_admin) {
-    return <div>Admin access required</div>;
-  }
+  // const { user } = useAuth();
+  // if (!user || !user.is_admin) {
+  //   return <div>Admin access required</div>;
+  // }
   const [allQuestions, setAllQuestions] = useState<QuestionVariant[]>([]);
   const [displayedQuestions, setDisplayedQuestions] = useState<QuestionVariant[]>([]);
   const [selectedLang, setSelectedLang] = useState<string>('ja');

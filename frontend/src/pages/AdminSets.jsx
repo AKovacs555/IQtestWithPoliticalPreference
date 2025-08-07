@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import Layout from '../components/Layout';
 import { useTranslation } from 'react-i18next';
-import useAuth from '../hooks/useAuth';
+// import useAuth from '../hooks/useAuth';
 
 const API_BASE = import.meta.env.VITE_API_BASE || '';
 const GITHUB_TOKEN = import.meta.env.VITE_GITHUB_TOKEN;
@@ -10,10 +10,10 @@ const GITHUB_REPO = import.meta.env.VITE_GITHUB_REPO;
 
 export default function AdminSets() {
   const { t } = useTranslation();
-  const { user } = useAuth();
-  if (!user || !user.is_admin) {
-    return <div>Admin access required</div>;
-  }
+  // const { user } = useAuth();
+  // if (!user || !user.is_admin) {
+  //   return <div>Admin access required</div>;
+  // }
   const [sets, setSets] = useState([]);
 
   useEffect(() => {

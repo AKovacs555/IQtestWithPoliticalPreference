@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import Layout from '../components/Layout';
-import useAuth from '../hooks/useAuth';
+// import useAuth from '../hooks/useAuth';
 
 export default function AdminQuestionStats() {
-  const { user } = useAuth();
-  if (!user || !user.is_admin) {
-    return <div>Admin access required</div>;
-  }
+  // const { user } = useAuth();
+  // if (!user || !user.is_admin) {
+  //   return <div>Admin access required</div>;
+  // }
   const apiBase = import.meta.env.VITE_API_BASE || '';
   const numQuestions = Number(import.meta.env.VITE_NUM_QUESTIONS || 20);
   const required = {
