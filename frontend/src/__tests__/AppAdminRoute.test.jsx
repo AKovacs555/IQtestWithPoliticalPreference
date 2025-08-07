@@ -25,12 +25,12 @@ describe('admin routes', () => {
     localStorage.setItem('authToken', tokenFor({ is_admin: false }));
   });
 
-  it('shows an access message for non-admin users', () => {
+  it('shows an access message for non-admin users', async () => {
     render(
       <MemoryRouter initialEntries={['/admin/questions']}>
         <App />
       </MemoryRouter>
     );
-    expect(screen.getByText(/Admin access required/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Admin access required/i)).toBeInTheDocument();
   });
 });
