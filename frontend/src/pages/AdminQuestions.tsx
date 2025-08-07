@@ -221,7 +221,6 @@ export default function AdminQuestions() {
 
   const approveAll = async (approved: boolean) => {
     setStatus("updating");
-    const ids = allQuestions.map((q) => q.id);
     const authToken = localStorage.getItem("authToken");
     const headers = authToken
       ? {
@@ -245,15 +244,8 @@ export default function AdminQuestions() {
     // });
 
     if (res.ok) {
-      const updatedQuestions = allQuestions.map((q) => ({ ...q, approved }));
-      setAllQuestions(updatedQuestions);
-      setDisplayedQuestions(
-        filterByLanguageAndApproval(
-          updatedQuestions,
-          selectedLang,
-          approvalFilter,
-        ),
-      );
+      // After updating, fetch the latest list from the server to ensure accuracy.
+      await fetchQuestions(selectedLang);
     } else {
       console.error("Failed to approve all questions", await res.text());
     }

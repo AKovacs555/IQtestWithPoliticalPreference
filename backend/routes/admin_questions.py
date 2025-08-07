@@ -125,25 +125,21 @@ async def approve_batch(payload: dict):
         raise HTTPException(status_code=400, detail="No IDs provided")
 
 
-@router.post("/approve_all", dependencies=[Depends(require_admin)])
-async def approve_all(payload: dict):
-    """
-    Approve or disapprove ALL questions.
-    Expects JSON body: {"approved": true} or {"approved": false}.
-    """
-    if "approved" not in payload:
-        raise HTTPException(status_code=400, detail="Missing 'approved' field.")
-    approved = payload["approved"]
-    supabase = get_supabase_client()
-
-    # Fetch all question IDs to ensure the update targets every record explicitly.
-    records = supabase.table("questions").select("id").execute().data
-    ids = [r["id"] for r in records]
-    if not ids:
-        return {"updated": False, "approved": approved}
-
-    supabase.table("questions").update({"approved": approved}).in_("id", ids).execute()
-    return {"updated": True, "approved": approved}
+    @router.post("/approve_all", dependencies=[Depends(require_admin)])
+    async def approve_all(payload: dict):
+        """
+        Approve or disapprove ALL questions.
+        Expects JSON body: {"approved": true} or {"approved": false}.
+        """
+        if "approved" not in payload:
+            raise HTTPException(status_code=400, detail="Missing 'approved' field.")
+        approved = payload["approved"]
+        supabase = get_supabase_client()
+        # Update every question's approved flag without fetching IDs.
+        resp = supabase.table("questions").update({"approved": approved}).execute()
+        # Supabase returns a list of updated rows; count them for reporting.
+        updated_count = len(resp.data or [])
+        return {"updated": updated_count, "approved": approved}
 
 
 @router.put("/{question_id}", dependencies=[Depends(require_admin)])
