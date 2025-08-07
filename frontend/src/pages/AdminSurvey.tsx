@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import Layout from '../components/Layout';
+// Layout is provided by AdminLayout, so no need to import it here.
 import { Link } from 'react-router-dom';
 import Select from 'react-select';
 import getCountryList from '../lib/countryList';
@@ -179,8 +179,7 @@ export default function AdminSurvey() {
   };
 
   return (
-    <Layout>
-      <div className="max-w-xl mx-auto space-y-4">
+    <div className="max-w-xl mx-auto space-y-4">
         <nav className="tabs">
           <Link to="/admin/questions" className="tab tab-bordered">Questions</Link>
           <Link to="/admin/surveys" className="tab tab-bordered tab-active">Surveys</Link>
@@ -351,7 +350,6 @@ export default function AdminSurvey() {
           <button className="btn" onClick={saveDefault}>{t('survey.submit', { defaultValue: 'Submit' })}</button>
         </div>
       </div>
-    </Layout>
-  );
+    );
 }
 

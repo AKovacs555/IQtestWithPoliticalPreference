@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import Layout from '../components/Layout';
+// Layout is provided by AdminLayout.
 import { Link } from 'react-router-dom';
 // import useAuth from '../hooks/useAuth';
 
@@ -53,8 +53,7 @@ export default function AdminUsers() {
   };
 
   return (
-    <Layout>
-      <div className="max-w-xl mx-auto space-y-4">
+    <div className="max-w-xl mx-auto space-y-4">
         <nav className="tabs">
           <Link to="/admin/questions" className="tab tab-bordered">Questions</Link>
           <Link to="/admin/surveys" className="tab tab-bordered">Surveys</Link>
@@ -94,6 +93,5 @@ export default function AdminUsers() {
         </table>
         {msg && <div className="text-sm">{msg}</div>}
       </div>
-    </Layout>
-  );
+    );
 }

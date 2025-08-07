@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
-import Layout from "../components/Layout";
+// Layout is provided by AdminLayout, so no need to import it here.
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 // import useAuth from '../hooks/useAuth';
@@ -349,8 +349,7 @@ export default function AdminQuestions() {
   };
 
   return (
-    <Layout>
-      <div className="space-y-4 max-w-xl mx-auto">
+    <div className="space-y-4 max-w-xl mx-auto">
         <nav className="tabs">
           <Link to="/admin/questions" className="tab tab-bordered tab-active">
             Questions
@@ -723,6 +722,5 @@ export default function AdminQuestions() {
           </dialog>
         )}
       </div>
-    </Layout>
-  );
+    );
 }

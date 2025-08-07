@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import Layout from '../components/Layout';
+// Layout is provided by AdminLayout.
 import { Link } from 'react-router-dom';
 // import useAuth from '../hooks/useAuth';
 
@@ -49,29 +49,27 @@ export default function AdminSettings() {
     }
   };
 
-  return (
-    <Layout>
+    return (
       <div className="max-w-xl mx-auto space-y-4">
-        <nav className="tabs">
-          <Link to="/admin/questions" className="tab tab-bordered">Questions</Link>
-          <Link to="/admin/surveys" className="tab tab-bordered">Surveys</Link>
-          <Link to="/admin/users" className="tab tab-bordered">Users</Link>
-          <Link to="/admin/settings" className="tab tab-bordered tab-active">Settings</Link>
-        </nav>
-        <div className="space-y-2">
-          <label className="block">
-            <span>Max free attempts</span>
-            <input
-              type="number"
-              className="input input-bordered w-full"
-              value={maxFreeAttempts}
-              onChange={e => setMaxFreeAttempts(e.target.value)}
-            />
-          </label>
-          <button className="btn" onClick={save}>Save</button>
-          {msg && <div className="text-sm">{msg}</div>}
+          <nav className="tabs">
+            <Link to="/admin/questions" className="tab tab-bordered">Questions</Link>
+            <Link to="/admin/surveys" className="tab tab-bordered">Surveys</Link>
+            <Link to="/admin/users" className="tab tab-bordered">Users</Link>
+            <Link to="/admin/settings" className="tab tab-bordered tab-active">Settings</Link>
+          </nav>
+          <div className="space-y-2">
+            <label className="block">
+              <span>Max free attempts</span>
+              <input
+                type="number"
+                className="input input-bordered w-full"
+                value={maxFreeAttempts}
+                onChange={e => setMaxFreeAttempts(e.target.value)}
+              />
+            </label>
+            <button className="btn" onClick={save}>Save</button>
+            {msg && <div className="text-sm">{msg}</div>}
+          </div>
         </div>
-      </div>
-    </Layout>
-  );
-}
+    );
+  }
