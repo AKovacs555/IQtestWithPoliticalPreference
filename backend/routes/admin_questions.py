@@ -88,10 +88,16 @@ async def question_stats():
 async def toggle_approved(group_id: str):
     supabase = get_supabase_client()
     records = (
-        supabase.table("questions").select("approved").eq("group_id", group_id).execute().data
+        supabase.table("questions")
+        .select("approved")
+        .eq("group_id", group_id)
+        .execute()
+        .data
     )
     new_status = not records[0]["approved"] if records else True
-    supabase.table("questions").update({"approved": new_status}).eq("group_id", group_id).execute()
+    supabase.table("questions").update({"approved": new_status}).eq(
+        "group_id", group_id
+    ).execute()
     return {"group_id": group_id, "approved": new_status}
 
 
@@ -106,10 +112,14 @@ async def approve_batch(payload: dict):
     question_ids = payload.get("ids") or []
     supabase = get_supabase_client()
     if ids:
-        supabase.table("questions").update({"approved": payload["approved"]}).in_("group_id", ids).execute()
+        supabase.table("questions").update({"approved": payload["approved"]}).in_(
+            "group_id", ids
+        ).execute()
         return {"updated": len(ids), "approved": payload["approved"]}
     elif question_ids:
-        supabase.table("questions").update({"approved": payload["approved"]}).in_("id", question_ids).execute()
+        supabase.table("questions").update({"approved": payload["approved"]}).in_(
+            "id", question_ids
+        ).execute()
         return {"updated": len(question_ids), "approved": payload["approved"]}
     else:
         raise HTTPException(status_code=400, detail="No IDs provided")
@@ -118,14 +128,21 @@ async def approve_batch(payload: dict):
 @router.post("/approve_all", dependencies=[Depends(require_admin)])
 async def approve_all(payload: dict):
     """
-    Approve or disapprove all questions.
-    Expects JSON body: {"approved": true} or {"approved": false}
+    Approve or disapprove ALL questions.
+    Expects JSON body: {"approved": true} or {"approved": false}.
     """
     if "approved" not in payload:
         raise HTTPException(status_code=400, detail="Missing 'approved' field.")
     approved = payload["approved"]
     supabase = get_supabase_client()
-    supabase.table("questions").update({"approved": approved}).execute()
+
+    # Fetch all question IDs to ensure the update targets every record explicitly.
+    records = supabase.table("questions").select("id").execute().data
+    ids = [r["id"] for r in records]
+    if not ids:
+        return {"updated": False, "approved": approved}
+
+    supabase.table("questions").update({"approved": approved}).in_("id", ids).execute()
     return {"updated": True, "approved": approved}
 
 
@@ -172,7 +189,9 @@ async def update_question(question_id: int, payload: dict):
                 "image_prompt": payload.get("image_prompt"),
                 "image": payload.get("image"),
             }
-            supabase.table("questions").update(update).eq("group_id", record["group_id"]).eq("lang", lang).execute()
+            supabase.table("questions").update(update).eq(
+                "group_id", record["group_id"]
+            ).eq("lang", lang).execute()
 
     return {"updated": True}
 
@@ -188,7 +207,9 @@ async def delete_question(question_id: int):
         .execute()
     ).data
     if record and record.get("group_id"):
-        supabase.table("questions").delete().eq("group_id", record["group_id"]).execute()
+        supabase.table("questions").delete().eq(
+            "group_id", record["group_id"]
+        ).execute()
     else:
         supabase.table("questions").delete().eq("id", question_id).execute()
     return {"deleted": True}
