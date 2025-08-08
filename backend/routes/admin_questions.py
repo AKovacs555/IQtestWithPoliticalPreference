@@ -155,6 +155,10 @@ async def approve_all(payload: ApproveAllRequest):
         rows = sel_groups.execute().data or []
         group_ids = sorted({r.get("group_id") for r in rows if r.get("group_id")})
         if not group_ids:
+            upd = supabase.table("questions").update({"approved": payload.approved}).eq("lang", payload.lang)
+            if payload.only_delta:
+                upd = upd.is_("approved", not payload.approved)
+            upd.execute()
             return {"updated": 0, "approved": payload.approved, "lang": payload.lang, "groups": 0}
 
         # Count rows that will actually change across all languages
@@ -165,10 +169,10 @@ async def approve_all(payload: ApproveAllRequest):
 
         # Update in batches across all languages for the selected groups
         for ids in chunk(group_ids):
-            upd = supabase.table("questions").in_("group_id", ids)
+            upd = supabase.table("questions").update({"approved": payload.approved}).in_("group_id", ids)
             if payload.only_delta:
                 upd = upd.is_("approved", not payload.approved)
-            upd.update({"approved": payload.approved}).execute()
+            upd.execute()
 
         return {"updated": target_count, "approved": payload.approved, "lang": payload.lang, "groups": len(group_ids)}
 
