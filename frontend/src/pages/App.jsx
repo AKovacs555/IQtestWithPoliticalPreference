@@ -1,5 +1,5 @@
 import React, { useEffect, useState, lazy, Suspense } from 'react';
-import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
+import { Routes, Route, useLocation, useNavigate, Navigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import useShareMeta from '../hooks/useShareMeta';
 import useAuth from '../hooks/useAuth';
@@ -376,8 +376,9 @@ export default function App() {
             </Suspense>
           }
         >
+          <Route index element={<Navigate to="/admin/questions" replace />} />
           <Route path="questions" element={<AdminQuestions />} />
-          <Route path="question-stats" element={<AdminQuestionStats />} />
+          <Route path="stats" element={<AdminQuestionStats />} />
           <Route path="surveys" element={<AdminSurvey />} />
           <Route path="users" element={<AdminUsers />} />
           <Route path="sets" element={<AdminSets />} />
