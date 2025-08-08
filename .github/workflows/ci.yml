@@ -9,17 +9,30 @@ jobs:
         with: {python-version: '3.11'}
       - run: pip install -r backend/requirements.txt pytest jsonschema
       - run: pytest -v
+      # --- Frontend build & E2E ---
       - uses: actions/setup-node@v4
-        with: {node-version: '20'}
-      - name: Install frontend deps (allow lockfile update in CI)
-        run: cd frontend && npm install
+        with:
+          node-version: '20'
+
+      - name: Install frontend deps (clean, reproducible)
+        run: cd frontend && npm ci
+
       - name: Build frontend with admin pages enabled
-        run: cd frontend && VITE_SHOW_ADMIN=true VITE_SUPABASE_URL=https://example.supabase.co VITE_SUPABASE_ANON_KEY=anon VITE_API_BASE=http://localhost:9999 npm run build
+        run: cd frontend && VITE_SHOW_ADMIN=true \
+             VITE_SUPABASE_URL=https://example.supabase.co \
+             VITE_SUPABASE_ANON_KEY=anon \
+             VITE_API_BASE=http://localhost:9999 \
+             npm run build
+
       - name: Install Playwright browsers (CI)
         working-directory: frontend
-        run: npx playwright install --with-deps
+        run: npx playwright@1.54.2 install --with-deps
 
-      - name: Run Playwright E2E (use root config)
+      # Optional: quick health check before launching tests (helps fail fast with a clear message)
+      - name: Sanity check built preview (no server yet)
+        run: test -f frontend/dist/index.html
+
+      - name: Run Playwright E2E (uses root config; webServer.cwd points to frontend)
         working-directory: frontend
         run: npx playwright test --config ../playwright.config.ts
 

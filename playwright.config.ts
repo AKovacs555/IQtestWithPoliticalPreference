@@ -12,10 +12,15 @@ export default defineConfig({
     video: 'retain-on-failure',
   },
   webServer: {
+    // IMPORTANT: run preview from the frontend workspace
+    // Option A (preferred): set cwd
     command: 'npm run preview -- --port 4173',
     url: 'http://localhost:4173',
     timeout: 60_000,
     reuseExistingServer: !process.env.CI,
+    cwd: 'frontend',
+    // Option B (alternative, if you’d rather not use cwd):
+    // command: 'npm --prefix frontend run preview -- --port 4173',
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
 });
