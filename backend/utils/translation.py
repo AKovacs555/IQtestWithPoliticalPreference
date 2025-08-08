@@ -31,6 +31,8 @@ LANG_NAME_MAP = {
     "ja": "Japanese",
 }
 
+TRANSLATION_MODEL = os.environ.get("TRANSLATION_MODEL", "gpt-4o")
+
 api_key = os.environ.get("OPENAI_API_KEY")
 client = openai.AsyncClient(api_key=api_key) if api_key else None
 
@@ -56,7 +58,7 @@ async def translate_question(
     )
 
     response = await client.chat.completions.create(
-        model="gpt-4o",
+        model=TRANSLATION_MODEL,
         messages=[{"role": "user", "content": prompt}],
         temperature=0.3,
         response_format={"type": "json_object"},
@@ -112,7 +114,7 @@ async def translate_survey(
     )
 
     response = await client.chat.completions.create(
-        model="gpt-4o",
+        model=TRANSLATION_MODEL,
         messages=[{"role": "user", "content": prompt}],
         temperature=0.3,
         response_format={"type": "json_object"},
