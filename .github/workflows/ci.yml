@@ -34,9 +34,9 @@ jobs:
       - name: Sanity check built preview (no server yet)
         run: test -f frontend/dist/index.html
 
-      - name: Run Playwright E2E (uses root config; webServer.cwd points to frontend)
+      - name: Run Playwright E2E (uses frontend config)
         working-directory: frontend
-        run: npx playwright test --config ../playwright.config.ts
+        run: npx playwright test --config playwright.config.ts
 
       - name: Upload Playwright HTML report
         if: always()
