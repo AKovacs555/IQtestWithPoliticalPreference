@@ -6,7 +6,9 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "vitest"
+    "test": "vitest",
+    "test:e2e": "playwright test --config ../playwright.config.ts",
+    "test:e2e:ci": "playwright install --with-deps && playwright test --config ../playwright.config.ts"
   },
   "dependencies": {
     "@emotion/react": "^11.11.0",
