@@ -7,6 +7,14 @@ from fastapi import APIRouter, Depends, HTTPException
 from backend.deps.supabase_client import get_supabase_client
 from backend.utils.translation import translate_question
 from .dependencies import require_admin
+from pydantic import BaseModel
+
+
+class ApproveAllRequest(BaseModel):
+    approved: bool = True
+    lang: str | None = None
+    only_delta: bool = True  # if True, update only rows that actually need change
+
 
 logger = logging.getLogger(__name__)
 
@@ -125,21 +133,39 @@ async def approve_batch(payload: dict):
         raise HTTPException(status_code=400, detail="No IDs provided")
 
 
-    @router.post("/approve_all", dependencies=[Depends(require_admin)])
-    async def approve_all(payload: dict):
-        """
-        Approve or disapprove ALL questions.
-        Expects JSON body: {"approved": true} or {"approved": false}.
-        """
-        if "approved" not in payload:
-            raise HTTPException(status_code=400, detail="Missing 'approved' field.")
-        approved = payload["approved"]
-        supabase = get_supabase_client()
-        # Update every question's approved flag without fetching IDs.
-        resp = supabase.table("questions").update({"approved": approved}).execute()
-        # Supabase returns a list of updated rows; count them for reporting.
-        updated_count = len(resp.data or [])
-        return {"updated": updated_count, "approved": approved}
+@router.post("/approve_all", dependencies=[Depends(require_admin)])
+async def approve_all(payload: ApproveAllRequest):
+    """Approve or unapprove all matching questions in one call."""
+    supabase = get_supabase_client()
+
+    sel = supabase.table("questions").select("id", count="exact")
+    if payload.lang:
+        sel = sel.eq("lang", payload.lang)
+    if payload.only_delta:
+        sel = sel.is_("approved", not payload.approved)
+    target = sel.execute()
+    target_count = target.count or 0
+    if target_count == 0:
+        return {"updated": 0, "approved": payload.approved, "lang": payload.lang}
+
+    upd = supabase.table("questions")
+    if payload.lang:
+        upd = upd.eq("lang", payload.lang)
+    if payload.only_delta:
+        upd = upd.is_("approved", not payload.approved)
+    upd.update({"approved": payload.approved}).execute()
+
+    return {
+        "updated": target_count,
+        "approved": payload.approved,
+        "lang": payload.lang,
+    }
+
+
+@router.post("/unapprove_all", dependencies=[Depends(require_admin)])
+async def unapprove_all(payload: ApproveAllRequest):
+    payload.approved = False
+    return await approve_all(payload)
 
 
 @router.put("/{question_id}", dependencies=[Depends(require_admin)])

@@ -220,36 +220,33 @@ export default function AdminQuestions() {
   };
 
   const approveAll = async (approved: boolean) => {
+    if (status === "updating") return;
     setStatus("updating");
-    const authToken = localStorage.getItem("authToken");
-    const headers = authToken
-      ? {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${authToken}`,
+    try {
+      const authToken = localStorage.getItem("authToken");
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (authToken) headers.Authorization = `Bearer ${authToken}`;
+      const res = await fetch(`${apiBase}/admin/questions/approve_all`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          approved,
+          lang: selectedLang || null,
+          only_delta: true,
+        }),
+      });
+      if (!res.ok) {
+        console.error("Failed to update questions", await res.text());
+      } else {
+        const { updated } = await res.json();
+        await fetchQuestions(selectedLang);
+        if (window?.toast) {
+          window.toast(`${approved ? "Approved" : "Unapproved"} ${updated} questions`);
         }
-      : { "Content-Type": "application/json" };
-
-    // Option A: call the updated approve_all endpoint
-    const res = await fetch(`${apiBase}/admin/questions/approve_all`, {
-      method: "POST",
-      headers,
-      body: JSON.stringify({ approved }),
-    });
-
-    // Option B: if you prefer not to use /approve_all, you can instead call approve_batch:
-    // const res = await fetch(`${apiBase}/admin/questions/approve_batch`, {
-    //   method: 'POST',
-    //   headers,
-    //   body: JSON.stringify({ ids, approved }),
-    // });
-
-    if (res.ok) {
-      // After updating, fetch the latest list from the server to ensure accuracy.
-      await fetchQuestions(selectedLang);
-    } else {
-      console.error("Failed to approve all questions", await res.text());
+      }
+    } finally {
+      setStatus(null);
     }
-    setStatus(null);
   };
 
   const toggleApprove = async (groupId: string) => {
@@ -387,37 +384,43 @@ export default function AdminQuestions() {
               <button
                 className="btn btn-primary btn-sm"
                 onClick={() => handleBulkApprove(true)}
-                disabled={selected.size === 0}
+                disabled={selected.size === 0 || status === "updating"}
               >
                 Approve Selected
               </button>
               <button
                 className="btn btn-secondary btn-sm"
                 onClick={() => handleBulkApprove(false)}
-                disabled={selected.size === 0}
+                disabled={selected.size === 0 || status === "updating"}
               >
                 Disapprove Selected
               </button>
               <button
-                className="btn btn-success btn-sm"
+                className="btn btn-success btn-sm ml-4"
                 onClick={() => approveAll(true)}
+                disabled={status === "updating"}
               >
                 Approve All
               </button>
               <button
                 className="btn btn-warning btn-sm"
                 onClick={() => approveAll(false)}
+                disabled={status === "updating"}
               >
                 Unapprove All
               </button>
               <button
                 className="btn btn-error btn-sm"
                 onClick={removeSelected}
-                disabled={selected.size === 0}
+                disabled={selected.size === 0 || status === "updating"}
               >
                 Delete Selected
               </button>
-              <button className="btn btn-error btn-sm" onClick={removeAll}>
+              <button
+                className="btn btn-error btn-sm"
+                onClick={removeAll}
+                disabled={status === "updating"}
+              >
                 Delete All Questions
               </button>
               <select
