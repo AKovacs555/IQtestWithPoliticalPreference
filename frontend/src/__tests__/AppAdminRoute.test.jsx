@@ -1,5 +1,5 @@
 import React from 'react';
-import { describe, beforeEach, it, expect, vi } from 'vitest';
+import { describe, beforeEach, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import '@testing-library/jest-dom/vitest';
@@ -12,7 +12,6 @@ function tokenFor(payload) {
 describe('admin routes', () => {
   beforeEach(() => {
     localStorage.clear();
-    vi.stubEnv('VITE_SHOW_ADMIN', 'true');
     window.matchMedia = window.matchMedia || (() => ({
       matches: false,
       addListener: () => {},

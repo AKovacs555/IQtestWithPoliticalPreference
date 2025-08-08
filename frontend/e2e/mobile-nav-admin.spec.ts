@@ -1,8 +1,14 @@
 import { test, expect } from '@playwright/test';
+import { Buffer } from 'buffer';
 const distUrl = 'file://' + process.cwd() + '/dist/index.html';
+const token =
+  'h.' + Buffer.from(JSON.stringify({ is_admin: true })).toString('base64') + '.s';
 
 test('mobile drawer routes via hash without 404', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
+  await page.addInitScript(t => {
+    window.localStorage.setItem('authToken', t as string);
+  }, token);
   await page.goto(distUrl);
 
   const menuBtn = page.locator('button[aria-label="menu"]');

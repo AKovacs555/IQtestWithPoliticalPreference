@@ -25,34 +25,22 @@ import Contact from './Contact.jsx';
 import ErrorChunkReload from '../components/common/ErrorChunkReload';
 import ThemeDemo from './ThemeDemo.jsx';
 import Button from '@mui/material/Button';
-import AdminGuard from '../components/AdminGuard';
-import { SHOW_ADMIN } from '../lib/admin';
+import RequireAdmin from '../components/RequireAdmin';
 const API_BASE = import.meta.env.VITE_API_BASE || "";
 
-let AdminLayout = null;
-let AdminHome = null;
-let AdminQuestions = null;
-let AdminSurvey = null;
-let AdminUsers = null;
-let AdminSets = null;
-let AdminSettings = null;
-let AdminQuestionStats = null;
-
-if (SHOW_ADMIN) {
-  AdminLayout = lazy(() =>
-    import('../layouts/AdminLayout').catch(err => {
-      console.error('Failed to load admin chunk', err);
-      return { default: () => <ErrorChunkReload chunk="admin" /> };
-    })
-  );
-  AdminHome = lazy(() => import('./AdminHome'));
-  AdminQuestions = lazy(() => import('./AdminQuestions'));
-  AdminSurvey = lazy(() => import('./AdminSurvey'));
-  AdminUsers = lazy(() => import('./AdminUsers'));
-  AdminSets = lazy(() => import('./AdminSets'));
-  AdminSettings = lazy(() => import('./AdminSettings.jsx'));
-  AdminQuestionStats = lazy(() => import('./AdminQuestionStats.jsx'));
-}
+const AdminLayout = lazy(() =>
+  import('../layouts/AdminLayout').catch(err => {
+    console.error('Failed to load admin chunk', err);
+    return { default: () => <ErrorChunkReload chunk="admin" /> };
+  })
+);
+const AdminHome = lazy(() => import('./AdminHome'));
+const AdminQuestions = lazy(() => import('./AdminQuestions'));
+const AdminSurvey = lazy(() => import('./AdminSurvey'));
+const AdminUsers = lazy(() => import('./AdminUsers'));
+const AdminSets = lazy(() => import('./AdminSets'));
+const AdminSettings = lazy(() => import('./AdminSettings.jsx'));
+const AdminQuestionStats = lazy(() => import('./AdminQuestionStats.jsx'));
 
 const PageTransition = ({ children }) => (
   <motion.div
@@ -382,26 +370,24 @@ export default function App() {
         {import.meta.env.DEV && (
           <Route path="/theme" element={<ThemeDemo />} />
         )}
-        {SHOW_ADMIN && AdminLayout && (
-          <Route
-            path="/admin/*"
-            element={
-              <Suspense fallback={<div />}>
-                <AdminGuard>
-                  <AdminLayout />
-                </AdminGuard>
-              </Suspense>
-            }
-          >
-            <Route index element={<AdminGuard><AdminHome /></AdminGuard>} />
-            <Route path="questions" element={<AdminGuard><AdminQuestions /></AdminGuard>} />
-            <Route path="stats" element={<AdminGuard><AdminQuestionStats /></AdminGuard>} />
-            <Route path="surveys" element={<AdminGuard><AdminSurvey /></AdminGuard>} />
-            <Route path="users" element={<AdminGuard><AdminUsers /></AdminGuard>} />
-            <Route path="sets" element={<AdminGuard><AdminSets /></AdminGuard>} />
-            <Route path="settings" element={<AdminGuard><AdminSettings /></AdminGuard>} />
-          </Route>
-        )}
+        <Route
+          path="/admin/*"
+          element={
+            <Suspense fallback={<div />}>
+              <RequireAdmin>
+                <AdminLayout />
+              </RequireAdmin>
+            </Suspense>
+          }
+        >
+          <Route index element={<AdminHome />} />
+          <Route path="questions" element={<AdminQuestions />} />
+          <Route path="stats" element={<AdminQuestionStats />} />
+          <Route path="surveys" element={<AdminSurvey />} />
+          <Route path="users" element={<AdminUsers />} />
+          <Route path="sets" element={<AdminSets />} />
+          <Route path="settings" element={<AdminSettings />} />
+        </Route>
       </Routes>
     </AnimatePresence>
   );

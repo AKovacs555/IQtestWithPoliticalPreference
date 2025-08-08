@@ -13,7 +13,7 @@ import useAuth from '../hooks/useAuth';
 import OverflowNav from './nav/OverflowNav';
 import MobileDrawer from './nav/MobileDrawer';
 import type { NavItem } from './nav/types';
-import { SHOW_ADMIN, useIsAdmin } from '../lib/admin';
+import { useIsAdmin } from '../lib/admin';
 
 export default function Navbar() {
   const userId = typeof window !== 'undefined' ? localStorage.getItem('user_id') : null;
@@ -44,7 +44,7 @@ export default function Navbar() {
   const items: NavItem[] = [
     ...links,
     { label: t('nav.take_quiz'), onClick: handleStart },
-    ...(SHOW_ADMIN && isAdmin
+    ...(isAdmin
       ? [{ label: t('nav.admin', { defaultValue: 'Admin' }), href: '/admin' }]
       : []),
   ];
