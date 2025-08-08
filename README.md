@@ -36,6 +36,20 @@ Admin access works as follows:
 - Users must have `is_admin=true` in the Supabase `users` table. After updating the database, they need to log out and back in so the JWT includes the `is_admin` claim.
 - Admin endpoints use the authenticated user's JWT and require `is_admin=true`; no separate API key is needed.
 
+## Building the frontend locally
+
+To create a production build of the React app with the admin pages enabled, define the Vite variables inline with the build command:
+
+```bash
+cd frontend
+VITE_SHOW_ADMIN=true \
+VITE_SUPABASE_URL=https://example.supabase.co \
+VITE_SUPABASE_ANON_KEY=anon \
+VITE_API_BASE=http://localhost:9999 \
+npm run build
+```
+
+The backslashes (``\``) allow you to split the command across lines; ensure each `\` is the final character on its line or Bash will try to execute the next line as a separate command and fail with `No such file or directory`.
 
 ## Backend (FastAPI)
 
