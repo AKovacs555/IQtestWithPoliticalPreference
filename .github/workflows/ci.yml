@@ -12,4 +12,17 @@ jobs:
       - uses: actions/setup-node@v4
         with: {node-version: '20'}
       - run: cd frontend && npm ci && npm run build
-      - run: cd frontend && npx playwright test ../e2e/admin.spec.ts
+      - name: Install Playwright browsers (CI)
+        working-directory: frontend
+        run: npx playwright install --with-deps
+
+      - name: Run Playwright E2E (uses root config pointing to ./e2e)
+        working-directory: frontend
+        run: npx playwright test --config ../playwright.config.ts
+
+      - name: Upload Playwright HTML report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: frontend/playwright-report
