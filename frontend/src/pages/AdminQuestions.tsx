@@ -414,14 +414,14 @@ export default function AdminQuestions() {
                 onClick={() => approveAll(true)}
                 disabled={status === "updating"}
               >
-                Approve All
+                Approve All (all languages)
               </button>
               <button
                 className="btn btn-warning btn-sm"
                 onClick={() => approveAll(false)}
                 disabled={status === "updating"}
               >
-                Unapprove All
+                Unapprove All (all languages)
               </button>
               <button
                 className="btn btn-error btn-sm"

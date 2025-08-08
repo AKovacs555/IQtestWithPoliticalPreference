@@ -135,31 +135,53 @@ async def approve_batch(payload: dict):
 
 @router.post("/approve_all", dependencies=[Depends(require_admin)])
 async def approve_all(payload: ApproveAllRequest):
-    """Approve or unapprove all matching questions in one call."""
+    """
+    Approve or unapprove all matching questions.
+    If `lang` is provided, select the affected groups in that language and
+    apply the change to ALL languages for those groups. If `lang` is None,
+    apply the change to all rows.
+    """
     supabase = get_supabase_client()
 
-    sel = supabase.table("questions").select("id", count="exact")
+    def chunk(xs: list[str], n: int = 500):
+        for i in range(0, len(xs), n):
+            yield xs[i:i+n]
+
+    # Case 1: a language is specified -> update all languages for those groups
     if payload.lang:
-        sel = sel.eq("lang", payload.lang)
+        sel_groups = supabase.table("questions").select("group_id").eq("lang", payload.lang)
+        if payload.only_delta:
+            sel_groups = sel_groups.is_("approved", not payload.approved)
+        rows = sel_groups.execute().data or []
+        group_ids = sorted({r.get("group_id") for r in rows if r.get("group_id")})
+        if not group_ids:
+            return {"updated": 0, "approved": payload.approved, "lang": payload.lang, "groups": 0}
+
+        # Count rows that will actually change across all languages
+        count_q = supabase.table("questions").select("id", count="exact").in_("group_id", group_ids)
+        if payload.only_delta:
+            count_q = count_q.is_("approved", not payload.approved)
+        target_count = (count_q.execute().count) or 0
+
+        # Update in batches across all languages for the selected groups
+        for ids in chunk(group_ids):
+            upd = supabase.table("questions").in_("group_id", ids)
+            if payload.only_delta:
+                upd = upd.is_("approved", not payload.approved)
+            upd.update({"approved": payload.approved}).execute()
+
+        return {"updated": target_count, "approved": payload.approved, "lang": payload.lang, "groups": len(group_ids)}
+
+    # Case 2: no language specified -> global update
+    sel = supabase.table("questions").select("id", count="exact")
     if payload.only_delta:
         sel = sel.is_("approved", not payload.approved)
-    target = sel.execute()
-    target_count = target.count or 0
-    if target_count == 0:
-        return {"updated": 0, "approved": payload.approved, "lang": payload.lang}
-
-    upd = supabase.table("questions").update({"approved": payload.approved})
-    if payload.lang:
-        upd = upd.eq("lang", payload.lang)
+    target_count = (sel.execute().count) or 0
+    upd = supabase.table("questions")
     if payload.only_delta:
         upd = upd.is_("approved", not payload.approved)
-    upd.execute()
-
-    return {
-        "updated": target_count,
-        "approved": payload.approved,
-        "lang": payload.lang,
-    }
+    upd.update({"approved": payload.approved}).execute()
+    return {"updated": target_count, "approved": payload.approved, "lang": None}
 
 
 @router.post("/unapprove_all", dependencies=[Depends(require_admin)])
