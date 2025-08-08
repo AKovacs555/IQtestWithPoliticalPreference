@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 // Layout is provided by AdminLayout.
 import { useTranslation } from 'react-i18next';
-import useAuth from '../hooks/useAuth';
 
 const API_BASE = import.meta.env.VITE_API_BASE || '';
 const GITHUB_TOKEN = import.meta.env.VITE_GITHUB_TOKEN;
@@ -10,11 +9,6 @@ const GITHUB_REPO = import.meta.env.VITE_GITHUB_REPO;
 
 export default function AdminSets() {
   const { t } = useTranslation();
-  const { user } = useAuth();
-  const showAdmin = String(import.meta.env.VITE_SHOW_ADMIN || '').toLowerCase() === 'true';
-  if (!showAdmin && (!user || !user.is_admin)) {
-    return <div className="p-4 text-center">Admin access required</div>;
-  }
   const [sets, setSets] = useState([]);
 
   useEffect(() => {

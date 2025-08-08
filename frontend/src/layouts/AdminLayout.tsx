@@ -1,28 +1,10 @@
 import React from 'react';
 import AppShell from '../components/AppShell.jsx';
-import { NavLink, Outlet, Navigate } from 'react-router-dom';
+import { NavLink, Outlet } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import useAuth from '../hooks/useAuth';
 
 export default function AdminLayout() {
-  const { user } = useAuth();
   const { t } = useTranslation();
-  const showAdmin = String(import.meta.env.VITE_SHOW_ADMIN || '').toLowerCase() === 'true';
-
-  if (!showAdmin) {
-    return <div className="p-4 text-center">Admin UI disabled</div>;
-  }
-  if (!user) {
-    return (
-      <>
-        <div className="p-4 text-center">Redirecting to login...</div>
-        <Navigate to="/login" replace />
-      </>
-    );
-  }
-  if (!user.is_admin) {
-    return <div className="p-4 text-center">Admin access required</div>;
-  }
 
   const items = [
     { to: '/admin/questions', label: 'Questions' },

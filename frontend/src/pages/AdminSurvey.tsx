@@ -1,10 +1,8 @@
 import React, { useEffect, useState } from 'react';
 // Layout is provided by AdminLayout, so no need to import it here.
-import { Link } from 'react-router-dom';
 import Select from 'react-select';
 import getCountryList from '../lib/countryList';
 import { useTranslation } from 'react-i18next';
-import useAuth from '../hooks/useAuth';
 
 interface SurveyItem {
   group_id: string;
@@ -17,11 +15,6 @@ interface SurveyItem {
 }
 
 export default function AdminSurvey() {
-  const { user } = useAuth();
-  const showAdmin = String(import.meta.env.VITE_SHOW_ADMIN || '').toLowerCase() === 'true';
-  if (!showAdmin && (!user || !user.is_admin)) {
-    return <div className="p-4 text-center">Admin access required</div>;
-  }
   const [items, setItems] = useState<SurveyItem[]>([]);
   const [languages, setLanguages] = useState<string[]>([]);
   const { t, i18n } = useTranslation();
@@ -181,12 +174,6 @@ export default function AdminSurvey() {
 
   return (
     <div className="max-w-xl mx-auto space-y-4">
-        <nav className="tabs">
-          <Link to="/admin/questions" className="tab tab-bordered">Questions</Link>
-          <Link to="/admin/surveys" className="tab tab-bordered tab-active">Surveys</Link>
-          <Link to="/admin/users" className="tab tab-bordered">Users</Link>
-          <Link to="/admin/settings" className="tab tab-bordered">Settings</Link>
-        </nav>
         {status && <div className="alert alert-info text-sm">{status}</div>}
 
         <div className="card card-bordered p-4 space-y-2">

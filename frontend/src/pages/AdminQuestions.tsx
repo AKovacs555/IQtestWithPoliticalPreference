@@ -1,8 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 // Layout is provided by AdminLayout, so no need to import it here.
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router-dom";
-import useAuth from '../hooks/useAuth';
 const languageOptions = [
   "ja",
   "en",
@@ -37,11 +35,6 @@ interface QuestionGroup {
 }
 
 export default function AdminQuestions() {
-  const { user } = useAuth();
-  const showAdmin = String(import.meta.env.VITE_SHOW_ADMIN || '').toLowerCase() === 'true';
-  if (!showAdmin && (!user || !user.is_admin)) {
-    return <div className="p-4 text-center">Admin access required</div>;
-  }
   const [allQuestions, setAllQuestions] = useState<QuestionVariant[]>([]);
   const [displayedQuestions, setDisplayedQuestions] = useState<
     QuestionVariant[]
@@ -348,20 +341,6 @@ export default function AdminQuestions() {
 
   return (
     <div className="space-y-4 max-w-xl mx-auto">
-        <nav className="tabs">
-          <Link to="/admin/questions" className="tab tab-bordered tab-active">
-            Questions
-          </Link>
-          <Link to="/admin/surveys" className="tab tab-bordered">
-            Surveys
-          </Link>
-          <Link to="/admin/users" className="tab tab-bordered">
-            Users
-          </Link>
-          <Link to="/admin/settings" className="tab tab-bordered">
-            Settings
-          </Link>
-        </nav>
         {status && <div className="alert alert-info text-sm">{status}</div>}
         <div className="space-y-2">
           <div className="space-y-1">
