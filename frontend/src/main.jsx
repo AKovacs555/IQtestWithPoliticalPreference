@@ -12,15 +12,33 @@ import CssBaseline from '@mui/material/CssBaseline';
 import '@fontsource-variable/inter';
 import './styles.css';
 import './styles/global.css';
-import { theme } from './theme';
+import { getTheme, ColorModeContext } from './theme';
+
+function Root() {
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const [mode, setMode] = React.useState(
+    () => localStorage.getItem('theme') || (prefersDark ? 'dark' : 'light'),
+  );
+
+  React.useEffect(() => {
+    document.documentElement.setAttribute('data-theme', mode);
+    localStorage.setItem('theme', mode);
+  }, [mode]);
+
+  return (
+    <ColorModeContext.Provider value={{ mode, setMode }}>
+      <ThemeProvider theme={getTheme(mode)}>
+        <CssBaseline />
+        <App />
+      </ThemeProvider>
+    </ColorModeContext.Provider>
+  );
+}
 
 createRoot(document.getElementById('root')).render(
   <Router>
     <SessionProvider>
-      <ThemeProvider theme={theme}>
-        <CssBaseline />
-        <App />
-      </ThemeProvider>
+      <Root />
     </SessionProvider>
-  </Router>
+  </Router>,
 );
