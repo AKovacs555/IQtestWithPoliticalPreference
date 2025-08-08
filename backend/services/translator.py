@@ -2,30 +2,24 @@ import os, json
 from typing import Dict, Any, List, Optional
 from openai import AsyncOpenAI
 
-MODEL_DEFAULT = os.getenv("TRANSLATION_MODEL", "gpt-5")  # override via env if needed
+MODEL_DEFAULT = os.getenv("TRANSLATION_MODEL", "gpt-5")
 client = AsyncOpenAI()
 
-# Strict JSON schema for translated question
 SCHEMA = {
-    "name": "Question",
-    "schema": {
-        "type": "object",
-        "properties": {
-            "prompt": {"type": "string"},
-            "options": {"type": "array", "items": {"type": "string"}},
-            "answer_index": {"type": "integer"},
-            "explanation": {"type": "string"}
-        },
-        "required": ["prompt", "options", "answer_index"],
-        "additionalProperties": False
+    "type": "object",
+    "properties": {
+        "prompt": {"type": "string"},
+        "options": {"type": "array", "items": {"type": "string"}},
+        "answer_index": {"type": "integer"},
+        "explanation": {"type": "string"}
     },
-    "strict": True
+    "required": ["prompt", "options", "answer_index"],
+    "additionalProperties": False
 }
-
 INSTRUCTIONS = (
     "You are a professional localization translator for psychometrics/IQ tests. "
     "Translate the input JSON from {src} to {tgt}. Preserve placeholders (e.g. {{...}}, %s, %(...)s), "
-    "formatting (Markdown/LaTeX), numbers, option order, and `answer_index`. "
+    "formatting (Markdown/LaTeX), numbers, option order, and answer_index. "
     "Return ONLY a JSON object following the provided schema."
 )
 
@@ -43,18 +37,21 @@ async def translate_one(
     tgt_lang: str,
     model: Optional[str] = None
 ) -> Dict[str, Any]:
-    m = (model or MODEL_DEFAULT)
+    m = model or MODEL_DEFAULT
     user_input = json.dumps(_normalize(q), ensure_ascii=False)
 
-    # IMPORTANT: Do NOT send temperature/top_p/penalties for reasoning models.
-    # Responses API w/ Structured Outputs enforces the schema.
-    resp = await client.responses.create(
+    # Use Chat Completions instead of the deprecated Responses API.
+    response = await client.chat.completions.create(
         model=m,
-        instructions=INSTRUCTIONS.format(src=src_lang, tgt=tgt_lang),
-        input=user_input,
-        text={"format": {"type": "json_schema", "json_schema": SCHEMA}}
+        messages=[
+            {"role": "system", "content": INSTRUCTIONS.format(src=src_lang, tgt=tgt_lang)},
+            {"role": "user", "content": user_input},
+        ],
+        temperature=0.0,
+        response_format={"type": "json_schema", "schema": SCHEMA},
     )
-    data = json.loads(resp.output_text)
+
+    data = json.loads(response.choices[0].message.content)
     data.setdefault("explanation", "")
     return data
 
