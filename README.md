@@ -205,9 +205,10 @@ To localise a manually created test into other languages run:
 python tools/translate_questions.py --input questions/set02_ja.json --languages en,tr,ru,zh
 ```
 
-Set `OPENAI_API_KEY` before execution. The model defaults to `gpt-4o` but can be
-overridden via the `TRANSLATION_MODEL` environment variable. Translated files
-such as `set02_en.json` are written next to the source JSON.
+Set `OPENAI_API_KEY` before execution. The model defaults to `gpt-5` and falls
+back to `gpt-4o` if unavailable. These can be overridden via
+`TRANSLATION_MODEL` and `TRANSLATION_FALLBACK_MODEL` environment variables.
+Translated files such as `set02_en.json` are written next to the source JSON.
 
 ## Frontend (React)
 
