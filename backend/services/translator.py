@@ -52,7 +52,7 @@ async def translate_one(
         model=m,
         instructions=INSTRUCTIONS.format(src=src_lang, tgt=tgt_lang),
         input=user_input,
-        response_format={"type": "json_schema", "json_schema": SCHEMA}
+        text={"format": {"type": "json_schema", "json_schema": SCHEMA}}
     )
     data = json.loads(resp.output_text)
     data.setdefault("explanation", "")

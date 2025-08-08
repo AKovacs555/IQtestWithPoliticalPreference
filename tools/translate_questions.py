@@ -34,7 +34,7 @@ def translate_payload(payload: dict, src: str, tgt: str) -> dict:
             "Return ONLY JSON following the schema."
         ),
         input=json.dumps(payload, ensure_ascii=False),
-        response_format={"type": "json_schema", "json_schema": SCHEMA},
+        text={"format": {"type": "json_schema", "json_schema": SCHEMA}},
     )
     return json.loads(resp.output_text)
 
