@@ -11,7 +11,6 @@ The following variables must be configured for local development and deployments
 - `VITE_API_BASE` – backend API base URL
 - `VITE_SUPABASE_URL` – Supabase project URL for the frontend
 - `VITE_SUPABASE_ANON_KEY` – Supabase anon key for the frontend
-- `VITE_SHOW_ADMIN` – set to `true` to include admin pages in the build
 - `SUPABASE_API_KEY` – service role or API key for Supabase access
 - `SUPABASE_SERVICE_ROLE_KEY` – service role key used by backend jobs
 - `SUPABASE_JWT_SECRET` – JWT secret from Supabase settings
@@ -30,20 +29,20 @@ alter table public.users add column if not exists is_admin boolean not null defa
 
 Set `is_admin` to `true` for any accounts that should manage content.
 
+The Admin UI is available whenever the authenticated user has `is_admin=true`.
+
 Admin access works as follows:
 
-- `VITE_SHOW_ADMIN=true` controls whether admin routes are built and shown in the navigation.
+- The frontend checks the `is_admin` claim from the user's JWT (including `user.is_admin`, `user_metadata.is_admin`, or `app_metadata.is_admin`) and shows the Admin UI when it evaluates to `true`.
 - Users must have `is_admin=true` in the Supabase `users` table. After updating the database, they need to log out and back in so the JWT includes the `is_admin` claim.
 - Admin endpoints use the authenticated user's JWT and require `is_admin=true`; no separate API key is needed.
-- The frontend checks the `is_admin` claim and compares `VITE_SHOW_ADMIN` as a string (`=== "true"`).
 
 ## Building the frontend locally
 
-To create a production build of the React app with the admin pages enabled, define the Vite variables inline with the build command:
+To create a production build of the React app, define the Vite variables inline with the build command:
 
 ```bash
 cd frontend
-VITE_SHOW_ADMIN=true \
 VITE_SUPABASE_URL=https://example.supabase.co \
 VITE_SUPABASE_ANON_KEY=anon \
 VITE_API_BASE=http://localhost:9999 \
