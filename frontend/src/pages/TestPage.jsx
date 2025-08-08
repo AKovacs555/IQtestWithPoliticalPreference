@@ -2,7 +2,8 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import AppShell from '../components/AppShell';
 import { getQuizStart, submitQuiz } from '../api';
-import ProgressBar from '../components/ProgressBar';
+import LinearProgress from '@mui/material/LinearProgress';
+import { AnimatePresence, motion, MotionConfig } from 'framer-motion';
 import QuestionCard from '../components/QuestionCard';
 import { useNavigate } from 'react-router-dom';
 import useAuth from '../hooks/useAuth';
@@ -206,15 +207,27 @@ export default function TestPage() {
                 {Math.floor(timeLeft / 60)}:{`${timeLeft % 60}`.padStart(2, '0')}
               </div>
             </div>
-            <ProgressBar value={(current / questions.length) * 100} />
-            {questions[current] && (
-              <QuestionCard
-                question={questions[current]}
-                onSelect={select}
-                watermark={watermark}
-                disabled={submitting}
-              />
-            )}
+            <LinearProgress variant="determinate" value={(current / questions.length) * 100} sx={{ mb: 1.5 }} />
+            <MotionConfig reducedMotion="user">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={questions[current]?.id || current}
+                  initial={{ opacity: 0, x: 12 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -12 }}
+                  transition={{ duration: 0.18 }}
+                >
+                  {questions[current] && (
+                    <QuestionCard
+                      question={questions[current]}
+                      onSelect={select}
+                      watermark={watermark}
+                      disabled={submitting}
+                    />
+                  )}
+                </motion.div>
+              </AnimatePresence>
+            </MotionConfig>
           </>
         )}
         {suspicious && (
