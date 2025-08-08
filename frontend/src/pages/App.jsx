@@ -30,6 +30,7 @@ import TestPage from './TestPage.jsx';
 import Contact from './Contact.jsx';
 import ErrorChunkReload from '../components/common/ErrorChunkReload';
 import ThemeDemo from './ThemeDemo.jsx';
+import Button from '@mui/material/Button';
 const API_BASE = import.meta.env.VITE_API_BASE || "";
 
 const AdminLayout = lazy(() =>
@@ -279,26 +280,27 @@ const Result = () => {
           {share && <img src={share} alt="IQ share card" className="mx-auto rounded" />}
           {share && (
             <div className="space-x-2">
-              {/* Share on X (Twitter) */}
-              <a
+              <Button
+                component="a"
                 href={`https://twitter.com/intent/tweet?url=${url}&text=${text}`}
                 target="_blank"
                 rel="noreferrer"
-                className="px-4 py-2 rounded-md bg-primary text-white text-sm hover:bg-primary/90 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary"
+                variant="contained"
+                size="small"
               >
                 X
-              </a>
-              {/* Share on LINE */}
-              <a
+              </Button>
+              <Button
+                component="a"
                 href={`https://social-plugins.line.me/lineit/share?url=${url}`}
                 target="_blank"
                 rel="noreferrer"
-                className="px-4 py-2 rounded-md bg-primary text-white text-sm hover:bg-primary/90 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary"
+                variant="contained"
+                size="small"
               >
                 LINE
-              </a>
-              {/* Copy link or share */}
-              <button
+              </Button>
+              <Button
                 onClick={() => {
                   if (navigator.share) {
                     navigator.share({ url: window.location.href, text: decodeURIComponent(text) });
@@ -307,26 +309,31 @@ const Result = () => {
                     alert(t('result.link_copied'));
                   }
                 }}
-                className="px-4 py-2 rounded-md bg-primary text-white text-sm hover:bg-primary/90 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary"
+                variant="contained"
+                size="small"
               >
                 {t('result.share')}
-              </button>
+              </Button>
             </div>
           )}
-          <button
+          <Button
             onClick={() => navigate('/')}
-            className="px-4 py-2 mt-4 rounded-md bg-primary text-white text-sm hover:bg-primary/90 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary"
+            variant="contained"
+            size="small"
+            sx={{ mt: 4 }}
           >
             {t('result.back_to_home')}
-          </button>
+          </Button>
           <div className="mt-4 space-y-2">
             <p>{t('result.pro_prompt', { price })}</p>
-            <a
+            <Button
+              component="a"
               href="/pricing"
-              className="px-4 py-2 rounded-md bg-primary text-white text-sm hover:bg-primary/90 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary"
+              variant="contained"
+              size="small"
             >
               {t('pricing.subscribe')}
-            </a>
+            </Button>
           </div>
           <p className="text-sm text-gray-600">This test is for research and entertainment.</p>
         </div>

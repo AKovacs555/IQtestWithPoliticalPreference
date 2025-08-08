@@ -1,5 +1,6 @@
 import React from 'react';
 import QuestionCanvas from './QuestionCanvas';
+import { OptionCard } from './OptionCard';
 
 function getImageUrl(path) {
   if (!path) return null;
@@ -25,28 +26,18 @@ export default function QuestionCard({ question, onSelect, watermark, disabled =
         />
       )}
       <QuestionCanvas question={text} options={[]} onSelect={onSelect} watermark={watermark} />
-      <div className="grid grid-cols-2 gap-4">
+      <div className="space-y-3">
         {options.map((opt, i) => {
           const optImg = getImageUrl(option_images[i]);
           return (
-            <div key={i} className="flex flex-col items-center space-y-2">
-              {optImg && (
-                <img
-                  src={optImg}
-                  loading="lazy"
-                  className="max-h-40 w-full object-contain"
-                  alt={`option ${i + 1}`}
-                />
-              )}
-              <div className="text-center">{opt}</div>
-              <button
-                onClick={() => onSelect(i)}
-                disabled={disabled}
-                className={`w-full py-3 rounded-md bg-primary text-white hover:bg-blue-600 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
-              >
-                {i + 1}
-              </button>
-            </div>
+            <OptionCard
+              key={i}
+              label={`${i + 1}. ${opt}`}
+              imgSrc={optImg || undefined}
+              selected={false}
+              onClick={() => onSelect(i)}
+              disabled={disabled}
+            />
           );
         })}
       </div>

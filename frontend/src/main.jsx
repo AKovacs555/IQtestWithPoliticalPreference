@@ -9,8 +9,10 @@ import { SessionProvider } from './hooks/useSession';
 import './i18n';
 import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
+import '@fontsource-variable/inter';
 import './styles.css';
-import theme from './theme';
+import './styles/global.css';
+import { theme } from './theme';
 
 createRoot(document.getElementById('root')).render(
   <Router>
