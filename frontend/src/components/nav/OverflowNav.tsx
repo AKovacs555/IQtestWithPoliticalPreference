@@ -1,14 +1,16 @@
-import { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Box, Button, IconButton, Menu, MenuItem } from '@mui/material';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
+import { Link as RouterLink } from 'react-router-dom';
+import type { NavItem } from './types';
 
 // Generic overflow group: render inline until space runs out, spill rest into "More"
 export default function OverflowNav({
   items,
   gap = 0.5,
-}: { items: Array<any>; gap?: number }) {
+}: { items: NavItem[]; gap?: number }) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const itemRefs = useRef<Array<HTMLButtonElement | null>>([]);
+  const itemRefs = useRef<Array<HTMLButtonElement | HTMLAnchorElement | null>>([]);
   const [visibleCount, setVisibleCount] = useState(items.length);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
@@ -50,18 +52,21 @@ export default function OverflowNav({
           overflow: 'hidden',
         }}
       >
-        {visible.map((it, i) => (
-          <Button
-            key={i}
-            ref={(n) => (itemRefs.current[i] = n)}
-            onClick={it.onClick}
-            href={it.href}
-            size="small"
-            sx={{ minHeight: '48px' }}
-          >
-            {it.element ?? it.label}
-          </Button>
-        ))}
+        {visible.map((it, i) => {
+          const linkProps = !it.onClick && it.href ? { component: RouterLink, to: it.href } : {};
+          return (
+            <Button
+              key={i}
+              ref={(n) => (itemRefs.current[i] = n)}
+              {...linkProps}
+              onClick={it.onClick}
+              size="small"
+              sx={{ minHeight: '48px' }}
+            >
+              {it.element ?? it.label}
+            </Button>
+          );
+        })}
       </Box>
 
       {overflow.length > 0 && (
@@ -78,19 +83,21 @@ export default function OverflowNav({
             anchorEl={anchorEl}
             onClose={() => setAnchorEl(null)}
           >
-            {overflow.map((it, i) => (
-              <MenuItem
-                key={i}
-                onClick={(e) => {
-                  setAnchorEl(null);
-                  it.onClick?.(e as any);
-                }}
-                component={it.href ? 'a' : 'li'}
-                href={it.href}
-              >
-                {it.label}
-              </MenuItem>
-            ))}
+            {overflow.map((it, i) => {
+              const linkProps = !it.onClick && it.href ? { component: RouterLink, to: it.href } : {};
+              return (
+                <MenuItem
+                  key={i}
+                  {...linkProps}
+                  onClick={(e) => {
+                    setAnchorEl(null);
+                    it.onClick?.(e as any);
+                  }}
+                >
+                  {it.label}
+                </MenuItem>
+              );
+            })}
           </Menu>
         </>
       )}
