@@ -16,7 +16,7 @@ jobs:
         working-directory: frontend
         run: npx playwright install --with-deps
 
-      - name: Run Playwright E2E (uses root config pointing to ./e2e)
+      - name: Run Playwright E2E (use root config)
         working-directory: frontend
         run: npx playwright test --config ../playwright.config.ts
 
