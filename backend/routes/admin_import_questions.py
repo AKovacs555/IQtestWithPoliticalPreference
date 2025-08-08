@@ -4,7 +4,8 @@ import logging
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from backend.deps.supabase_client import get_supabase_client
-from backend.services.translator import translate_one
+import asyncio
+from backend.services.translation import translate_text
 from .dependencies import require_admin
 
 # Supported languages for automatic translation, including Turkish and Italian
@@ -92,18 +93,36 @@ async def import_questions(file: UploadFile = File(...)):
             }
             for tgt in target_languages:
                 try:
-                    translated = await translate_one(base, lang, tgt)
+                    tasks = [
+                        asyncio.to_thread(
+                            translate_text, base["prompt"], lang, tgt
+                        ),
+                        *[
+                            asyncio.to_thread(translate_text, opt, lang, tgt)
+                            for opt in options
+                        ],
+                    ]
+                    if base["explanation"]:
+                        tasks.append(
+                            asyncio.to_thread(
+                                translate_text, base["explanation"], lang, tgt
+                            )
+                        )
+                    results = await asyncio.gather(*tasks)
+                    translated_prompt = results[0]
+                    translated_options = results[1 : 1 + len(options)]
                 except Exception as exc:
                     logger.error(
                         f"Translation {tgt} failed for orig_id {incoming_id}: {exc}"
                     )
                     continue
+
                 trans_record = {
                     "orig_id": incoming_id,
                     "group_id": group_id,
-                    "question": translated["prompt"],
-                    "options": translated["options"],
-                    "answer": translated["answer_index"],
+                    "question": translated_prompt,
+                    "options": translated_options,
+                    "answer": answer,
                     "irt_a": irt["a"],
                     "irt_b": irt["b"],
                     "lang": tgt,
@@ -204,7 +223,24 @@ async def import_questions_with_images(
                 }
                 for tgt in target_languages:
                     try:
-                        translated = await translate_one(base, lang, tgt)
+                        tasks = [
+                            asyncio.to_thread(
+                                translate_text, base["prompt"], lang, tgt
+                            ),
+                            *[
+                                asyncio.to_thread(translate_text, opt, lang, tgt)
+                                for opt in item["options"]
+                            ],
+                        ]
+                        if base["explanation"]:
+                            tasks.append(
+                                asyncio.to_thread(
+                                    translate_text, base["explanation"], lang, tgt
+                                )
+                            )
+                        results = await asyncio.gather(*tasks)
+                        translated_prompt = results[0]
+                        translated_options = results[1 : 1 + len(item["options"])]
                     except Exception as exc:
                         logger.error(
                             f"Translation {tgt} failed for orig_id {incoming_id}: {exc}"
@@ -213,9 +249,9 @@ async def import_questions_with_images(
                     trans_record = {
                         "orig_id": incoming_id,
                         "group_id": group_id,
-                        "question": translated["prompt"],
-                        "options": translated["options"],
-                        "answer": translated["answer_index"],
+                        "question": translated_prompt,
+                        "options": translated_options,
+                        "answer": item["answer"],
                         "irt_a": item["irt"]["a"],
                         "irt_b": item["irt"]["b"],
                         "lang": tgt,
