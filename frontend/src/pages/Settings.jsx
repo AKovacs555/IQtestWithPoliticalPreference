@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import Layout from '../components/Layout';
+import AppShell from '../components/AppShell';
 
 const API_BASE = import.meta.env.VITE_API_BASE || "";
 
@@ -17,19 +17,19 @@ export default function Settings() {
 
   if (!userId) {
     return (
-      <Layout>
+      <AppShell>
         <div className="p-4 text-center">
           <p className="mb-2">No user specified.</p>
           <Link to="/" className="underline">Home</Link>
         </div>
-      </Layout>
+      </AppShell>
     );
   }
 
-  if (!stats) return <Layout><div className="p-4">Loading...</div></Layout>;
+  if (!stats) return <AppShell><div className="p-4">Loading...</div></AppShell>;
 
   return (
-    <Layout>
+    <AppShell>
       <div className="p-4 space-y-2">
         <h2 className="text-xl font-bold mb-2">Your Stats</h2>
         <p>Plays: {stats.plays}</p>
@@ -46,6 +46,6 @@ export default function Settings() {
         </div>
         <Link to="/" className="underline">Home</Link>
       </div>
-    </Layout>
+    </AppShell>
   );
 }

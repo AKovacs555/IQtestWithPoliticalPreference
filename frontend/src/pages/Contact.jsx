@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import Layout from '../components/Layout';
+import AppShell from '../components/AppShell';
 
 const CONTACT_EMAIL = import.meta.env.VITE_CONTACT_EMAIL || 'support@example.com';
 
@@ -18,7 +18,7 @@ export default function Contact() {
   };
 
   return (
-    <Layout>
+    <AppShell>
       <div className="max-w-md mx-auto">
         <h1 className="text-2xl font-bold mb-4">Contact Us</h1>
         {sent ? (
@@ -57,7 +57,7 @@ export default function Contact() {
           </form>
         )}
       </div>
-    </Layout>
+    </AppShell>
   );
 }
 

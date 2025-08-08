@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import Layout from '../components/Layout';
+import AppShell from '../components/AppShell';
 import { useTranslation } from 'react-i18next';
 import AdProgress from '../components/AdProgress';
 
@@ -41,7 +41,7 @@ export default function Pricing() {
   }, []);
 
   return (
-    <Layout>
+    <AppShell>
       <div className="max-w-2xl mx-auto py-8 space-y-6">
         <h2 className="text-3xl font-bold text-center">{t('pricing.title')}</h2>
         <div className="grid md:grid-cols-3 gap-4">
@@ -94,6 +94,6 @@ export default function Pricing() {
           {progress > 0 && progress < 100 && <AdProgress progress={progress} />}
         </div>
       </div>
-    </Layout>
+    </AppShell>
   );
 }

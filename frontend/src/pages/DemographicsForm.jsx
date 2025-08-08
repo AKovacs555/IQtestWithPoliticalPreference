@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import Layout from '../components/Layout';
+import AppShell from '../components/AppShell';
 import useAuth from '../hooks/useAuth';
 
 const API_BASE = import.meta.env.VITE_API_BASE || "";
@@ -42,7 +42,7 @@ export default function DemographicsForm() {
   if (!user) return null;
 
   return (
-    <Layout>
+    <AppShell>
       <div className="p-4 space-y-4 max-w-md mx-auto">
         <h2 className="text-xl font-bold">Before you start</h2>
         <div>
@@ -105,6 +105,6 @@ export default function DemographicsForm() {
           Next
         </button>
       </div>
-    </Layout>
+    </AppShell>
   );
 }

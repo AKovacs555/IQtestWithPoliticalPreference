@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import Layout from '../components/Layout';
+import AppShell from '../components/AppShell';
 import LanguageSelector from '../components/LanguageSelector';
 import { getSurvey, submitSurvey, completeSurvey } from '../api';
 import { useTranslation } from 'react-i18next';
@@ -99,7 +99,7 @@ export default function SurveyPage() {
   };
 
   return (
-    <Layout>
+    <AppShell>
       <div className="space-y-4 max-w-xl mx-auto">
         <LanguageSelector />
         <h2 className="text-2xl font-bold text-center">{t('survey.title')}</h2>
@@ -141,6 +141,6 @@ export default function SurveyPage() {
           </button>
         )}
       </div>
-    </Layout>
+    </AppShell>
   );
 }

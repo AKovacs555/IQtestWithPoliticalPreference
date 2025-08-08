@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import Layout from '../components/Layout';
+import AppShell from '../components/AppShell';
 import { getQuizStart, submitQuiz } from '../api';
 import ProgressBar from '../components/ProgressBar';
 import QuestionCard from '../components/QuestionCard';
@@ -182,7 +182,7 @@ export default function TestPage() {
   };
 
   return (
-    <Layout>
+    <AppShell>
       <div
         className="watermark fixed inset-0 pointer-events-none opacity-10 text-xs z-40 flex items-end justify-end p-2 select-none"
       >
@@ -221,6 +221,6 @@ export default function TestPage() {
           <p className="text-red-600 text-sm">Session flagged for leaving the page.</p>
         )}
       </div>
-    </Layout>
+    </AppShell>
   );
 }

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import Layout from '../components/Layout';
+import AppShell from '../components/AppShell';
 
 const API_BASE = import.meta.env.VITE_API_BASE || "";
 
@@ -13,7 +13,7 @@ export default function SelectSet() {
   }, []);
 
   return (
-    <Layout>
+    <AppShell>
       <div className="p-4 space-y-4 max-w-md mx-auto text-gray-900 dark:text-slate-100">
         <h2 className="text-xl font-bold text-center">Choose a Test</h2>
         <ul className="space-y-2">
@@ -30,6 +30,6 @@ export default function SelectSet() {
           ))}
         </ul>
       </div>
-    </Layout>
+    </AppShell>
   );
 }

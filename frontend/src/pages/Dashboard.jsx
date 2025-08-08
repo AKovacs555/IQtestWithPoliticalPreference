@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import Layout from '../components/Layout';
+import AppShell from '../components/AppShell';
 import { Chart } from 'chart.js/auto';
 import { useTranslation } from 'react-i18next';
 
@@ -66,7 +66,7 @@ export default function Dashboard() {
   }, [optionStats]);
 
   return (
-    <Layout>
+    <AppShell>
       <div className="max-w-2xl mx-auto space-y-4 py-4">
         <h2 className="text-2xl font-bold text-center">{t('dashboard.title')}</h2>
         {hist.user_score == null ? (
@@ -98,6 +98,6 @@ export default function Dashboard() {
           </>
         )}
       </div>
-    </Layout>
+    </AppShell>
   );
 }
