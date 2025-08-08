@@ -43,9 +43,12 @@
     "@testing-library/react": "^14.2.2",
     "@vitejs/plugin-react": "^4.2.0",
     "autoprefixer": "^10.4.12",
+    "depcheck": "^1.4.7",
     "jsdom": "^24.0.0",
     "postcss": "^8.4.18",
     "tailwindcss": "^3.2.0",
+    "ts-prune": "^0.10.3",
+    "ts-unused-exports": "^11.0.1",
     "vite": "^4.0.0",
     "vitest": "^1.4.0"
   }

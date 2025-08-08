@@ -1,0 +1,728 @@
+[
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 39,
+      "row": 7
+    },
+    "filename": "/workspace/IQtestWithPoliticalPreference/backend/adaptive.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 1,
+            "row": 8
+          },
+          "location": {
+            "column": 1,
+            "row": 7
+          }
+        }
+      ],
+      "message": "Remove unused import: `questions.QUESTION_MAP`"
+    },
+    "location": {
+      "column": 27,
+      "row": 7
+    },
+    "message": "`questions.QUESTION_MAP` imported but unused",
+    "noqa_row": 7,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 25,
+      "row": 4
+    },
+    "filename": "/workspace/IQtestWithPoliticalPreference/backend/irt.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 1,
+            "row": 5
+          },
+          "location": {
+            "column": 1,
+            "row": 4
+          }
+        }
+      ],
+      "message": "Remove unused import: `typing.Tuple`"
+    },
+    "location": {
+      "column": 20,
+      "row": 4
+    },
+    "message": "`typing.Tuple` imported but unused",
+    "noqa_row": 4,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 14,
+      "row": 5
+    },
+    "filename": "/workspace/IQtestWithPoliticalPreference/backend/main.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 1,
+            "row": 6
+          },
+          "location": {
+            "column": 1,
+            "row": 5
+          }
+        }
+      ],
+      "message": "Remove unused import: `random`"
+    },
+    "location": {
+      "column": 8,
+      "row": 5
+    },
+    "message": "`random` imported but unused",
+    "noqa_row": 5,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 12,
+      "row": 6
+    },
+    "filename": "/workspace/IQtestWithPoliticalPreference/backend/main.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 1,
+            "row": 7
+          },
+          "location": {
+            "column": 1,
+            "row": 6
+          }
+        }
+      ],
+      "message": "Remove unused import: `time`"
+    },
+    "location": {
+      "column": 8,
+      "row": 6
+    },
+    "message": "`time` imported but unused",
+    "noqa_row": 6,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 30,
+      "row": 7
+    },
+    "filename": "/workspace/IQtestWithPoliticalPreference/backend/main.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 1,
+            "row": 8
+          },
+          "location": {
+            "column": 1,
+            "row": 7
+          }
+        }
+      ],
+      "message": "Remove unused import: `datetime.datetime`"
+    },
+    "location": {
+      "column": 22,
+      "row": 7
+    },
+    "message": "`datetime.datetime` imported but unused",
+    "noqa_row": 7,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 41,
+      "row": 31
+    },
+    "filename": "/workspace/IQtestWithPoliticalPreference/backend/main.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 1,
+            "row": 32
+          },
+          "location": {
+            "column": 1,
+            "row": 31
+          }
+        }
+      ],
+      "message": "Remove unused import"
+    },
+    "location": {
+      "column": 33,
+      "row": 31
+    },
+    "message": "`backend.sms_service.send_otp` imported but unused",
+    "noqa_row": 31,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 55,
+      "row": 31
+    },
+    "filename": "/workspace/IQtestWithPoliticalPreference/backend/main.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 1,
+            "row": 32
+          },
+          "location": {
+            "column": 1,
+            "row": 31
+          }
+        }
+      ],
+      "message": "Remove unused import"
+    },
+    "location": {
+      "column": 43,
+      "row": 31
+    },
+    "message": "`backend.sms_service.SMS_PROVIDER` imported but unused",
+    "noqa_row": 31,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 27,
+      "row": 40
+    },
+    "filename": "/workspace/IQtestWithPoliticalPreference/backend/main.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 1,
+            "row": 41
+          },
+          "location": {
+            "column": 1,
+            "row": 40
+          }
+        }
+      ],
+      "message": "Remove unused import: `dp.add_laplace`"
+    },
+    "location": {
+      "column": 16,
+      "row": 40
+    },
+    "message": "`dp.add_laplace` imported but unused",
+    "noqa_row": 40,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 22,
+      "row": 43
+    },
+    "filename": "/workspace/IQtestWithPoliticalPreference/backend/main.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "from questions import (\n    QUESTION_MAP,\n    get_random_questions,\n)",
+          "end_location": {
+            "column": 2,
+            "row": 50
+          },
+          "location": {
+            "column": 1,
+            "row": 42
+          }
+        }
+      ],
+      "message": "Remove unused import"
+    },
+    "location": {
+      "column": 5,
+      "row": 43
+    },
+    "message": "`questions.DEFAULT_QUESTIONS` imported but unused",
+    "noqa_row": 43,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 34,
+      "row": 46
+    },
+    "filename": "/workspace/IQtestWithPoliticalPreference/backend/main.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "from questions import (\n    QUESTION_MAP,\n    get_random_questions,\n)",
+          "end_location": {
+            "column": 2,
+            "row": 50
+          },
+          "location": {
+            "column": 1,
+            "row": 42
+          }
+        }
+      ],
+      "message": "Remove unused import"
+    },
+    "location": {
+      "column": 5,
+      "row": 46
+    },
+    "message": "`questions.get_balanced_random_questions` imported but unused",
+    "noqa_row": 46,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 41,
+      "row": 47
+    },
+    "filename": "/workspace/IQtestWithPoliticalPreference/backend/main.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "from questions import (\n    QUESTION_MAP,\n    get_random_questions,\n)",
+          "end_location": {
+            "column": 2,
+            "row": 50
+          },
+          "location": {
+            "column": 1,
+            "row": 42
+          }
+        }
+      ],
+      "message": "Remove unused import"
+    },
+    "location": {
+      "column": 5,
+      "row": 47
+    },
+    "message": "`questions.get_balanced_random_questions_by_set` imported but unused",
+    "noqa_row": 47,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 41,
+      "row": 48
+    },
+    "filename": "/workspace/IQtestWithPoliticalPreference/backend/main.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "from questions import (\n    QUESTION_MAP,\n    get_random_questions,\n)",
+          "end_location": {
+            "column": 2,
+            "row": 50
+          },
+          "location": {
+            "column": 1,
+            "row": 42
+          }
+        }
+      ],
+      "message": "Remove unused import"
+    },
+    "location": {
+      "column": 5,
+      "row": 48
+    },
+    "message": "`questions.get_balanced_random_questions_global` imported but unused",
+    "noqa_row": 48,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 19,
+      "row": 49
+    },
+    "filename": "/workspace/IQtestWithPoliticalPreference/backend/main.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "from questions import (\n    QUESTION_MAP,\n    get_random_questions,\n)",
+          "end_location": {
+            "column": 2,
+            "row": 50
+          },
+          "location": {
+            "column": 1,
+            "row": 42
+          }
+        }
+      ],
+      "message": "Remove unused import"
+    },
+    "location": {
+      "column": 5,
+      "row": 49
+    },
+    "message": "`questions.available_sets` imported but unused",
+    "noqa_row": 49,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 17,
+      "row": 128
+    },
+    "filename": "/workspace/IQtestWithPoliticalPreference/backend/main.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "from db import (\n    get_user,\n    create_user as db_create_user,\n    update_user as db_update_user,\n    get_all_users,\n    get_surveys,\n    insert_survey_responses,\n    get_survey_answers,\n    get_answered_survey_ids,\n)",
+          "end_location": {
+            "column": 2,
+            "row": 133
+          },
+          "location": {
+            "column": 1,
+            "row": 123
+          }
+        }
+      ],
+      "message": "Remove unused import: `db.get_supabase`"
+    },
+    "location": {
+      "column": 5,
+      "row": 128
+    },
+    "message": "`db.get_supabase` imported but unused",
+    "noqa_row": 128,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 28,
+      "row": 3
+    },
+    "filename": "/workspace/IQtestWithPoliticalPreference/backend/routes/admin_surveys.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 1,
+            "row": 4
+          },
+          "location": {
+            "column": 1,
+            "row": 3
+          }
+        }
+      ],
+      "message": "Remove unused import: `typing.Optional`"
+    },
+    "location": {
+      "column": 20,
+      "row": 3
+    },
+    "message": "`typing.Optional` imported but unused",
+    "noqa_row": 3,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 54,
+      "row": 5
+    },
+    "filename": "/workspace/IQtestWithPoliticalPreference/backend/routes/admin_surveys.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "from fastapi import APIRouter, Depends",
+          "end_location": {
+            "column": 54,
+            "row": 5
+          },
+          "location": {
+            "column": 1,
+            "row": 5
+          }
+        }
+      ],
+      "message": "Remove unused import: `fastapi.HTTPException`"
+    },
+    "location": {
+      "column": 41,
+      "row": 5
+    },
+    "message": "`fastapi.HTTPException` imported but unused",
+    "noqa_row": 5,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 24,
+      "row": 2
+    },
+    "filename": "/workspace/IQtestWithPoliticalPreference/backend/routes/custom_survey.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 1,
+            "row": 3
+          },
+          "location": {
+            "column": 1,
+            "row": 2
+          }
+        }
+      ],
+      "message": "Remove unused import"
+    },
+    "location": {
+      "column": 20,
+      "row": 2
+    },
+    "message": "`typing.List` imported but unused",
+    "noqa_row": 2,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 34,
+      "row": 2
+    },
+    "filename": "/workspace/IQtestWithPoliticalPreference/backend/routes/custom_survey.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 1,
+            "row": 3
+          },
+          "location": {
+            "column": 1,
+            "row": 2
+          }
+        }
+      ],
+      "message": "Remove unused import"
+    },
+    "location": {
+      "column": 26,
+      "row": 2
+    },
+    "message": "`typing.Optional` imported but unused",
+    "noqa_row": 2,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 41,
+      "row": 4
+    },
+    "filename": "/workspace/IQtestWithPoliticalPreference/backend/scoring.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "from irt import prob_correct",
+          "end_location": {
+            "column": 41,
+            "row": 4
+          },
+          "location": {
+            "column": 1,
+            "row": 4
+          }
+        }
+      ],
+      "message": "Remove unused import: `irt.percentile`"
+    },
+    "location": {
+      "column": 31,
+      "row": 4
+    },
+    "message": "`irt.percentile` imported but unused",
+    "noqa_row": 4,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 14,
+      "row": 2
+    },
+    "filename": "/workspace/IQtestWithPoliticalPreference/backend/sms_service.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 1,
+            "row": 3
+          },
+          "location": {
+            "column": 1,
+            "row": 2
+          }
+        }
+      ],
+      "message": "Remove unused import: `random`"
+    },
+    "location": {
+      "column": 8,
+      "row": 2
+    },
+    "message": "`random` imported but unused",
+    "noqa_row": 2,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 12,
+      "row": 5
+    },
+    "filename": "/workspace/IQtestWithPoliticalPreference/backend/tests/test_payment.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 1,
+            "row": 6
+          },
+          "location": {
+            "column": 1,
+            "row": 5
+          }
+        }
+      ],
+      "message": "Remove unused import: `main`"
+    },
+    "location": {
+      "column": 8,
+      "row": 5
+    },
+    "message": "`main` imported but unused",
+    "noqa_row": 5,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 23,
+      "row": 7
+    },
+    "filename": "/workspace/IQtestWithPoliticalPreference/backend/tests/test_payment.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 1,
+            "row": 8
+          },
+          "location": {
+            "column": 1,
+            "row": 7
+          }
+        }
+      ],
+      "message": "Remove unused import: `backend.db`"
+    },
+    "location": {
+      "column": 21,
+      "row": 7
+    },
+    "message": "`backend.db` imported but unused",
+    "noqa_row": 7,
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  }
+]
