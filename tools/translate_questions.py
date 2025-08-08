@@ -10,6 +10,7 @@ from pathlib import Path
 
 import openai
 
+MODEL = os.getenv("TRANSLATION_MODEL", "gpt-4o")
 
 def translate_item(question: str, options: list[str], target_lang: str) -> tuple[str, list[str]]:
     """Return the question and options translated into ``target_lang``."""
@@ -21,7 +22,7 @@ def translate_item(question: str, options: list[str], target_lang: str) -> tuple
     user_content = json.dumps({"question": question, "options": options}, ensure_ascii=False)
     try:
         resp = openai.ChatCompletion.create(
-            model="gpt-4o",
+            model=MODEL,
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_content},
