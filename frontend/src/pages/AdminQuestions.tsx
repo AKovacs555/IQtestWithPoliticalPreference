@@ -59,6 +59,7 @@ export default function AdminQuestions() {
   const [imageFiles, setImageFiles] = useState<FileList | null>(null);
   const [uploadStatus, setUploadStatus] = useState<string | null>(null);
   const [isImporting, setIsImporting] = useState(false);
+  const [translateModel, setTranslateModel] = useState<string>("");
   const [approvalFilter, setApprovalFilter] = useState<
     "all" | "approved" | "unapproved"
   >("all");
@@ -110,6 +111,13 @@ export default function AdminQuestions() {
       filterByLanguageAndApproval(allQuestions, selectedLang, approvalFilter),
     );
   }, [allQuestions, selectedLang, approvalFilter]);
+
+  useEffect(() => {
+    fetch(`${apiBase}/api/translate-model`)
+      .then((res) => res.json())
+      .then((d) => setTranslateModel(d.model || ""))
+      .catch(() => {});
+  }, [apiBase]);
 
   const handleLangChange = (lang: string) => {
     setSelectedLang(lang);
@@ -373,6 +381,11 @@ export default function AdminQuestions() {
           <button className="btn" onClick={handleImport} disabled={isImporting}>
             Import Questions
           </button>
+          {translateModel && (
+            <p className="text-sm text-gray-500 mt-2">
+              Using translation model: {translateModel}
+            </p>
+          )}
           {isImporting && uploadStatus && (
             <div className="alert alert-info text-sm">
               {t(`upload.status.${uploadStatus}`)}

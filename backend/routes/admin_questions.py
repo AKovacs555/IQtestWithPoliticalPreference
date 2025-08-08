@@ -5,7 +5,7 @@ import asyncio
 from math import ceil
 from fastapi import APIRouter, Depends, HTTPException
 from backend.deps.supabase_client import get_supabase_client
-from backend.utils.translation import translate_question
+from backend.services.translator import translate_one
 from .dependencies import require_admin
 from pydantic import BaseModel
 
@@ -195,17 +195,21 @@ async def update_question(question_id: int, payload: dict):
     supabase.table("questions").update(data).eq("id", question_id).execute()
 
     if record.get("lang") == "ja":
+        base = {
+            "prompt": payload["question"],
+            "options": payload["options"],
+            "answer_index": payload["answer"],
+            "explanation": payload.get("explanation", ""),
+        }
         tasks = [
-            translate_question(payload["question"], payload["options"], lang)
-            for lang in TARGET_LANGS
+            translate_one(base, "ja", lang) for lang in TARGET_LANGS
         ]
         results = await asyncio.gather(*tasks)
-        for lang, res in zip(TARGET_LANGS, results):
-            q_trans, opts_trans = res
+        for lang, translated in zip(TARGET_LANGS, results):
             update = {
-                "question": q_trans,
-                "options": opts_trans,
-                "answer": payload["answer"],
+                "question": translated["prompt"],
+                "options": translated["options"],
+                "answer": translated["answer_index"],
                 "irt_a": payload["irt_a"],
                 "irt_b": payload["irt_b"],
                 "image_prompt": payload.get("image_prompt"),

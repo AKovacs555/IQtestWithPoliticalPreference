@@ -77,6 +77,7 @@ from routes.custom_survey import (
     router as custom_survey_router,
     admin_router as custom_survey_admin_router,
 )
+from api import diagnostics
 import json
 from utils.settings import get_setting
 
@@ -103,6 +104,7 @@ app.include_router(admin_import_router)
 app.include_router(admin_surveys_router)
 app.include_router(admin_users_router)
 app.include_router(settings_router)
+app.include_router(diagnostics.router)
 
 # Public routers
 app.include_router(quiz_router)

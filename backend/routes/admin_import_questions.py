@@ -4,7 +4,7 @@ import logging
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from backend.deps.supabase_client import get_supabase_client
-from backend.utils.translation import translate_question
+from backend.services.translator import translate_one
 from .dependencies import require_admin
 
 # Supported languages for automatic translation, including Turkish and Italian
@@ -84,11 +84,15 @@ async def import_questions(file: UploadFile = File(...)):
             continue
 
         if lang == "ja":
+            base = {
+                "prompt": item["question"],
+                "options": options,
+                "answer_index": answer,
+                "explanation": item.get("explanation", ""),
+            }
             for tgt in target_languages:
                 try:
-                    q_trans, opts_trans = await translate_question(
-                        item["question"], options, tgt
-                    )
+                    translated = await translate_one(base, lang, tgt)
                 except Exception as exc:
                     logger.error(
                         f"Translation {tgt} failed for orig_id {incoming_id}: {exc}"
@@ -97,9 +101,9 @@ async def import_questions(file: UploadFile = File(...)):
                 trans_record = {
                     "orig_id": incoming_id,
                     "group_id": group_id,
-                    "question": q_trans,
-                    "options": opts_trans,
-                    "answer": answer,
+                    "question": translated["prompt"],
+                    "options": translated["options"],
+                    "answer": translated["answer_index"],
                     "irt_a": irt["a"],
                     "irt_b": irt["b"],
                     "lang": tgt,
@@ -192,11 +196,15 @@ async def import_questions_with_images(
             )
         else:
             if lang == "ja":
+                base = {
+                    "prompt": item["question"],
+                    "options": item["options"],
+                    "answer_index": item["answer"],
+                    "explanation": item.get("explanation", ""),
+                }
                 for tgt in target_languages:
                     try:
-                        q_trans, opts_trans = await translate_question(
-                            item["question"], item["options"], tgt
-                        )
+                        translated = await translate_one(base, lang, tgt)
                     except Exception as exc:
                         logger.error(
                             f"Translation {tgt} failed for orig_id {incoming_id}: {exc}"
@@ -205,9 +213,9 @@ async def import_questions_with_images(
                     trans_record = {
                         "orig_id": incoming_id,
                         "group_id": group_id,
-                        "question": q_trans,
-                        "options": opts_trans,
-                        "answer": item["answer"],
+                        "question": translated["prompt"],
+                        "options": translated["options"],
+                        "answer": translated["answer_index"],
                         "irt_a": item["irt"]["a"],
                         "irt_b": item["irt"]["b"],
                         "lang": tgt,
