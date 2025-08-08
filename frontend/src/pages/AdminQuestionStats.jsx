@@ -1,13 +1,7 @@
 import React, { useEffect, useState } from 'react';
 // Layout is provided by AdminLayout.
-import useAuth from '../hooks/useAuth';
 
 export default function AdminQuestionStats() {
-  const { user } = useAuth();
-  const showAdmin = String(import.meta.env.VITE_SHOW_ADMIN || '').toLowerCase() === 'true';
-  if (!showAdmin && (!user || !user.is_admin)) {
-    return <div className="p-4 text-center">Admin access required</div>;
-  }
   const apiBase = import.meta.env.VITE_API_BASE || '';
   const numQuestions = Number(import.meta.env.VITE_NUM_QUESTIONS || 20);
   const required = {

@@ -35,6 +35,7 @@ Admin access works as follows:
 - `VITE_SHOW_ADMIN=true` controls whether admin routes are built and shown in the navigation.
 - Users must have `is_admin=true` in the Supabase `users` table. After updating the database, they need to log out and back in so the JWT includes the `is_admin` claim.
 - Admin endpoints use the authenticated user's JWT and require `is_admin=true`; no separate API key is needed.
+- The frontend checks the `is_admin` claim and compares `VITE_SHOW_ADMIN` as a string (`=== "true"`).
 
 ## Building the frontend locally
 
