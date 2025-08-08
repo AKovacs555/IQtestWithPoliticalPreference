@@ -1,0 +1,12 @@
+[
+  {
+    "path": "archive",
+    "reason": "legacy Flask implementation",
+    "evidence": ["README mention", "git grep shows no references"]
+  },
+  {
+    "path": "migrations",
+    "reason": "unused migrations directory",
+    "evidence": ["git grep migrations returns nothing"]
+  }
+]

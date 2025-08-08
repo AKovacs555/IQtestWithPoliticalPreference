@@ -1,6 +1,6 @@
 # IQtestWithPoliticalPreference
 
-This project provides an IQ quiz and political preference survey using a responsive freemium design. Older Flask implementations are stored in the `archive/` directory for reference while the active codebase runs on **FastAPI** with a **React** front end. The UI uses **Material UI** components with Tailwind utilities and works on mobile and desktop devices.
+This project provides an IQ quiz and political preference survey using a responsive freemium design. The active codebase runs on **FastAPI** with a **React** front end. The UI uses **Material UI** components with Tailwind utilities and works on mobile and desktop devices.
 
 > **Note:** Political party selection has been disabled. Related endpoints now return empty data and the frontend no longer prompts users to choose a party.
 
