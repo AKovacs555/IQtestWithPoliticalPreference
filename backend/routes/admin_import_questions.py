@@ -5,15 +5,38 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from backend.deps.supabase_client import get_supabase_client
 import asyncio
-from backend.services.translation import translate_text
+from backend.services.openai_client import translate_with_openai
 from .dependencies import require_admin
 
 # Supported languages for automatic translation, including Turkish and Italian
 target_languages = ["en", "tr", "ru", "zh", "ko", "es", "fr", "it", "de", "ar"]
+LANG_DISPLAY = {
+    "en": "English",
+    "tr": "Turkish",
+    "ru": "Russian",
+    "zh": "Chinese",
+    "ko": "Korean",
+    "es": "Spanish",
+    "fr": "French",
+    "it": "Italian",
+    "de": "German",
+    "ar": "Arabic",
+    "ja": "Japanese",
+}
 
 router = APIRouter(prefix="/admin", tags=["admin-questions"])
 
 logger = logging.getLogger(__name__)
+
+
+def _build_prompt(src: str, tgt: str) -> str:
+    return (
+        "You are a professional translator. "
+        "Translate the following text into {lang}. "
+        "Keep math symbols, numbers, and answer labels intact. "
+        "Return ONLY the translated text without extra commentary.\n\n"
+        f"=== SOURCE LANGUAGE TEXT ===\n{src}\n"
+    ).format(lang=LANG_DISPLAY.get(tgt, tgt))
 
 
 @router.post("/import_questions", dependencies=[Depends(require_admin)])
@@ -95,25 +118,39 @@ async def import_questions(file: UploadFile = File(...)):
                 try:
                     tasks = [
                         asyncio.to_thread(
-                            translate_text, base["prompt"], lang, tgt
+                            translate_with_openai,
+                            _build_prompt(base["prompt"], tgt),
                         ),
                         *[
-                            asyncio.to_thread(translate_text, opt, lang, tgt)
+                            asyncio.to_thread(
+                                translate_with_openai, _build_prompt(opt, tgt)
+                            )
                             for opt in options
                         ],
                     ]
                     if base["explanation"]:
                         tasks.append(
                             asyncio.to_thread(
-                                translate_text, base["explanation"], lang, tgt
+                                translate_with_openai,
+                                _build_prompt(base["explanation"], tgt),
                             )
                         )
                     results = await asyncio.gather(*tasks)
                     translated_prompt = results[0]
                     translated_options = results[1 : 1 + len(options)]
+                    logger.info(
+                        "Translated orig_id=%s lang=%s len=%d",
+                        incoming_id,
+                        tgt,
+                        len(translated_prompt),
+                    )
                 except Exception as exc:
                     logger.error(
-                        f"Translation {tgt} failed for orig_id {incoming_id}: {exc}"
+                        "Translation %s failed for orig_id %s: %s",
+                        tgt,
+                        incoming_id,
+                        exc,
+                        exc_info=True,
                     )
                     continue
 
@@ -137,6 +174,7 @@ async def import_questions(file: UploadFile = File(...)):
                         f"Failed to insert record (lang={trans_record['lang']}, orig_id={trans_record['orig_id']}): {exc}"
                     )
                     continue
+                await asyncio.sleep(0.2)
     return {"inserted": inserted}
 
 
@@ -225,25 +263,40 @@ async def import_questions_with_images(
                     try:
                         tasks = [
                             asyncio.to_thread(
-                                translate_text, base["prompt"], lang, tgt
+                                translate_with_openai,
+                                _build_prompt(base["prompt"], tgt),
                             ),
                             *[
-                                asyncio.to_thread(translate_text, opt, lang, tgt)
+                                asyncio.to_thread(
+                                    translate_with_openai,
+                                    _build_prompt(opt, tgt),
+                                )
                                 for opt in item["options"]
                             ],
                         ]
                         if base["explanation"]:
                             tasks.append(
                                 asyncio.to_thread(
-                                    translate_text, base["explanation"], lang, tgt
+                                    translate_with_openai,
+                                    _build_prompt(base["explanation"], tgt),
                                 )
                             )
                         results = await asyncio.gather(*tasks)
                         translated_prompt = results[0]
                         translated_options = results[1 : 1 + len(item["options"])]
+                        logger.info(
+                            "Translated orig_id=%s lang=%s len=%d",
+                            incoming_id,
+                            tgt,
+                            len(translated_prompt),
+                        )
                     except Exception as exc:
                         logger.error(
-                            f"Translation {tgt} failed for orig_id {incoming_id}: {exc}"
+                            "Translation %s failed for orig_id %s: %s",
+                            tgt,
+                            incoming_id,
+                            exc,
+                            exc_info=True,
                         )
                         continue
                     trans_record = {
@@ -266,4 +319,5 @@ async def import_questions_with_images(
                             f"Failed to insert record (lang={trans_record['lang']}, orig_id={trans_record['orig_id']}): {exc}"
                         )
                         continue
+                    await asyncio.sleep(0.2)
     return {"inserted": inserted}
