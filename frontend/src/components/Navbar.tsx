@@ -37,17 +37,17 @@ export default function Navbar() {
     { label: t('dashboard.title'), href: '/dashboard' },
     { label: t('nav.contact', { defaultValue: 'Contact' }), href: '/contact' },
   ];
-  const adminLinks: NavItem[] = [
-    { label: 'Questions', href: '/admin/questions' },
-    { label: 'Question Stats', href: '/admin/question-stats' },
-    { label: t('admin_sets.title'), href: '/admin/sets' },
-    { label: 'Settings', href: '/admin/settings' },
-  ];
+
+  const showAdmin =
+    String(import.meta.env.VITE_SHOW_ADMIN || '').toLowerCase() === 'true' &&
+    Boolean(user?.is_admin);
 
   const items: NavItem[] = [
     ...links,
     { label: t('nav.take_quiz'), onClick: handleStart },
-    ...(user?.is_admin ? adminLinks : []),
+    ...(showAdmin
+      ? [{ label: t('nav.admin', { defaultValue: 'Admin' }), href: '/admin' }]
+      : []),
   ];
 
   return (
