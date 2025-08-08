@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Layout from '../components/Layout';
+import AppShell from '../components/AppShell';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
@@ -32,7 +32,7 @@ export default function Home() {
   }, [userId]);
 
   return (
-    <Layout>
+    <AppShell>
       <motion.section
         className="py-12 flex flex-col items-center text-center space-y-6"
         initial={{ opacity: 0, y: 20 }}
@@ -54,6 +54,6 @@ export default function Home() {
           <ArrowRight className="w-5 h-5" />
         </button>
       </motion.section>
-    </Layout>
+    </AppShell>
   );
 }

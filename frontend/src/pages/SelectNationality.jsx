@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import Layout from '../components/Layout';
+import AppShell from '../components/AppShell';
 import getCountryList from '../lib/countryList';
 import LanguageSelector from '../components/LanguageSelector';
 import { useTranslation } from 'react-i18next';
@@ -40,7 +40,7 @@ export default function SelectNationality() {
   );
 
   return (
-    <Layout>
+    <AppShell>
       <div className="space-y-4 max-w-md mx-auto">
         <LanguageSelector />
         <h2 className="text-xl font-bold">{t('select_country.title')}</h2>
@@ -68,6 +68,6 @@ export default function SelectNationality() {
           {t('select_country.save')}
         </button>
       </div>
-    </Layout>
+    </AppShell>
   );
 }

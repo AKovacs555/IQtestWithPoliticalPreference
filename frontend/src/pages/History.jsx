@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import Layout from '../components/Layout';
+import AppShell from '../components/AppShell';
 
 const API_BASE = import.meta.env.VITE_API_BASE || "";
 
@@ -17,22 +17,22 @@ export default function History() {
 
   if (!userId) {
     return (
-      <Layout>
+      <AppShell>
         <div className="p-4 text-center">No user specified.</div>
-      </Layout>
+      </AppShell>
     );
   }
 
   if (!scores) {
     return (
-      <Layout>
+      <AppShell>
         <div className="p-4">Loading...</div>
-      </Layout>
+      </AppShell>
     );
   }
 
   return (
-    <Layout>
+    <AppShell>
       <div className="p-4 space-y-4 max-w-md mx-auto">
         <h2 className="text-xl font-bold">History</h2>
         <table className="table w-full">
@@ -57,6 +57,6 @@ export default function History() {
         </table>
         <Link to={`/settings/${userId}`} className="underline text-sm">Back to Profile</Link>
       </div>
-    </Layout>
+    </AppShell>
   );
 }

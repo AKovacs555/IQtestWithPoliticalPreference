@@ -3,7 +3,7 @@ import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import useShareMeta from '../hooks/useShareMeta';
 import useAuth from '../hooks/useAuth';
-import Layout from '../components/Layout';
+import AppShell from '../components/AppShell';
 import AdminQuestions from './AdminQuestions';
 import AdminSurvey from './AdminSurvey';
 import AdminUsers from './AdminUsers';
@@ -29,6 +29,7 @@ import LoginPage from './LoginPage.jsx';
 import TestPage from './TestPage.jsx';
 import Contact from './Contact.jsx';
 import ErrorChunkReload from '../components/common/ErrorChunkReload';
+import ThemeDemo from './ThemeDemo.jsx';
 const API_BASE = import.meta.env.VITE_API_BASE || "";
 
 const AdminLayout = lazy(() =>
@@ -187,7 +188,7 @@ const Quiz = () => {
 
   return (
     <PageTransition>
-      <Layout>
+      <AppShell>
         <div className="space-y-4 max-w-lg mx-auto quiz-container">
           {loading && <p>Loading...</p>}
           {error && <p className="text-red-600">{error}</p>}
@@ -216,7 +217,7 @@ const Quiz = () => {
             <p className="text-red-600 text-sm">Session flagged for leaving the page.</p>
           )}
         </div>
-      </Layout>
+      </AppShell>
     </PageTransition>
   );
 };
@@ -268,7 +269,7 @@ const Result = () => {
 
   return (
     <PageTransition>
-      <Layout>
+      <AppShell>
         <div className="text-center space-y-4 p-6 max-w-md mx-auto rounded-2xl backdrop-blur-md bg-white/60 shadow-lg">
           <h2 className="text-2xl font-bold">Your Results</h2>
           <p>IQ: {Number.isFinite(score) ? score.toFixed(2) : 'N/A'}</p>
@@ -329,7 +330,7 @@ const Result = () => {
           </div>
           <p className="text-sm text-gray-600">This test is for research and entertainment.</p>
         </div>
-      </Layout>
+      </AppShell>
     </PageTransition>
   );
 };
@@ -357,6 +358,9 @@ export default function App() {
         <Route path="/select-nationality" element={<SelectNationality />} />
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/login" element={<LoginPage />} />
+        {import.meta.env.DEV && (
+          <Route path="/theme" element={<ThemeDemo />} />
+        )}
         <Route
           path="/admin/*"
           element={
