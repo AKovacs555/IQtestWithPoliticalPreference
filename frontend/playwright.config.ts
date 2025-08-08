@@ -18,7 +18,7 @@ export default defineConfig({
     url: 'http://localhost:4173',
     timeout: 60_000,
     reuseExistingServer: !process.env.CI,
-    cwd: 'frontend',
+    cwd: '.',
     // Option B (alternative, if you’d rather not use cwd):
     // command: 'npm --prefix frontend run preview -- --port 4173',
   },
