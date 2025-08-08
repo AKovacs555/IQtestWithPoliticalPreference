@@ -148,12 +148,12 @@ async def approve_all(payload: ApproveAllRequest):
     if target_count == 0:
         return {"updated": 0, "approved": payload.approved, "lang": payload.lang}
 
-    upd = supabase.table("questions")
+    upd = supabase.table("questions").update({"approved": payload.approved})
     if payload.lang:
         upd = upd.eq("lang", payload.lang)
     if payload.only_delta:
         upd = upd.is_("approved", not payload.approved)
-    upd.update({"approved": payload.approved}).execute()
+    upd.execute()
 
     return {
         "updated": target_count,
@@ -201,9 +201,7 @@ async def update_question(question_id: int, payload: dict):
             "answer_index": payload["answer"],
             "explanation": payload.get("explanation", ""),
         }
-        tasks = [
-            translate_one(base, "ja", lang) for lang in TARGET_LANGS
-        ]
+        tasks = [translate_one(base, "ja", lang) for lang in TARGET_LANGS]
         results = await asyncio.gather(*tasks)
         for lang, translated in zip(TARGET_LANGS, results):
             update = {
