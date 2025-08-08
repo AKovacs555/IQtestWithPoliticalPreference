@@ -1029,3 +1029,12 @@ async def admin_question_bank_info():
         return {"count": 0}
 
 
+@app.get("/share/meta")
+async def share_meta():
+    return {
+        "hashtags": ["IQArena", "IQアリーナ"],
+        "page": "results",
+        "utm": {},
+    }
+
+
