@@ -18,11 +18,13 @@ jobs:
         run: cd frontend && npm ci
 
       - name: Build frontend with admin pages enabled
-        run: cd frontend && VITE_SHOW_ADMIN=true \
-             VITE_SUPABASE_URL=https://example.supabase.co \
-             VITE_SUPABASE_ANON_KEY=anon \
-             VITE_API_BASE=http://localhost:9999 \
-             npm run build
+        working-directory: frontend
+        env:
+          VITE_SHOW_ADMIN: "true"
+          VITE_SUPABASE_URL: "https://example.supabase.co"
+          VITE_SUPABASE_ANON_KEY: "anon"
+          VITE_API_BASE: "http://localhost:9999"
+        run: npm run build
 
       - name: Install Playwright browsers (CI)
         working-directory: frontend
