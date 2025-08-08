@@ -12,7 +12,7 @@ from backend.db import (
     get_dashboard_default_survey,
     set_dashboard_default_survey,
 )
-from backend.utils.translation import translate_survey, SUPPORTED_LANGUAGES
+from backend.services.translator import translate_one
 from backend.deps.supabase_client import get_supabase_client
 from .dependencies import require_admin
 
@@ -24,6 +24,7 @@ logger = logging.getLogger(__name__)
 
 # Language options should mirror those available to end users
 LANGUAGES = ["ja", "en", "tr", "ru", "zh", "ko", "es", "fr", "it", "de", "ar"]
+SUPPORTED_LANGUAGES = ["en", "ja", "es", "de", "it", "tr", "fr", "zh", "ko", "ar"]
 
 
 def grant_free_tests(countries: list[str]) -> None:
@@ -60,15 +61,22 @@ async def create_survey(payload: dict):
         for lang in SUPPORTED_LANGUAGES:
             if lang == base_lang:
                 continue
-            statement_tr, options_tr = await translate_survey(
-                payload["statement"], payload["options"], lang
+            translated = await translate_one(
+                {
+                    "prompt": payload["statement"],
+                    "options": payload["options"],
+                    "answer_index": 0,
+                    "explanation": "",
+                },
+                base_lang,
+                lang,
             )
             rows.append(
                 {
                     "group_id": group_id,
                     "lang": lang,
-                    "statement": statement_tr,
-                    "options": options_tr,
+                    "statement": translated["prompt"],
+                    "options": translated["options"],
                     "type": payload["type"],
                     "exclusive_options": payload["exclusive_options"],
                     "lr": payload.get("lr", 0),
@@ -91,15 +99,22 @@ async def edit_survey(group_id: str, payload: dict):
         for lang in SUPPORTED_LANGUAGES:
             if lang == base_lang:
                 continue
-            statement_tr, options_tr = await translate_survey(
-                payload["statement"], payload["options"], lang
+            translated = await translate_one(
+                {
+                    "prompt": payload["statement"],
+                    "options": payload["options"],
+                    "answer_index": 0,
+                    "explanation": "",
+                },
+                base_lang,
+                lang,
             )
             update_survey(
                 group_id,
                 lang,
                 {
-                    "statement": statement_tr,
-                    "options": options_tr,
+                    "statement": translated["prompt"],
+                    "options": translated["options"],
                     "type": payload["type"],
                     "exclusive_options": payload["exclusive_options"],
                     "lr": payload.get("lr", 0),

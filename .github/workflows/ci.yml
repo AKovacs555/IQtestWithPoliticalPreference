@@ -3,6 +3,9 @@ on: [push, pull_request]
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      TRANSLATION_MODEL: gpt-5
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

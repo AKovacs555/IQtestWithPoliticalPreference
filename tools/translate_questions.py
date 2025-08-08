@@ -1,56 +1,64 @@
-"""Translate IQ question sets into multiple languages using OpenAI."""
-
-from __future__ import annotations
-
 import argparse
 import json
 import os
 import time
 from pathlib import Path
 
-import openai
+from openai import OpenAI
 
-MODEL = os.getenv("TRANSLATION_MODEL", "gpt-4o")
+client = OpenAI()
+model = os.getenv("TRANSLATION_MODEL", "gpt-5")
 
-def translate_item(question: str, options: list[str], target_lang: str) -> tuple[str, list[str]]:
-    """Return the question and options translated into ``target_lang``."""
+SCHEMA = {
+    "name": "Question",
+    "schema": {
+        "type": "object",
+        "properties": {
+            "prompt": {"type": "string"},
+            "options": {"type": "array", "items": {"type": "string"}},
+            "answer_index": {"type": "integer"},
+            "explanation": {"type": "string"},
+        },
+        "required": ["prompt", "options", "answer_index"],
+        "additionalProperties": False,
+    },
+    "strict": True,
+}
 
-    system_prompt = (
-        f"Translate the following IQ test question and its multiple-choice options into {target_lang}. "
-        "Preserve the numbering/order of the options. Respond in JSON with keys 'question' and 'options'."
+
+def translate_payload(payload: dict, src: str, tgt: str) -> dict:
+    resp = client.responses.create(
+        model=model,
+        instructions=(
+            f"Translate JSON from {src} to {tgt}. Preserve placeholders, formatting, numbers, option order, and answer_index. "
+            "Return ONLY JSON following the schema."
+        ),
+        input=json.dumps(payload, ensure_ascii=False),
+        response_format={"type": "json_schema", "json_schema": SCHEMA},
     )
-    user_content = json.dumps({"question": question, "options": options}, ensure_ascii=False)
-    try:
-        resp = openai.ChatCompletion.create(
-            model=MODEL,
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_content},
-            ],
-        )
-    except Exception as e:  # broad catch to surface API issues
-        raise RuntimeError(f"OpenAI API call failed: {e}") from e
-
-    text = resp.choices[0].message.content
-    data = json.loads(text)
-    return data["question"], data["options"]
+    return json.loads(resp.output_text)
 
 
 def translate_file(path: Path, languages: list[str]) -> None:
-    """Translate ``path`` into each language in ``languages`` and write files."""
-
     base_data = json.loads(path.read_text(encoding="utf-8"))
     set_id = base_data.get("id", path.stem)
+    src_lang = base_data.get("language", "ja")
     for lang in languages:
         print(f"Translating {set_id} -> {lang}")
-        data = json.loads(json.dumps(base_data))  # deep copy
+        data = json.loads(json.dumps(base_data))
         data["language"] = lang
         for q in data.get("questions", []):
             qid = q.get("id")
             print(f"  question {qid}")
-            translated_q, translated_opts = translate_item(q["question"], q["options"], lang)
-            q["question"] = translated_q
-            q["options"] = translated_opts
+            payload = {
+                "prompt": q.get("question", ""),
+                "options": q.get("options", []),
+                "answer_index": q.get("answer", 0),
+                "explanation": q.get("explanation", ""),
+            }
+            translated = translate_payload(payload, src_lang, lang)
+            q["question"] = translated["prompt"]
+            q["options"] = translated["options"]
             time.sleep(1)
         out_file = path.parent / f"{set_id}_{lang}.json"
         out_file.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -66,7 +74,7 @@ def main() -> None:
     api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
         raise SystemExit("OPENAI_API_KEY environment variable not set")
-    openai.api_key = api_key
+    # OpenAI client picks up key from env automatically
 
     languages = [lang.strip() for lang in args.languages.split(",") if lang.strip()]
     translate_file(Path(args.input), languages)
