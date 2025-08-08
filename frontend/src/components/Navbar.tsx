@@ -12,6 +12,7 @@ import { useTranslation } from 'react-i18next';
 import useAuth from '../hooks/useAuth';
 import OverflowNav from './nav/OverflowNav';
 import MobileDrawer from './nav/MobileDrawer';
+import type { NavItem } from './nav/types';
 
 export default function Navbar() {
   const userId = typeof window !== 'undefined' ? localStorage.getItem('user_id') : null;
@@ -29,21 +30,21 @@ export default function Navbar() {
     else navigate('/quiz');
   };
 
-  const links = [
+  const links: NavItem[] = [
     { label: t('nav.leaderboard'), href: '/leaderboard' },
     { label: t('nav.pricing'), href: '/pricing' },
     { label: t('nav.nationality'), href: '/select-nationality' },
     { label: t('dashboard.title'), href: '/dashboard' },
     { label: t('nav.contact', { defaultValue: 'Contact' }), href: '/contact' },
   ];
-  const adminLinks = [
+  const adminLinks: NavItem[] = [
     { label: 'Questions', href: '/admin/questions' },
     { label: 'Question Stats', href: '/admin/question-stats' },
     { label: t('admin_sets.title'), href: '/admin/sets' },
     { label: 'Settings', href: '/admin/settings' },
   ];
 
-  const items = [
+  const items: NavItem[] = [
     ...links,
     { label: t('nav.take_quiz'), onClick: handleStart },
     ...(user?.is_admin ? adminLinks : []),
