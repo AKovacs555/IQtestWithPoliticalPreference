@@ -11,7 +11,10 @@ jobs:
       - run: pytest -v
       - uses: actions/setup-node@v4
         with: {node-version: '20'}
-      - run: cd frontend && npm ci && npm run build
+      - name: Install frontend deps (allow lockfile update in CI)
+        run: cd frontend && npm install
+      - name: Build frontend with admin pages enabled
+        run: cd frontend && VITE_SHOW_ADMIN=true VITE_SUPABASE_URL=https://example.supabase.co VITE_SUPABASE_ANON_KEY=anon VITE_API_BASE=http://localhost:9999 npm run build
       - name: Install Playwright browsers (CI)
         working-directory: frontend
         run: npx playwright install --with-deps
