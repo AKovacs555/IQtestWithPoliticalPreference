@@ -35,6 +35,40 @@ def create_user(user_data: Dict[str, Any]) -> Dict[str, Any]:
     return resp.data[0]
 
 
+def get_or_create_user_id_from_hashed(supabase: Client, hashed_id: str) -> str:
+    """Return ``users.id`` (UUID) for a hashed identifier.
+
+    If the user does not yet exist a new record is inserted and the generated
+    ``id`` is returned.  Always returns a UUID string.
+    """
+
+    # Attempt to fetch an existing ID first.
+    r = (
+        supabase.table("users")
+        .select("id")
+        .eq("hashed_id", hashed_id)
+        .limit(1)
+        .execute()
+    )
+    if r.data:
+        return r.data[0]["id"]
+
+    # Insert a new record and try to obtain the generated ID.  Some drivers
+    # require an explicit select afterwards if ``returning"` isn't enabled.
+    ins = supabase.table("users").insert({"hashed_id": hashed_id}).execute()
+    if ins.data and "id" in ins.data[0]:
+        return ins.data[0]["id"]
+
+    r2 = (
+        supabase.table("users")
+        .select("id")
+        .eq("hashed_id", hashed_id)
+        .limit(1)
+        .execute()
+    )
+    return r2.data[0]["id"]
+
+
 def update_user(hashed_id: str, update_data: Dict[str, Any]) -> None:
     """Update a user record with the allowed fields.
 

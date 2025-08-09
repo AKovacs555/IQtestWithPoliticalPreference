@@ -22,7 +22,7 @@ def _create_user(uid):
         'free_attempts': 0,
         'survey_completed': False,
     }
-    db.create_user(data)
+    return db.create_user(data)['id']
 
 
 def test_survey_submit_handles_null_lr_auth(monkeypatch):
@@ -48,7 +48,7 @@ def test_survey_submit_handles_null_lr_auth(monkeypatch):
 
 def test_survey_submit_persists_answers_and_marks_completion(monkeypatch):
     uid = 'user10'
-    _create_user(uid)
+    user_uuid = _create_user(uid)
     surveys = [
         {
             "id": 1,
@@ -75,7 +75,7 @@ def test_survey_submit_persists_answers_and_marks_completion(monkeypatch):
     supa = db.get_supabase()
     assert len(supa.tables.get('survey_responses', [])) == 1
     assert supa.tables['survey_responses'][0] == {
-        'user_id': uid,
+        'user_id': user_uuid,
         'survey_id': '1',
         'survey_group_id': 'g1',
         'answer': {"id": "1", "selections": [0]},

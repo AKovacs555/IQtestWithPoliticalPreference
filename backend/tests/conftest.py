@@ -1,5 +1,6 @@
 import pytest
 import os
+import uuid
 
 os.environ.setdefault("SUPABASE_URL", "http://localhost")
 os.environ.setdefault("SUPABASE_SERVICE_ROLE_KEY", "dummy")
@@ -11,8 +12,9 @@ class DummyResponse:
         self.error = None
 
 class DummyTable:
-    def __init__(self, rows):
+    def __init__(self, rows, name):
         self.rows = rows
+        self.name = name
         self._select = False
         self._insert = None
         self._update = None
@@ -21,15 +23,21 @@ class DummyTable:
         self._limit = None
 
     def select(self, *columns):
-        # Mimic supabase by raising an error when selecting a missing column.
-        for col_group in columns:
-            for col in col_group.split(","):
-                if col.strip() == "id":
-                    raise ValueError("column 'id' does not exist")
         self._select = True
         return self
 
     def insert(self, data):
+        # Auto-generate UUIDs for user rows when missing.
+        if self.name == "users":
+            def ensure_id(row: dict) -> dict:
+                row = dict(row)
+                row.setdefault("id", str(uuid.uuid4()))
+                return row
+
+            if isinstance(data, list):
+                data = [ensure_id(r) for r in data]
+            else:
+                data = ensure_id(data)
         self._insert = data
         return self
 
@@ -91,7 +99,7 @@ class DummySupabase:
     def from_(self, table):
         if table not in self.tables:
             self.tables[table] = []
-        return DummyTable(self.tables[table])
+        return DummyTable(self.tables[table], table)
 
     def table(self, name):
         return self.from_(name)
