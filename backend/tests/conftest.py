@@ -112,4 +112,12 @@ def fake_supabase(monkeypatch):
     monkeypatch.setattr("main.get_supabase", lambda: supa, raising=False)
     monkeypatch.setattr("backend.utils.settings.supabase", supa, raising=False)
     monkeypatch.setattr("backend.routes.settings.supabase", supa, raising=False)
+    if os.environ.get("DAILY3_TEST_REAL") != "1":
+        monkeypatch.setattr("db.get_daily_answer_count", lambda *_: 3, raising=False)
+        monkeypatch.setattr(
+            "backend.db.get_daily_answer_count", lambda *_: 3, raising=False
+        )
+        monkeypatch.setattr(
+            "backend.routes.quiz.get_daily_answer_count", lambda *_: 3, raising=False
+        )
     return supa

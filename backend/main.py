@@ -81,6 +81,7 @@ from routes.custom_survey import (
     admin_router as custom_survey_admin_router,
 )
 from routes.leaderboard import router as leaderboard_router
+from routes.daily import router as daily_router
 from api import diagnostics
 import json
 from utils.settings import get_setting
@@ -116,6 +117,7 @@ app.include_router(quiz_router)
 app.include_router(surveys_router)
 app.include_router(user_router)
 app.include_router(leaderboard_router)
+app.include_router(daily_router)
 app.include_router(auth_router)
 app.include_router(sms_router)
 app.include_router(referral_router)

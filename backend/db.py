@@ -1,6 +1,7 @@
 import os
 import logging
 from typing import Any, Dict, Optional, List, Iterable
+from datetime import datetime, timedelta
 from supabase import create_client, Client
 from postgrest.exceptions import APIError
 
@@ -321,6 +322,39 @@ def get_daily_survey_response(
     )
     rows = resp.data or []
     return rows[0] if rows else None
+
+
+def get_daily_answer_count(user_id: str, day_start: datetime) -> int:
+    """Return how many daily answers exist for ``user_id`` on the UTC day."""
+    supabase = get_supabase()
+    end = day_start + timedelta(days=1)
+    resp = supabase.table("survey_responses").select("*").eq("user_id", user_id).execute()
+    rows = resp.data or []
+    start_iso = day_start.isoformat()
+    end_iso = end.isoformat()
+    count = 0
+    for row in rows:
+        ts = row.get("created_at")
+        if ts and start_iso <= ts < end_iso:
+            count += 1
+    return count
+
+
+def insert_daily_answer(
+    user_id: str,
+    item_id: str,
+    answer_index: int,
+    created_at: datetime,
+) -> None:
+    """Insert a daily survey answer for ``user_id``."""
+    supabase = get_supabase()
+    data = {
+        "user_id": user_id,
+        "item_id": item_id,
+        "answer_index": answer_index,
+        "created_at": created_at.isoformat(),
+    }
+    supabase.table("survey_responses").insert(data).execute()
 
 
 def get_answered_survey_ids(user_id: str) -> List[str]:

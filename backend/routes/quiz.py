@@ -5,7 +5,7 @@ import logging
 import uuid
 from pathlib import Path
 from typing import List, Optional
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, HTTPException, Request, Depends
 import random
 from pydantic import BaseModel
@@ -14,6 +14,8 @@ from backend.questions_loader import (
     get_question_sets,
     get_questions_for_set,
 )
+
+logger = logging.getLogger(__name__)
 # Backwards compatibility for tests
 def get_balanced_random_questions_by_set(n: int, set_id: str, lang: str | None = None):
     return get_questions_for_set(set_id, n, lang)
@@ -24,7 +26,11 @@ from backend.scoring import estimate_theta, iq_score, ability_summary, standard_
 from backend.irt import percentile
 from backend.features import generate_share_image
 from backend.deps.auth import get_current_user
-from backend.db import get_answered_survey_ids, insert_survey_responses
+from backend.db import (
+    get_answered_survey_ids,
+    insert_survey_responses,
+    get_daily_answer_count,
+)
 
 router = APIRouter(prefix="/quiz", tags=["quiz"])
 
@@ -100,6 +106,22 @@ async def start_quiz(
                 "message": "Please complete the demographics form before taking the IQ test.",
             },
         )
+    if user:
+        now = datetime.now(timezone.utc)
+        start = datetime(now.year, now.month, now.day, tzinfo=timezone.utc)
+        answered = get_daily_answer_count(user["hashed_id"], start)
+        if answered < 3:
+            reset_at = start + timedelta(days=1)
+            logger.error("daily3_block")
+            raise HTTPException(
+                status_code=403,
+                detail={
+                    "code": "DAILY3_REQUIRED",
+                    "remaining": 3 - answered,
+                    "reset_at": reset_at.isoformat(),
+                },
+            )
+        logger.info("quiz_start_allowed")
     if set_id:
         try:
             questions = get_balanced_random_questions_by_set(NUM_QUESTIONS, set_id)
