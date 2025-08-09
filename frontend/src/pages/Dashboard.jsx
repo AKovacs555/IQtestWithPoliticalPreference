@@ -14,6 +14,7 @@ export default function Dashboard() {
   const [surveyList, setSurveyList] = useState([]);
   const [selectedSurvey, setSelectedSurvey] = useState('');
   const [optionStats, setOptionStats] = useState(null);
+  const [inviteCode, setInviteCode] = useState('');
 
   useEffect(() => {
     fetch(`${API_BASE}/stats/iq_histogram?user_id=${userId}`)
@@ -27,6 +28,13 @@ export default function Dashboard() {
     fetch(`${API_BASE}/admin/dashboard-default-survey`)
       .then(r => r.json())
       .then(d => setSelectedSurvey(d.group_id || ''));
+
+    const token = localStorage.getItem('authToken');
+    if (token) {
+      fetch(`${API_BASE}/referral/code`, { headers: { Authorization: `Bearer ${token}` } })
+        .then(r => r.json())
+        .then(d => setInviteCode(d.invite_code || ''));
+    }
   }, [i18n.language, userId]);
 
   useEffect(() => {
@@ -73,6 +81,11 @@ export default function Dashboard() {
           <p className="text-center">{t('dashboard.no_data')}</p>
         ) : (
           <>
+            {inviteCode && (
+              <p className="text-center text-sm">
+                Invite link: {`${window.location.origin}/?r=${inviteCode}`}
+              </p>
+            )}
             {hist.histogram.length ? (
               <div className="h-64"><canvas ref={histRef}></canvas></div>
             ) : null}

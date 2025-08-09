@@ -11,7 +11,9 @@ const DEFAULT_HASHTAGS = (import.meta.env.VITE_SOCIAL_HASHTAGS || 'IQArena,IQTes
 
 export async function shareResult({ title, text, url, hashtags }: ShareParams) {
   const tags = hashtags && hashtags.length ? hashtags : DEFAULT_HASHTAGS;
-  const fullText = text || '';
+  const tagText = tags.map((t) => `#${t}`).join(' ');
+  const plainText = text || '';
+  const fullText = plainText ? `${plainText} ${tagText}` : tagText;
   if (navigator.share) {
     try {
       await navigator.share({ title, text: fullText, url });
@@ -21,7 +23,7 @@ export async function shareResult({ title, text, url, hashtags }: ShareParams) {
     }
   }
   const encodedUrl = encodeURIComponent(url);
-  const encodedText = encodeURIComponent(fullText);
+  const encodedText = encodeURIComponent(plainText);
   const encodedTags = encodeURIComponent(tags.join(','));
   // Open X/Twitter share as primary fallback
   const twitter = `https://twitter.com/intent/tweet?url=${encodedUrl}&text=${encodedText}&hashtags=${encodedTags}`;
