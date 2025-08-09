@@ -20,6 +20,7 @@ repo_root = os.path.join(backend_dir, "..")
 sys.path.extend([backend_dir, repo_root])
 
 from fastapi import FastAPI, HTTPException, Depends, Request
+from fastapi.responses import JSONResponse
 import io
 import contextlib
 from fastapi.middleware.cors import CORSMiddleware
@@ -135,11 +136,12 @@ from db import (
     get_all_users,
     get_supabase,
     get_surveys,
-    insert_survey_responses,
     get_survey_answers,
     get_answered_survey_ids,
     get_pricing_rule,
+    get_or_create_user_id_from_hashed,
 )
+from postgrest.exceptions import APIError
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
 SUPABASE_API_KEY = os.environ.get("SUPABASE_API_KEY", "")
 
@@ -742,7 +744,6 @@ async def survey_submit(payload: SurveySubmitRequest):
         if payload.user_id:
             response_rows.append(
                 {
-                    "user_id": payload.user_id,
                     "survey_id": ans.id,
                     "survey_group_id": str(item.get("group_id")),
                     "answer": {"id": ans.id, "selections": selections},
@@ -754,9 +755,29 @@ async def survey_submit(payload: SurveySubmitRequest):
         lr_score /= n
         auth_score /= n
 
-    if response_rows:
-        insert_survey_responses(response_rows)
-        db_update_user(payload.user_id, {"survey_completed": True})
+    if payload.user_id and response_rows:
+        supabase = get_supabase()
+        hashed_human_id = payload.user_id
+        uuid = get_or_create_user_id_from_hashed(supabase, hashed_human_id)
+
+        def rows_with(u: str) -> List[dict]:
+            return [dict(r, user_id=u) for r in response_rows]
+
+        rows = rows_with(uuid)
+        try:
+            supabase.from_("survey_responses").insert(rows).execute()
+            db_update_user(hashed_human_id, {"survey_completed": True})
+        except APIError as e:
+            code = getattr(e, "code", "")
+            msg = (getattr(e, "message", "") or "").lower()
+            if code in ("23505",) or "unique" in msg or "duplicate key" in msg:
+                return JSONResponse({"error": "already_answered_today"}, status_code=409)
+            if code in ("23503",) or "foreign key" in msg:
+                uuid = get_or_create_user_id_from_hashed(supabase, hashed_human_id)
+                supabase.from_("survey_responses").insert(rows_with(uuid)).execute()
+                db_update_user(hashed_human_id, {"survey_completed": True})
+            else:
+                return JSONResponse({"error": "db_error", "detail": str(e)}, status_code=500)
 
     if lr_score > 0.3:
         category = "Conservative"
