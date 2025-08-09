@@ -8,18 +8,18 @@ import main
 def test_country_specific_pricing(monkeypatch):
     def fake_get_pricing_rule(country, product):
         if country == "JP" and product == "retry":
-            return {"price_jpy": 111}
-        if country == "JP" and product == "pro_month":
-            return {"price_jpy": 222}
+            return {"currency": "JPY", "amount_minor": 111, "product": "retry"}
+        if country == "JP" and product == "pro_pass":
+            return {"currency": "JPY", "amount_minor": 222, "product": "pro_pass"}
         return None
     monkeypatch.setattr(main, "get_pricing_rule", fake_get_pricing_rule)
     with TestClient(main.app) as client:
         r = client.get("/pricing/u1", headers={"cf-country": "JP"})
         assert r.status_code == 200
         data = r.json()
-        assert data["retry_price"] == 111
-        assert data["pro_price"] == 222
-        assert data["currency"] == "JPY"
+        assert data["retry"]["amount_minor"] == 111
+        assert data["pro_pass"]["amount_minor"] == 222
+        assert data["country"] == "JP"
 
 
 def test_pro_purchase_flow(monkeypatch):

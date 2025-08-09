@@ -32,11 +32,19 @@ export default function Pricing() {
 
   useEffect(() => {
     fetch(`${API_BASE}/pricing/${userId}`)
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) throw new Error('pricing');
+        return res.json();
+      })
       .then(data => {
-        setPrice(data.price);
-        setProPrice(data.pro_price);
-        setFreeAttempts(data.free_attempts ?? 0);
+        setPrice(data?.retry?.amount_minor ?? 0);
+        setProPrice(data?.pro_pass?.amount_minor ?? 0);
+        setFreeAttempts(0);
+      })
+      .catch(() => {
+        setPrice(0);
+        setProPrice(0);
+        setFreeAttempts(0);
       });
   }, []);
 

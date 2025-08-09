@@ -62,7 +62,7 @@ from payment import (
     create_nowpayments_invoice,
     get_nowpayments_status,
 )
-from analytics import log_event
+from analytics import log_event as track_event
 from tools.dif_analysis import dif_report
 from routes.exam import router as exam_router
 from routes.admin_questions import router as admin_questions_router
@@ -141,6 +141,9 @@ from db import (
     get_pricing_rule,
     get_or_create_user_id_from_hashed,
     upsert_user,
+    log_event,
+    DEFAULT_RETRY_PRICE,
+    DEFAULT_PRO_PRICE,
 )
 from postgrest.exceptions import APIError
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
@@ -153,6 +156,15 @@ EVENTS: list[dict] = []
 
 
 router = APIRouter()
+
+
+def detect_country(request: Request) -> str:
+    return (
+        request.headers.get("cf-country")
+        or request.headers.get("cf_country")
+        or request.headers.get("x-country")
+        or "JP"
+    ).upper()
 
 
 class UpsertUserIn(BaseModel):
@@ -329,69 +341,21 @@ def hash_phone(phone: str, salt: str) -> str:
 # Adaptive testing session store
 OTP_CODES = {}
 
-def _retry_price(user: dict) -> int:
-    plays_paid = max((user.get("plays", 0)) - (user.get("referrals", 0)), 0)
-    idx = plays_paid if plays_paid < len(PRICES) else len(PRICES) - 1
-    return PRICES[idx]
 
-
-def _assign_variant(user: dict) -> int:
-    """Return a stable variant index for the user."""
-    return abs(hash(user["hashed_id"])) % len(PRICE_VARIANTS)
-
-
-@app.get("/pricing/{user_id}", response_model=PricingResponse)
-async def pricing(user_id: str, request: Request, region: str = "US"):
-    country = (
-        request.headers.get("cf-country")
-        or request.headers.get("cf_country")
-        or request.headers.get("x-country")
-        or region
-    ).upper()
-    max_free_attempts = await get_setting("max_free_attempts", 1)
-    user = get_user(user_id)
-    if not user:
-        user = db_create_user(
-            {
-                "hashed_id": user_id,
-                "salt": "",
-                "plays": 0,
-                "referrals": 0,
-                "points": 0,
-                "scores": [],
-                "party_log": [],
-                "demographic": {},
-                "free_attempts": max_free_attempts,
-            }
-        )
-    elif "free_attempts" not in user:
-        user["free_attempts"] = max_free_attempts
-        db_update_user(user_id, {"free_attempts": max_free_attempts})
-    elif user.get("free_attempts", 0) > max_free_attempts:
-        user["free_attempts"] = max_free_attempts
-        db_update_user(user_id, {"free_attempts": max_free_attempts})
-    processor = select_processor(country)
-    variant_idx = _assign_variant(user)
-    log_event({"event": "pricing_shown", "user_id": user_id, "variant": variant_idx})
-    price = PRICE_VARIANTS[variant_idx]
-    retry_price = _retry_price(user)
-    rule_retry = get_pricing_rule(country, "retry")
-    if rule_retry:
-        retry_price = rule_retry["price_jpy"]
-    pro_price = PRO_PRICE_MONTHLY
-    rule_pro = get_pricing_rule(country, "pro_month")
-    if rule_pro:
-        pro_price = rule_pro["price_jpy"]
-    return {
-        "price": price,
-        "retry_price": retry_price,
-        "plays": user.get("plays", 0),
-        "free_attempts": min(user.get("free_attempts", max_free_attempts), max_free_attempts),
-        "processor": processor,
-        "pro_price": pro_price,
-        "variant": variant_idx,
-        "currency": "JPY",
-    }
+@app.get("/pricing/{user_hid}")
+def pricing(user_hid: str, request: Request):
+    try:
+        country = detect_country(request)
+        rule_retry = get_pricing_rule(country, "retry") or DEFAULT_RETRY_PRICE
+        rule_pro = get_pricing_rule(country, "pro_pass") or DEFAULT_PRO_PRICE
+        return {"country": country, "retry": rule_retry, "pro_pass": rule_pro}
+    except Exception as e:  # pragma: no cover - logging only
+        logger.exception("pricing endpoint fallback", exc_info=e)
+        return {
+            "country": "JP",
+            "retry": DEFAULT_RETRY_PRICE,
+            "pro_pass": DEFAULT_PRO_PRICE,
+        }
 
 
 @app.post("/purchase")
@@ -416,7 +380,7 @@ async def purchase(payload: PurchaseRequest, region: str = "US"):
 async def nowpayments_callback(payment_id: str):
     data = get_nowpayments_status(payment_id)
     if data.get("payment_status") == "finished":
-        log_event({"event": "nowpayments_finished", "payment_id": payment_id})
+        track_event({"event": "nowpayments_finished", "payment_id": payment_id})
     return {"status": "ok"}
 
 
@@ -459,7 +423,7 @@ async def record_play(action: UserAction):
         "points": user.get("points", 0),
         "free_attempts": user.get("free_attempts", 0),
     })
-    log_event({"event": "play_record", "user_id": action.user_id, "paid": paid})
+    track_event({"event": "play_record", "user_id": action.user_id, "paid": paid})
     return {"plays": user["plays"], "points": user.get("points", 0), "free_attempts": user.get("free_attempts", 0)}
 
 
@@ -500,7 +464,7 @@ async def ads_start(action: UserAction):
                 "demographic": {},
             }
         )
-    log_event({"event": "ad_start", "user_id": action.user_id})
+    track_event({"event": "ad_start", "user_id": action.user_id})
     return {"status": "started"}
 
 
@@ -522,7 +486,7 @@ async def ads_complete(action: UserAction):
         )
     user["points"] = user.get("points", 0) + AD_REWARD_POINTS
     db_update_user(action.user_id, {"points": user["points"]})
-    log_event({"event": "ad_complete", "user_id": action.user_id})
+    track_event({"event": "ad_complete", "user_id": action.user_id})
     return {"points": user["points"]}
 
 
@@ -679,6 +643,11 @@ async def survey_start(
         )
         for i in items_raw
     ]
+    if user_id:
+        try:
+            log_event(user_id, "survey_start", {"lang": lang, "nationality": user_nationality})
+        except Exception:  # pragma: no cover - logging only
+            pass
     return {"items": items, "parties": []}
 
 
@@ -885,7 +854,7 @@ async def analytics(event: dict):
     """Log client-side events to self-hosted analytics."""
     import logging
     logging.getLogger(__name__).info("Event: %s", event)
-    log_event(event)
+    track_event(event)
     EVENTS.append(event)
     return {}
 

@@ -13,7 +13,6 @@ export default function Home() {
   const userId = localStorage.getItem('user_id') || '';
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [freeStats, setFreeStats] = useState(null);
   const [proPrice, setProPrice] = useState(0);
   const handleStart = () => {
     if (!user) {
@@ -32,15 +31,16 @@ export default function Home() {
   useEffect(() => {
     if (!userId) return;
     fetch(`${API_BASE}/pricing/${userId}`)
-      .then(res => res.json())
-      .then(data => {
-        setFreeStats({
-          granted: (data.free_attempts ?? 0) + (data.plays ?? 0),
-          consumed: data.plays ?? 0,
-        });
-        setProPrice(data.pro_price || 0);
+      .then(res => {
+        if (!res.ok) throw new Error('pricing');
+        return res.json();
       })
-      .catch(() => {});
+      .then(data => {
+        setProPrice(data?.pro_pass?.amount_minor ?? 0);
+      })
+      .catch(() => {
+        setProPrice(0);
+      });
   }, [userId]);
 
   const handleProPurchase = () => {
@@ -67,13 +67,8 @@ export default function Home() {
         <p className="max-w-md text-gray-600 dark:text-gray-400 mb-6">
           Take our quick IQ test and see how you compare.
         </p>
-        {freeStats && (
+        {proPrice > 0 && (
           <div className="w-full grid gap-4 md:grid-cols-2">
-            <div className="p-4 border rounded-md text-center">
-              <h3 className="font-semibold mb-2">Free Attempts</h3>
-              <p className="text-3xl font-bold">{freeStats.granted - freeStats.consumed}</p>
-              <p className="text-sm text-muted-foreground">remaining</p>
-            </div>
             <div className="p-4 border rounded-md text-center">
               <h3 className="font-semibold mb-2">Pro Pass</h3>
               <p className="text-3xl font-bold">{proPrice}</p>
