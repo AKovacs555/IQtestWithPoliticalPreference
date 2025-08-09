@@ -2,9 +2,14 @@ import os
 import logging
 from typing import Any, Dict, Optional, List, Iterable, Tuple
 from supabase import create_client, Client
+from postgrest.exceptions import APIError
 
 _supabase: Client | None = None
 logger = logging.getLogger(__name__)
+
+
+DEFAULT_RETRY_PRICE = {"currency": "JPY", "amount_minor": 0, "product": "retry"}
+DEFAULT_PRO_PRICE = {"currency": "JPY", "amount_minor": 0, "product": "pro_pass"}
 
 
 def get_supabase() -> Client:
@@ -344,19 +349,27 @@ def list_pricing_rules() -> List[Dict[str, Any]]:
     resp = supabase.from_("pricing_rules").select("*").execute()
     return resp.data or []
 
-def get_pricing_rule(country: str, product: str) -> Optional[Dict[str, Any]]:
+def get_pricing_rule(country: str, product: str):
     supabase = get_supabase()
-    resp = (
-        supabase.from_("pricing_rules")
-        .select("*")
-        .eq("country", country)
-        .eq("product", product)
-        .eq("active", True)
-        .limit(1)
-        .execute()
-    )
-    rows = resp.data or []
-    return rows[0] if rows else None
+    try:
+        res = (
+            supabase.table("pricing_rules")
+            .select("*")
+            .eq("country", country)
+            .eq("product", product)
+            .eq("active", True)
+            .limit(1)
+            .execute()
+        )
+        items = getattr(res, "data", None) or []
+        return items[0] if items else None
+    except APIError as e:
+        msg = getattr(e, "message", str(e))
+        code = getattr(e, "code", None)
+        if (code == "42P01") or ("does not exist" in msg.lower()) or ("not found" in msg.lower()):
+            logger.warning("pricing_rules missing; fallback pricing used")
+            return None
+        raise
 
 def upsert_pricing_rule(data: Dict[str, Any]) -> Dict[str, Any]:
     supabase = get_supabase()
@@ -366,3 +379,17 @@ def upsert_pricing_rule(data: Dict[str, Any]) -> Dict[str, Any]:
 def delete_pricing_rule(rule_id: str) -> None:
     supabase = get_supabase()
     supabase.from_("pricing_rules").delete().eq("id", rule_id).execute()
+
+
+def log_event(user_hid: str, name: str, meta: dict | None = None):
+    supabase = get_supabase()
+    row = {"user_hid": user_hid, "name": name, "metadata": meta or None}
+    try:
+        supabase.table("events").insert(row).execute()
+    except APIError as e:
+        msg = getattr(e, "message", str(e))
+        code = getattr(e, "code", None)
+        if (code == "42P01") or ("does not exist" in msg.lower()) or ("not found" in msg.lower()):
+            logger.warning("events table missing; skipping event insert")
+            return
+        logger.exception("failed to insert event")

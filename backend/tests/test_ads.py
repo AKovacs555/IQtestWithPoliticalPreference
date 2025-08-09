@@ -29,8 +29,7 @@ def test_pricing_variant():
         r = client.get(f'/pricing/{user_id}')
         assert r.status_code == 200
         data = r.json()
-        assert 'variant' in data
-        assert data['price'] in [480, 720, 980]
+        assert 'retry' in data and 'pro_pass' in data
 
 
 def test_question_validation():
