@@ -244,6 +244,7 @@ To get started quickly, deploy the backend and frontend separately.
 3. After configuring the variables run `vercel env pull` to generate a local `.env` file for development.
 4. Use `npm install` followed by `npm run build` for the build steps.
 5. Any change to the variables requires a redeploy from Vercel’s dashboard.
+6. In Supabase (*Settings → Auth*), set **Site URL** to your Vercel domain and add `/auth/callback` to **Redirect URLs** so OAuth callbacks resolve correctly.
 
 This repository now serves as a starting point for the revamped freemium quiz platform. Terms of Service and a Privacy Policy are provided under `templates/` and personal identifiers are hashed with per-record salts. Aggregated statistics apply differential privacy noise for research use only.
 

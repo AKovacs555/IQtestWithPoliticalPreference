@@ -356,6 +356,17 @@ export default function App() {
   // Admin routes are always registered for troubleshooting purposes.
   // Proper authentication is temporarily disabled.
   const location = useLocation();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    // When Supabase redirects to /?code=... ensure the callback route handles it
+    if (
+      window.location.pathname === '/' &&
+      window.location.search.includes('code=')
+    ) {
+      navigate('/auth/callback' + window.location.search, { replace: true });
+    }
+  }, [navigate]);
   return (
     <AnimatePresence mode="wait">
       <Routes location={location} key={location.pathname}>
