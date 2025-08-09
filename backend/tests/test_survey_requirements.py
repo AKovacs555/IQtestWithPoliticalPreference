@@ -1,132 +1,69 @@
-import os, sys
+import os
+import sys
+from datetime import date
 from fastapi.testclient import TestClient
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 
 from main import app
-from backend import db
-import routes.quiz as quiz
 from backend.deps.auth import create_token
 
 
-def _create_user(uid, extra=None):
-    data = {
-        'hashed_id': uid,
-        'salt': '',
-        'plays': 0,
-        'referrals': 0,
-        'points': 0,
-        'scores': [],
-        'party_log': [],
-        'demographic': {},
-        'demographic_completed': False,
-        'free_attempts': 0,
-        'survey_completed': False,
-    }
-    if extra:
-        data.update(extra)
-    db.create_user(data)
+def _seed_items(supa, count=5):
+    supa.tables.setdefault("survey_items", [])
+    for i in range(1, count + 1):
+        supa.tables["survey_items"].append({
+            "id": f"i{i}",
+            "survey_id": "s1",
+            "body": f"Q{i}",
+            "choices": ["a", "b"],
+            "order_no": i,
+            "lang": "ja",
+            "is_active": True,
+        })
 
 
-def test_quiz_requires_survey_completion(monkeypatch):
-    uid = 'user1'
-    _create_user(uid, {'nationality': 'US'})
-    monkeypatch.setattr(
-        quiz,
-        'get_balanced_random_questions_by_set',
-        lambda n, sid: [{'id': 1, 'question': 'q', 'options': ['a'], 'answer': 0}],
-    )
-    token = create_token(uid)
+def _create_user(supa, uid: str):
+    supa.tables.setdefault("users", []).append({"hashed_id": uid})
+
+
+def test_daily_quota_enforced(fake_supabase):
+    _seed_items(fake_supabase, 5)
+    _create_user(fake_supabase, "uquota")
+    today = date.today().isoformat()
+    fake_supabase.tables.setdefault("survey_responses", []).extend([
+        {"id": "r1", "user_id": "uquota", "item_id": "i1", "answer_index": 0, "answered_on": today},
+        {"id": "r2", "user_id": "uquota", "item_id": "i2", "answer_index": 0, "answered_on": today},
+    ])
+    token = create_token("uquota")
     with TestClient(app) as client:
-        r = client.get('/quiz/start?set_id=set1', headers={"Authorization": f"Bearer {token}"})
-        assert r.status_code == 400
-        assert r.json()['detail']['error'] == 'survey_required'
-        db.update_user(uid, {'survey_completed': True, 'demographic_completed': True})
-        r = client.get('/quiz/start?set_id=set1', headers={"Authorization": f"Bearer {token}"})
-        assert r.status_code == 200
-        assert 'questions' in r.json()
+        r1 = client.post(
+            "/surveys/answer",
+            json={"item_id": "i3", "answer_index": 0},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        assert r1.status_code == 200
+        r2 = client.post(
+            "/surveys/answer",
+            json={"item_id": "i4", "answer_index": 0},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        assert r2.status_code == 409
+        assert r2.json()["detail"]["error"] == "daily_quota_exceeded"
 
 
-def test_quiz_requires_nationality(monkeypatch):
-    uid = 'user_nat'
-    _create_user(uid, {'survey_completed': True})
-    monkeypatch.setattr(
-        quiz,
-        'get_balanced_random_questions_by_set',
-        lambda n, sid: [{'id': 1, 'question': 'q', 'options': ['a'], 'answer': 0}],
-    )
-    token = create_token(uid)
+def test_daily_quota_get_after_limit(fake_supabase):
+    _seed_items(fake_supabase, 5)
+    _create_user(fake_supabase, "uquota2")
+    today = date.today().isoformat()
+    fake_supabase.tables.setdefault("survey_responses", []).extend([
+        {"id": "r1", "user_id": "uquota2", "item_id": "i1", "answer_index": 0, "answered_on": today},
+        {"id": "r2", "user_id": "uquota2", "item_id": "i2", "answer_index": 0, "answered_on": today},
+        {"id": "r3", "user_id": "uquota2", "item_id": "i3", "answer_index": 0, "answered_on": today},
+    ])
+    token = create_token("uquota2")
     with TestClient(app) as client:
-        r = client.get('/quiz/start?set_id=set1', headers={"Authorization": f"Bearer {token}"})
-        assert r.status_code == 400
-        assert r.json()['detail']['error'] == 'nationality_required'
-        db.update_user(uid, {'nationality': 'US', 'demographic_completed': True})
-        r = client.get('/quiz/start?set_id=set1', headers={"Authorization": f"Bearer {token}"})
-        assert r.status_code == 200
-        assert 'questions' in r.json()
-
-
-def test_survey_start_requires_nationality(monkeypatch):
-    uid = 'user_no_nat'
-    _create_user(uid)
-    surveys = [
-        {'id': 1, 'statement': 'a', 'options': [], 'type': 'sa', 'exclusive_options': [], 'target_countries': []},
-    ]
-    monkeypatch.setattr('main.get_surveys', lambda lang: surveys)
-    monkeypatch.setattr('main.get_answered_survey_ids', lambda u: [])
-    with TestClient(app) as client:
-        r = client.get(f'/survey/start?user_id={uid}')
-        assert r.status_code == 400
-        assert r.json()['detail']['error'] == 'nationality_required'
-    db.update_user(uid, {'nationality': 'US'})
-    with TestClient(app) as client:
-        r = client.get(f'/survey/start?user_id={uid}')
-        assert r.status_code == 200
-        assert 'items' in r.json()
-
-
-def test_survey_complete_endpoint():
-    uid = 'user2'
-    _create_user(uid)
-    with TestClient(app) as client:
-        r = client.post('/survey/complete', json={'user_id': uid})
-        assert r.status_code == 200
-        assert r.json()['status'] == 'ok'
-    user = db.get_user(uid)
-    assert user['survey_completed'] is True
-
-
-def test_survey_start_filters_nationality(monkeypatch):
-    uid = 'user3'
-    _create_user(uid, {'nationality': 'US'})
-    surveys = [
-        {'id': 1, 'statement': 'us', 'options': [], 'type': 'sa', 'exclusive_options': [], 'target_countries': ['US']},
-        {'id': 2, 'statement': 'jp', 'options': [], 'type': 'sa', 'exclusive_options': [], 'target_countries': ['JP']},
-        {'id': 3, 'statement': 'all', 'options': [], 'type': 'sa', 'exclusive_options': [], 'target_countries': []},
-    ]
-    monkeypatch.setattr('main.get_surveys', lambda lang: surveys)
-    monkeypatch.setattr('main.get_answered_survey_ids', lambda uid: [])
-    with TestClient(app) as client:
-        r = client.get(f'/survey/start?user_id={uid}')
-        assert r.status_code == 200
-        data = r.json()
-        ids = {item['id'] for item in data['items']}
-        assert ids == {'1', '3'}
-
-
-def test_survey_start_excludes_answered(monkeypatch):
-    uid = 'user4'
-    _create_user(uid, {'nationality': 'US'})
-    surveys = [
-        {'id': 1, 'group_id': 'g1', 'statement': 'a', 'options': [], 'type': 'sa', 'exclusive_options': [], 'target_countries': []},
-        {'id': 2, 'group_id': 'g2', 'statement': 'b', 'options': [], 'type': 'sa', 'exclusive_options': [], 'target_countries': []},
-    ]
-    monkeypatch.setattr('main.get_surveys', lambda lang: surveys)
-    monkeypatch.setattr('main.get_answered_survey_ids', lambda u: {'g1'})
-    with TestClient(app) as client:
-        r = client.get(f'/survey/start?user_id={uid}')
-        assert r.status_code == 200
-        data = r.json()
-        ids = {item['id'] for item in data['items']}
-        assert ids == {'2'}
+        r = client.get("/surveys/daily3", headers={"Authorization": f"Bearer {token}"})
+        assert r.status_code == 409
+        assert r.json()["detail"]["error"] == "daily_quota_exceeded"

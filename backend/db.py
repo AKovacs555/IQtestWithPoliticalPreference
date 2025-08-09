@@ -1,6 +1,6 @@
 import os
 import logging
-from typing import Any, Dict, Optional, List, Iterable, Tuple
+from typing import Any, Dict, Optional, List, Iterable
 from supabase import create_client, Client
 from postgrest.exceptions import APIError
 
@@ -261,6 +261,37 @@ def insert_survey_responses(rows: List[Dict[str, Any]]) -> None:
         return
     supabase = get_supabase()
     supabase.from_("survey_responses").insert(rows).execute()
+
+
+def count_daily_survey_responses(user_id: str, answered_on: str) -> int:
+    """Return how many survey items a user has answered on a given day."""
+    supabase = get_supabase()
+    resp = (
+        supabase.table("survey_responses")
+        .select("id")
+        .eq("user_id", user_id)
+        .eq("answered_on", answered_on)
+        .execute()
+    )
+    return len(resp.data or [])
+
+
+def get_daily_survey_response(
+    user_id: str, item_id: str, answered_on: str
+) -> Optional[Dict[str, Any]]:
+    """Fetch an existing response for the given user/item/date if present."""
+    supabase = get_supabase()
+    resp = (
+        supabase.table("survey_responses")
+        .select("*")
+        .eq("user_id", user_id)
+        .eq("item_id", item_id)
+        .eq("answered_on", answered_on)
+        .limit(1)
+        .execute()
+    )
+    rows = resp.data or []
+    return rows[0] if rows else None
 
 
 def get_answered_survey_ids(user_id: str) -> List[str]:

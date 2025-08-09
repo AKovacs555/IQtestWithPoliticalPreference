@@ -13,6 +13,9 @@ async function handleJson(res) {
         code = data.detail.error;
       }
     } catch {}
+    if (!code && res.status === 409) {
+      code = 'daily_quota_exceeded';
+    }
     const err = new Error(msg);
     if (code) err.code = code;
     throw err;

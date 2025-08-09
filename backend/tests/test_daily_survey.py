@@ -1,4 +1,5 @@
-import os, sys
+import os
+import sys
 from datetime import date
 from fastapi.testclient import TestClient
 
@@ -53,16 +54,22 @@ def test_answer_unique_per_day(fake_supabase):
     _create_user(fake_supabase, "u2")
     token = create_token("u2")
     with TestClient(app) as client:
-        for idx in [0, 1]:
-            r = client.post(
-                "/surveys/answer",
-                json={"item_id": "i1", "answer_index": idx},
-                headers={"Authorization": f"Bearer {token}"},
-            )
-            assert r.status_code == 200
+        r1 = client.post(
+            "/surveys/answer",
+            json={"item_id": "i1", "answer_index": 0},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        assert r1.status_code == 200
+        r2 = client.post(
+            "/surveys/answer",
+            json={"item_id": "i1", "answer_index": 1},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        assert r2.status_code == 409
+        assert r2.json()["detail"]["error"] == "already_answered"
     responses = fake_supabase.tables.get("survey_responses", [])
     assert len(responses) == 1
-    assert responses[0]["answer_index"] == 1
+    assert responses[0]["answer_index"] == 0
 
 
 def test_daily3_returns_remaining(fake_supabase):
