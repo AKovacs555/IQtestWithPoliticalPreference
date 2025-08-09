@@ -9,7 +9,8 @@ import ThemeToggle from './ThemeToggle';
 import PointsBadge from './PointsBadge';
 import LanguageSelector from './LanguageSelector';
 import { useTranslation } from 'react-i18next';
-import useAuth from '../hooks/useAuth';
+import { useAuth } from '../auth/useAuth';
+import { supabase } from '../lib/supabaseClient';
 import OverflowNav from './nav/OverflowNav';
 import MobileDrawer from './nav/MobileDrawer';
 import type { NavItem } from './nav/types';
@@ -22,6 +23,21 @@ export default function Navbar() {
   const navigate = useNavigate();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+
+  async function signInWithGoogle() {
+    const redirectTo = window.location.origin + '/#/auth/callback';
+    await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo },
+    });
+  }
+
+  const logout = () => {
+    supabase.auth.signOut().catch(() => {});
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('user_id');
+    navigate('/login');
+  };
 
   const handleStart = () => {
     if (!user) navigate('/login');
@@ -52,6 +68,24 @@ export default function Navbar() {
       : []),
   ];
 
+  const drawerItems: NavItem[] = [...items];
+  if (!user) {
+    drawerItems.push(
+      { label: t('nav.login', { defaultValue: 'Log in' }), href: '/login' },
+      { label: t('nav.signup', { defaultValue: 'Sign up' }), href: '/signup' },
+      {
+        label: 'google',
+        element: (
+          <Button onClick={signInWithGoogle} size="small" variant="contained" fullWidth>
+            Continue with Google
+          </Button>
+        ),
+      },
+    );
+  } else {
+    drawerItems.push({ label: t('nav.logout', { defaultValue: 'Log out' }), onClick: logout });
+  }
+
   return (
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, overflowX: 'auto' }}>
       <Typography
@@ -67,12 +101,15 @@ export default function Navbar() {
         <OverflowNav items={items} />
       </Box>
       <Box sx={{ flexGrow: 1 }} />
-      {isMobile && <MobileDrawer items={items} />}
+      {isMobile && <MobileDrawer items={drawerItems} />}
       <ThemeToggle />
       <LanguageSelector />
       <PointsBadge userId={userId} />
       {!user ? (
         <>
+          <Button onClick={signInWithGoogle} size="small" variant="contained" sx={{ minHeight: '48px' }}>
+            Continue with Google
+          </Button>
           <Button href="/login" size="small" sx={{ minHeight: '48px' }}>
             {t('nav.login', { defaultValue: 'Log in' })}
           </Button>
@@ -81,15 +118,7 @@ export default function Navbar() {
           </Button>
         </>
       ) : (
-        <Button
-          onClick={() => {
-            localStorage.removeItem('authToken');
-            localStorage.removeItem('user_id');
-            navigate('/login');
-          }}
-          size="small"
-          sx={{ minHeight: '48px' }}
-        >
+        <Button onClick={logout} size="small" sx={{ minHeight: '48px' }}>
           {t('nav.logout', { defaultValue: 'Log out' })}
         </Button>
       )}

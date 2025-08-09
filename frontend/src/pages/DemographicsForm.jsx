@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import AppShell from '../components/AppShell';
-import useAuth from '../hooks/useAuth';
+import { useAuth } from '../auth/useAuth';
 
 const API_BASE = import.meta.env.VITE_API_BASE || "";
 

@@ -19,6 +19,9 @@ describe('google oauth button', () => {
     );
     const btn = screen.getByRole('button', { name: /google/i });
     fireEvent.click(btn);
-    expect(signInWithOAuth).toHaveBeenCalledWith({ provider: 'google' });
+    expect(signInWithOAuth).toHaveBeenCalledWith({
+      provider: 'google',
+      options: { redirectTo: `${window.location.origin}/#/auth/callback` },
+    });
   });
 });

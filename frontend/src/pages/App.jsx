@@ -2,10 +2,11 @@ import React, { useEffect, useState, lazy, Suspense } from 'react';
 import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import useShareMeta from '../hooks/useShareMeta';
-import useAuth from '../hooks/useAuth';
+import { useAuth } from '../auth/useAuth';
 import AppShell from '../components/AppShell';
 import ProgressBar from '../components/ProgressBar';
 import Home from './Home';
+import AuthCallback from './AuthCallback';
 import Pricing from './Pricing';
 import Leaderboard from './Leaderboard';
 import SelectSet from './SelectSet';
@@ -372,6 +373,7 @@ export default function App() {
         <Route path="/select-nationality" element={<SelectNationality />} />
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/auth/callback" element={<AuthCallback />} />
         {import.meta.env.DEV && (
           <Route path="/theme" element={<ThemeDemo />} />
         )}

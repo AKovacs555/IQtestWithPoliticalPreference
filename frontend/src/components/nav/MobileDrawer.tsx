@@ -1,4 +1,4 @@
-import { Drawer, List, ListItemButton, ListItemText, IconButton } from '@mui/material';
+import { Drawer, List, ListItemButton, ListItemText, IconButton, ListItem } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import { useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
@@ -14,18 +14,22 @@ export default function MobileDrawer({ items }: { items: NavItem[] }) {
       <Drawer anchor="left" open={open} onClose={() => setOpen(false)}>
         <List sx={{ width: 300 }}>
           {items.map((it, i) => (
-            <ListItemButton
-              key={i}
-              component={it.href && !it.onClick ? RouterLink : 'button'}
-              to={it.href}
-              onClick={(e) => {
-                it.onClick?.(e as any);
-                setOpen(false);
-              }}
-              sx={{ minHeight: 48 }}
-            >
-              <ListItemText primary={it.label} />
-            </ListItemButton>
+            it.element ? (
+              <ListItem key={i}>{it.element}</ListItem>
+            ) : (
+              <ListItemButton
+                key={i}
+                component={it.href && !it.onClick ? RouterLink : 'button'}
+                to={it.href}
+                onClick={(e) => {
+                  it.onClick?.(e as any);
+                  setOpen(false);
+                }}
+                sx={{ minHeight: 48 }}
+              >
+                <ListItemText primary={it.label} />
+              </ListItemButton>
+            )
           ))}
         </List>
       </Drawer>

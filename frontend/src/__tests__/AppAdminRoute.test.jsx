@@ -4,10 +4,10 @@ import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import '@testing-library/jest-dom/vitest';
 
-// Helper to generate a fake JWT payload
-function tokenFor(payload) {
-  return `h.${btoa(JSON.stringify(payload))}.s`;
-}
+let mockUser = null;
+vi.mock('../auth/useAuth', () => ({
+  useAuth: () => ({ user: mockUser, supabase: { auth: {} } }),
+}));
 
 describe('admin routes', () => {
   beforeEach(() => {
@@ -30,7 +30,7 @@ describe('admin routes', () => {
 
   it('redirects non-admin users away from admin pages', async () => {
     const App = (await import('../pages/App.jsx')).default;
-    localStorage.setItem('authToken', tokenFor({ is_admin: false }));
+    mockUser = { id: '1', is_admin: false };
     render(
       <MemoryRouter initialEntries={['/admin/questions']}>
         <App />
@@ -41,7 +41,7 @@ describe('admin routes', () => {
 
   it('allows admin users to access admin pages', async () => {
     const App = (await import('../pages/App.jsx')).default;
-    localStorage.setItem('authToken', tokenFor({ is_admin: true }));
+    mockUser = { id: '1', is_admin: true };
     render(
       <MemoryRouter initialEntries={['/admin/questions']}>
         <App />

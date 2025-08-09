@@ -5,10 +5,12 @@ import { MemoryRouter } from 'react-router-dom';
 import '@testing-library/jest-dom/vitest';
 import Navbar from '../components/Navbar';
 import '../i18n';
+import { vi } from 'vitest';
 
-function tokenFor(payload) {
-  return `h.${btoa(JSON.stringify(payload))}.s`;
-}
+let mockUser = null;
+vi.mock('../auth/useAuth', () => ({
+  useAuth: () => ({ user: mockUser, supabase: { auth: {} } }),
+}));
 
 describe('Navbar admin link', () => {
   beforeEach(() => {
@@ -28,7 +30,7 @@ describe('Navbar admin link', () => {
   });
 
   it('hides admin link for non-admin users', () => {
-    localStorage.setItem('authToken', tokenFor({ is_admin: false }));
+    mockUser = { id: '1', is_admin: false };
     render(
       <MemoryRouter>
         <Navbar />
@@ -38,7 +40,7 @@ describe('Navbar admin link', () => {
   });
 
   it('shows admin link for admin users', () => {
-    localStorage.setItem('authToken', tokenFor({ is_admin: true }));
+    mockUser = { id: '1', is_admin: true };
     render(
       <MemoryRouter>
         <Navbar />

@@ -4,7 +4,7 @@ import AppShell from '../components/AppShell';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
-import useAuth from '../hooks/useAuth';
+import { useAuth } from '../auth/useAuth';
 
 const API_BASE = import.meta.env.VITE_API_BASE || "";
 
