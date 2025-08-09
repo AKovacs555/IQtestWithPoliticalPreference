@@ -71,6 +71,7 @@ from routes.admin_users import router as admin_users_router
 from routes.admin_pricing import router as admin_pricing_router
 from routes.settings import router as settings_router
 from routes.quiz import router as quiz_router
+from routes.daily import router as daily_router
 from routes.surveys import router as surveys_router
 from routes.user import router as user_router
 from routes.auth import router as auth_router
@@ -114,6 +115,7 @@ app.include_router(diagnostics.router)
 
 # Public routers
 app.include_router(quiz_router)
+app.include_router(daily_router)
 app.include_router(surveys_router)
 app.include_router(user_router)
 app.include_router(leaderboard_router)

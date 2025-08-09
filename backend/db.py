@@ -1,6 +1,7 @@
 import os
 import logging
-from datetime import datetime
+import uuid
+from datetime import datetime, timedelta, date
 from typing import Any, Dict, Optional, List, Iterable
 from supabase import create_client, Client
 from postgrest.exceptions import APIError
@@ -396,6 +397,41 @@ def get_survey_answers(group_id: str) -> List[Dict[str, Any]]:
         for sel in selections:
             answers.append({"user_id": row.get("user_id"), "option_index": sel})
     return answers
+
+
+def get_daily_answer_count(user_id: str, day: date) -> int:
+    """Return how many poll answers a user submitted on ``day`` (UTC)."""
+
+    supabase = get_supabase()
+    start = datetime.combine(day, datetime.min.time())
+    end = start + timedelta(days=1)
+    resp = (
+        supabase.table("survey_responses")
+        .select("id", count="exact")
+        .eq("user_id", user_id)
+        .gte("created_at", start.isoformat() + "Z")
+        .lt("created_at", end.isoformat() + "Z")
+        .execute()
+    )
+    if getattr(resp, "count", None) is not None:
+        return resp.count
+    return len(resp.data or [])
+
+
+def insert_daily_answer(
+    user_id: str, question_id: str, answer: Dict[str, Any] | None = None
+) -> None:
+    """Insert a single poll answer for ``user_id``."""
+
+    supabase = get_supabase()
+    row = {
+        "id": str(uuid.uuid4()),
+        "user_id": user_id,
+        "survey_group_id": question_id,
+        "answer": answer or {},
+        "created_at": datetime.utcnow().isoformat() + "Z",
+    }
+    supabase.table("survey_responses").insert(row).execute()
 
 
 def get_dashboard_default_survey() -> Optional[str]:
