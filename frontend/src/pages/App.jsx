@@ -19,7 +19,7 @@ import Settings from './Settings.jsx';
 import DemographicsForm from './DemographicsForm.jsx';
 import History from './History.jsx';
 import { getQuizStart, submitQuiz } from '../api';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import SignupPage from './SignupPage.jsx';
 import LoginPage from './LoginPage.jsx';
 import TestPage from './TestPage.jsx';
@@ -47,16 +47,19 @@ const AdminQuestionStats = lazy(() => import('./AdminQuestionStats.jsx'));
 const AdminPricing = lazy(() => import('./AdminPricing.jsx'));
 const AdminReferral = lazy(() => import('./AdminReferral.jsx'));
 
-const PageTransition = ({ children }) => (
-  <motion.div
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
-    exit={{ opacity: 0, y: -20 }}
-    transition={{ duration: 0.2 }}
-  >
-    {children}
-  </motion.div>
-);
+const PageTransition = ({ children }) => {
+  const reduce = useReducedMotion();
+  return (
+    <motion.div
+      initial={reduce ? { opacity: 0 } : { opacity: 0, y: 20 }}
+      animate={reduce ? { opacity: 1 } : { opacity: 1, y: 0 }}
+      exit={reduce ? { opacity: 0 } : { opacity: 0, y: -20 }}
+      transition={{ duration: 0.2, ease: 'easeOut' }}
+    >
+      {children}
+    </motion.div>
+  );
+};
 
 
 const Quiz = () => {

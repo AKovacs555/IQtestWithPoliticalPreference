@@ -1,3 +1,4 @@
+html { font-size: 100%; }
 :root { --tap-min: 48px; }
 * { -webkit-tap-highlight-color: transparent; }
 button, a, [role="button"] { min-height: var(--tap-min); }
