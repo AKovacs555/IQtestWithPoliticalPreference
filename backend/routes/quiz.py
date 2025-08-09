@@ -24,9 +24,14 @@ from backend.scoring import estimate_theta, iq_score, ability_summary, standard_
 from backend.irt import percentile
 from backend.features import generate_share_image
 from backend.deps.auth import get_current_user
-from backend.db import get_answered_survey_ids, insert_survey_responses
+from backend.db import (
+    get_answered_survey_ids,
+    insert_survey_responses,
+    get_daily_answer_count,
+)
 
 router = APIRouter(prefix="/quiz", tags=["quiz"])
+logger = logging.getLogger(__name__)
 
 NUM_QUESTIONS = int(os.getenv("NUM_QUESTIONS", "20"))
 QUIZ_DURATION_MINUTES = int(os.getenv("QUIZ_DURATION_MINUTES", "25"))
@@ -100,6 +105,22 @@ async def start_quiz(
                 "message": "Please complete the demographics form before taking the IQ test.",
             },
         )
+    today = datetime.utcnow()
+    daily_count = get_daily_answer_count(user["hashed_id"], today.date())
+    if daily_count < 3:
+        reset_at = (
+            datetime.combine(today.date(), datetime.min.time()) + timedelta(days=1)
+        ).isoformat() + "Z"
+        logger.error("daily3_block")
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "DAILY3_REQUIRED",
+                "remaining": 3 - daily_count,
+                "reset_at": reset_at,
+            },
+        )
+    logger.info("quiz_start_allowed")
     if set_id:
         try:
             questions = get_balanced_random_questions_by_set(NUM_QUESTIONS, set_id)
