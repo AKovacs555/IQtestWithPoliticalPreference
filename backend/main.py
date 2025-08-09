@@ -19,7 +19,7 @@ backend_dir = os.path.dirname(__file__)
 repo_root = os.path.join(backend_dir, "..")
 sys.path.extend([backend_dir, repo_root])
 
-from fastapi import FastAPI, HTTPException, Depends, Request
+from fastapi import FastAPI, HTTPException, Depends, Request, APIRouter
 from fastapi.responses import JSONResponse
 import io
 import contextlib
@@ -140,6 +140,7 @@ from db import (
     get_answered_survey_ids,
     get_pricing_rule,
     get_or_create_user_id_from_hashed,
+    upsert_user,
 )
 from postgrest.exceptions import APIError
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
@@ -149,6 +150,22 @@ if not SUPABASE_URL or not SUPABASE_API_KEY:
     logger.warning("SUPABASE_URL or SUPABASE_API_KEY is not configured")
 
 EVENTS: list[dict] = []
+
+
+router = APIRouter()
+
+
+class UpsertUserIn(BaseModel):
+    user_id: str
+
+
+@router.post("/auth/upsert_user")
+def upsert_user_api(payload: UpsertUserIn):
+    upsert_user(payload.user_id)
+    return {"ok": True}
+
+
+app.include_router(router)
 
 # Dynamic pricing tiers loaded from RETRY_PRICE_TIERS
 def _load_price_tiers() -> list[int]:
