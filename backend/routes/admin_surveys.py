@@ -15,7 +15,7 @@ def grant_free_tests(countries: list[str]) -> None:
     if not countries:
         return
     supabase = get_supabase_client()
-    supabase.table("users").update({"free_tests": "free_tests + 1"}).in_("nationality", countries).execute()
+    supabase.table("app_users").update({"free_tests": "free_tests + 1"}).in_("nationality", countries).execute()
 
 
 @router.get("/")

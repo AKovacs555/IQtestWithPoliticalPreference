@@ -30,7 +30,7 @@ async def register(payload: RegisterPayload):
 
     if payload.username:
         resp = (
-            supabase.from_("users")
+            supabase.from_("app_users")
             .select("hashed_id")
             .eq("username", payload.username)
             .execute()
@@ -39,7 +39,7 @@ async def register(payload: RegisterPayload):
             raise HTTPException(status_code=400, detail="Username already taken")
 
     resp = (
-        supabase.from_("users").select("hashed_id").eq("email", payload.email).execute()
+        supabase.from_("app_users").select("hashed_id").eq("email", payload.email).execute()
     )
     if resp.data:
         raise HTTPException(status_code=400, detail="Email already registered")
@@ -60,7 +60,7 @@ async def register(payload: RegisterPayload):
         "invite_code": invite_code,
     }
 
-    supabase.from_("users").insert(data).execute()
+    supabase.from_("app_users").insert(data).execute()
     token = create_token(hashed_id, False)
     return {"token": token, "user_id": hashed_id, "is_admin": False}
 
@@ -71,7 +71,7 @@ async def login(payload: LoginPayload):
     supabase = db.get_supabase()
     id_field = "email" if "@" in payload.identifier else "username"
     resp = (
-        supabase.from_("users")
+        supabase.from_("app_users")
         .select("*")
         .eq(id_field, payload.identifier)
         .limit(1)

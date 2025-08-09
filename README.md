@@ -20,11 +20,11 @@ For details on preparing question files and importing them into Supabase see [do
 
 ## Admin access
 
-To grant administrative privileges, the `users` table in Supabase must include an `is_admin` boolean column with a default of `false`.
+To grant administrative privileges, the `app_users` table in Supabase must include an `is_admin` boolean column with a default of `false`.
 Run the following SQL in Supabase if the column is missing:
 
 ```sql
-alter table public.users add column if not exists is_admin boolean not null default false;
+alter table public.app_users add column if not exists is_admin boolean not null default false;
 ```
 
 Set `is_admin` to `true` for any accounts that should manage content.
@@ -34,8 +34,10 @@ The Admin UI is available whenever the authenticated user has `is_admin=true`.
 Admin access works as follows:
 
 - The frontend checks the `is_admin` claim from the user's JWT (including `user.is_admin`, `user_metadata.is_admin`, or `app_metadata.is_admin`) and shows the Admin UI when it evaluates to `true`.
-- Users must have `is_admin=true` in the Supabase `users` table. After updating the database, they need to log out and back in so the JWT includes the `is_admin` claim.
+- Users must have `is_admin=true` in the Supabase `app_users` table. After updating the database, they need to log out and back in so the JWT includes the `is_admin` claim.
 - Admin endpoints use the authenticated user's JWT and require `is_admin=true`; no separate API key is needed.
+
+> **Important:** Run the migration `supabase/migrations/20250810_rename_users_to_app_users.sql` on your Supabase project and redeploy the backend so authentication continues to work.
 
 ## Building the frontend locally
 

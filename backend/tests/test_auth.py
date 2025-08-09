@@ -9,7 +9,7 @@ def test_register_and_login(fake_supabase):
         assert r.status_code == 200
         data = r.json()
         assert data.get("user_id")
-        assert len(fake_supabase.tables["users"]) == 1
+        assert len(fake_supabase.tables["app_users"]) == 1
         r2 = client.post("/auth/login", json={"identifier": "user@example.com", "password": "secret"})
         assert r2.status_code == 200
         assert r2.json()["user_id"] == data["user_id"]

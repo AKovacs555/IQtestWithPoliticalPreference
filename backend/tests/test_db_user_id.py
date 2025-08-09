@@ -17,4 +17,4 @@ def test_get_or_create_user_id_from_hashed_creates_and_retrieves():
     uid2 = db.get_or_create_user_id_from_hashed(supa, hashed)
     assert uid1 == uid2
     # Ensure the user row exists with hashed_id
-    assert any(r['id'] == uid1 and r['hashed_id'] == hashed for r in supa.tables['users'])
+    assert any(r['id'] == uid1 and r['hashed_id'] == hashed for r in supa.tables['app_users'])

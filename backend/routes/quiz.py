@@ -276,7 +276,7 @@ async def submit_quiz(
             }
         ]
         plays = (user.get("plays") or 0) + 1
-        supabase.from_("users").update({"scores": scores, "plays": plays}).eq(
+        supabase.from_("app_users").update({"scores": scores, "plays": plays}).eq(
             "hashed_id", user["hashed_id"]
         ).execute()
     except Exception as e:  # pragma: no cover - best effort only

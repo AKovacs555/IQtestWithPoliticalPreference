@@ -29,8 +29,8 @@ class DummyTable:
                     r.update(self._update)
             data = rows[0] if self.single_flag else rows
             return SimpleNamespace(data=data)
-        elif self.name == 'users':
-            rows = [u for u in self.db.users.values() if all(u.get(f) == v for f, v in self.filters)]
+        elif self.name == 'app_users':
+            rows = [u for u in self.db.app_users.values() if all(u.get(f) == v for f, v in self.filters)]
             if self._update is not None:
                 for u in rows:
                     u.update(self._update)
@@ -40,7 +40,7 @@ class DummyTable:
 
 class DummySupabase:
     def __init__(self):
-        self.users = {
+        self.app_users = {
             'inviter': {'hashed_id': 'inviter', 'invite_code': 'ABC123', 'free_attempts': 0},
             'invitee': {'hashed_id': 'invitee'}
         }
@@ -56,5 +56,5 @@ def test_referrer_credit(monkeypatch):
     monkeypatch.setenv('REFERRAL_MAX_CREDITS', '3')
     monkeypatch.setattr(ref, 'get_supabase_client', lambda: db)
     ref.credit_referral_if_applicable('invitee')
-    assert db.users['inviter']['free_attempts'] == 1
+    assert db.app_users['inviter']['free_attempts'] == 1
     assert db.referrals[0]['credited'] is True

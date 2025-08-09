@@ -28,7 +28,7 @@ def credit_referral_if_applicable(user_id: str) -> None:
             return
         inviter_code = row.get("inviter_code")
         inviter_resp = (
-            supabase.table("users")
+            supabase.table("app_users")
             .select("hashed_id, free_attempts")
             .eq("invite_code", inviter_code)
             .single()
@@ -48,7 +48,7 @@ def credit_referral_if_applicable(user_id: str) -> None:
         credited_count = len(getattr(count_resp, "data", []) or [])
         if credited_count < max_credits:
             current = inviter.get("free_attempts") or 0
-            supabase.table("users").update({"free_attempts": current + 1}).eq(
+            supabase.table("app_users").update({"free_attempts": current + 1}).eq(
                 "hashed_id", inviter["hashed_id"]
             ).execute()
         supabase.table("referrals").update(

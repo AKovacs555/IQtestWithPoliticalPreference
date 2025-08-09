@@ -28,7 +28,7 @@ class DummyTable:
 
     def insert(self, data):
         # Auto-generate UUIDs for user rows when missing.
-        if self.name == "users":
+        if self.name == "app_users":
             def ensure_id(row: dict) -> dict:
                 row = dict(row)
                 row.setdefault("id", str(uuid.uuid4()))
@@ -94,7 +94,7 @@ class DummyTable:
 
 class DummySupabase:
     def __init__(self):
-        self.tables = {"users": []}
+        self.tables = {"app_users": []}
 
     def from_(self, table):
         if table not in self.tables:
