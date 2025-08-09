@@ -1,11 +1,12 @@
 import os
 import logging
+from datetime import datetime
 from typing import Any, Dict, Optional, List, Iterable
 from supabase import create_client, Client
 from postgrest.exceptions import APIError
 
-
 _processed_payments: set[str] = set()
+
 
 _supabase: Client | None = None
 logger = logging.getLogger(__name__)
@@ -123,14 +124,47 @@ def update_user(hashed_id: str, update_data: Dict[str, Any]) -> None:
         supabase.from_("app_users").update(data_to_update).eq("hashed_id", hashed_id).execute()
 
 
-def increment_free_attempts(hashed_id: str, delta: int = 1) -> None:
+def increment_free_attempts(user_id: str, delta: int = 1) -> None:
     """Increase a user's ``free_attempts`` by ``delta``."""
 
     supabase = get_supabase()
-    current = (get_user(hashed_id) or {}).get("free_attempts") or 0
+    current = (get_user(user_id) or {}).get("free_attempts") or 0
     supabase.table("users").update({"free_attempts": current + delta}).eq(
-        "hashed_id", hashed_id
+        "hashed_id", user_id
     ).execute()
+
+
+def record_payment_event(
+    payment_id: str,
+    user_id: Optional[str],
+    status: Optional[str],
+    amount: Optional[float],
+    currency: Optional[str],
+    raw: Dict[str, Any],
+) -> bool:
+    """Persist a payment notification to the ``payments`` table.
+
+    Returns ``True`` if the event was recorded, ``False`` if a record with the
+    same ``payment_id`` already exists.
+    """
+
+    supabase = get_supabase()
+    data = {
+        "payment_id": payment_id,
+        "user_id": user_id,
+        "status": status,
+        "amount": amount,
+        "currency": currency,
+        "raw": raw,
+    }
+    try:
+        supabase.table("payments").insert(data).execute()
+        return True
+    except APIError as exc:  # pragma: no cover - network error
+        # ``23505`` is the Postgres unique violation code
+        if getattr(exc, "code", "") == "23505" or "duplicate" in str(exc).lower():
+            return False
+        raise
 
 
 def get_all_users() -> List[Dict[str, Any]]:
@@ -150,8 +184,12 @@ def is_payment_processed(payment_id: str) -> bool:
 
 
 def mark_payment_processed(payment_id: str) -> None:
-    """Mark ``payment_id`` as processed."""
+    """Mark ``payment_id`` as processed by setting ``processed_at``."""
 
+    supabase = get_supabase()
+    supabase.table("payments").update({"processed_at": datetime.utcnow().isoformat()}).eq(
+        "payment_id", payment_id
+    ).execute()
     _processed_payments.add(payment_id)
 
 
