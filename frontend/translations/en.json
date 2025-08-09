@@ -53,7 +53,8 @@
     "leaderboard": "Leaderboard",
     "pricing": "Pricing",
     "nationality": "Nationality",
-    "take_quiz": "Take Quiz"
+    "take_quiz": "Take Quiz",
+    "daily_survey": "Daily Survey"
   },
   "result.pro_prompt": "Upgrade to Pro Pass for {{price}} JPY/month to unlock extra attempts, ad-free mode and advanced analytics.",
   "admin_sets.title": "Question Sets",

@@ -3,6 +3,7 @@ import os
 
 os.environ.setdefault("SUPABASE_URL", "http://localhost")
 os.environ.setdefault("SUPABASE_SERVICE_ROLE_KEY", "dummy")
+os.environ.setdefault("OPENAI_API_KEY", "test")
 
 class DummyResponse:
     def __init__(self, data=None):
@@ -15,8 +16,7 @@ class DummyTable:
         self._select = False
         self._insert = None
         self._update = None
-        self._eq_column = None
-        self._eq_value = None
+        self._filters = []
         self._single = False
         self._limit = None
 
@@ -38,8 +38,7 @@ class DummyTable:
         return self
 
     def eq(self, column, value):
-        self._eq_column = column
-        self._eq_value = value
+        self._filters.append((column, value))
         return self
 
     def limit(self, n):
@@ -54,23 +53,36 @@ class DummyTable:
         if self._insert is not None:
             if isinstance(self._insert, list):
                 self.rows.extend(self._insert)
-                return DummyResponse(self._insert)
+                result = self._insert
             else:
                 self.rows.append(self._insert)
-                return DummyResponse([self._insert])
+                result = [self._insert]
+            self._reset()
+            return DummyResponse(result)
         if self._update is not None:
             for r in self.rows:
-                if r.get(self._eq_column) == self._eq_value:
+                if all(r.get(col) == val for col, val in self._filters):
                     r.update(self._update)
+            self._reset()
             return DummyResponse(None)
         if self._select:
-            res = [r for r in self.rows if r.get(self._eq_column) == self._eq_value] if self._eq_column else self.rows
+            res = [r for r in self.rows if all(r.get(col) == val for col, val in self._filters)]
             if self._single:
                 res = res[0] if res else None
             if self._limit is not None and isinstance(res, list):
                 res = res[: self._limit]
+            self._reset()
             return DummyResponse(res)
+        self._reset()
         return DummyResponse(None)
+
+    def _reset(self):
+        self._select = False
+        self._insert = None
+        self._update = None
+        self._filters = []
+        self._single = False
+        self._limit = None
 
 class DummySupabase:
     def __init__(self):
@@ -80,9 +92,6 @@ class DummySupabase:
         if table not in self.tables:
             self.tables[table] = []
         return DummyTable(self.tables[table])
-
-    def table(self, name):
-        return self.from_(name)
 
     def table(self, name):
         return self.from_(name)

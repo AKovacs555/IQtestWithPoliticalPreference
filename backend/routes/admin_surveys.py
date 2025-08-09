@@ -1,145 +1,97 @@
 import uuid
-import logging
-from typing import Optional
+from fastapi import APIRouter, Depends
 
-from fastapi import APIRouter, Depends, HTTPException
-
-from backend.db import (
-    get_surveys,
-    insert_surveys,
-    update_survey,
-    delete_survey,
-    get_dashboard_default_survey,
-    set_dashboard_default_survey,
-)
-from backend.services.translator import translate_one
+from backend.routes.dependencies import require_admin
 from backend.deps.supabase_client import get_supabase_client
-from .dependencies import require_admin
 
-
-router = APIRouter(prefix="/admin/surveys", tags=["admin-surveys"])
-
-logger = logging.getLogger(__name__)
-
-
-# Language options should mirror those available to end users
-LANGUAGES = ["ja", "en", "tr", "ru", "zh", "ko", "es", "fr", "it", "de", "ar"]
-SUPPORTED_LANGUAGES = ["en", "ja", "es", "de", "it", "tr", "fr", "zh", "ko", "ar"]
+router = APIRouter(
+    prefix="/admin/surveys",
+    tags=["admin-surveys"],
+    dependencies=[Depends(require_admin)],
+)
 
 
 def grant_free_tests(countries: list[str]) -> None:
-    """Increment free test credits for users from given countries."""
     if not countries:
         return
     supabase = get_supabase_client()
-    # Supabase Python client doesn't support increment directly, so use raw string
-    supabase.table("users").update({"free_tests": "free_tests + 1"}).in_(
-        "nationality", countries
-    ).execute()
+    supabase.table("users").update({"free_tests": "free_tests + 1"}).in_("nationality", countries).execute()
 
 
-@router.get("/languages", dependencies=[Depends(require_admin)])
-async def list_languages():
-    """Return the available languages for survey creation."""
-    return {"languages": LANGUAGES}
+@router.get("/")
+async def list_surveys():
+    supabase = get_supabase_client()
+    res = supabase.table("surveys").select("*").execute()
+    return {"surveys": res.data or []}
 
 
-@router.get("/", dependencies=[Depends(require_admin)])
-async def list_surveys(lang: str = "ja"):
-    surveys = get_surveys(lang)
-    return {"questions": surveys}
-
-
-@router.post("/", dependencies=[Depends(require_admin)])
+@router.post("/")
 async def create_survey(payload: dict):
-    group_id = str(uuid.uuid4())
-    base_entry = {**payload, "group_id": group_id}
-    rows = [base_entry]
-
-    base_lang = payload.get("lang")
-    if base_lang in SUPPORTED_LANGUAGES:
-        for lang in SUPPORTED_LANGUAGES:
-            if lang == base_lang:
-                continue
-            translated = await translate_one(
-                {
-                    "prompt": payload["statement"],
-                    "options": payload["options"],
-                    "answer_index": 0,
-                    "explanation": "",
-                },
-                base_lang,
-                lang,
-            )
-            rows.append(
-                {
-                    "group_id": group_id,
-                    "lang": lang,
-                    "statement": translated["prompt"],
-                    "options": translated["options"],
-                    "type": payload["type"],
-                    "exclusive_options": payload["exclusive_options"],
-                    "lr": payload.get("lr", 0),
-                    "auth": payload.get("auth", 0),
-                    "target_countries": payload.get("target_countries", []),
-                }
-            )
-
-    insert_surveys(rows)
-    grant_free_tests(payload.get("target_countries", []))
-    return base_entry
+    supabase = get_supabase_client()
+    data = {
+        "id": str(uuid.uuid4()),
+        "title": payload.get("title"),
+        "lang": payload.get("lang", "ja"),
+        "status": payload.get("status", "draft"),
+    }
+    res = supabase.table("surveys").insert(data).execute()
+    return res.data[0]
 
 
-@router.put("/{group_id}", dependencies=[Depends(require_admin)])
-async def edit_survey(group_id: str, payload: dict):
-    update_survey(group_id, payload["lang"], payload)
-
-    base_lang = payload.get("lang")
-    if base_lang in SUPPORTED_LANGUAGES:
-        for lang in SUPPORTED_LANGUAGES:
-            if lang == base_lang:
-                continue
-            translated = await translate_one(
-                {
-                    "prompt": payload["statement"],
-                    "options": payload["options"],
-                    "answer_index": 0,
-                    "explanation": "",
-                },
-                base_lang,
-                lang,
-            )
-            update_survey(
-                group_id,
-                lang,
-                {
-                    "statement": translated["prompt"],
-                    "options": translated["options"],
-                    "type": payload["type"],
-                    "exclusive_options": payload["exclusive_options"],
-                    "lr": payload.get("lr", 0),
-                    "auth": payload.get("auth", 0),
-                    "target_countries": payload.get("target_countries", []),
-                },
-            )
+@router.put("/{survey_id}")
+async def update_survey(survey_id: str, payload: dict):
+    supabase = get_supabase_client()
+    data = {k: v for k, v in payload.items() if k in {"title", "lang", "status"}}
+    supabase.table("surveys").update(data).eq("id", survey_id).execute()
     return {"updated": True}
 
 
-@router.delete("/{group_id}", dependencies=[Depends(require_admin)])
-async def remove_survey(group_id: str):
-    delete_survey(group_id)
+@router.delete("/{survey_id}")
+async def delete_survey(survey_id: str):
+    supabase = get_supabase_client()
+    supabase.table("surveys").delete().eq("id", survey_id).execute()
     return {"deleted": True}
 
 
-@router.get("/dashboard-default-survey", dependencies=[Depends(require_admin)])
-async def get_dashboard_default():
-    group_id = get_dashboard_default_survey()
-    return {"group_id": group_id}
+@router.get("/{survey_id}/items")
+async def list_items(survey_id: str):
+    supabase = get_supabase_client()
+    res = (
+        supabase.table("survey_items")
+        .select("*")
+        .eq("survey_id", survey_id)
+        .order("order_no")
+        .execute()
+    )
+    return {"items": res.data or []}
 
 
-@router.post(
-    "/dashboard-default-survey", dependencies=[Depends(require_admin)]
-)
-async def set_dashboard_default(payload: dict):
-    set_dashboard_default_survey(payload.get("group_id"))
-    return {"status": "ok"}
+@router.post("/{survey_id}/items")
+async def create_item(survey_id: str, payload: dict):
+    supabase = get_supabase_client()
+    data = {
+        "id": str(uuid.uuid4()),
+        "survey_id": survey_id,
+        "body": payload.get("body"),
+        "choices": payload.get("choices", []),
+        "order_no": payload.get("order_no", 0),
+        "lang": payload.get("lang", "ja"),
+        "is_active": payload.get("is_active", True),
+    }
+    res = supabase.table("survey_items").insert(data).execute()
+    return res.data[0]
+
+
+@router.put("/items/{item_id}")
+async def update_item(item_id: str, payload: dict):
+    supabase = get_supabase_client()
+    data = {k: v for k, v in payload.items() if k in {"body", "choices", "order_no", "lang", "is_active"}}
+    supabase.table("survey_items").update(data).eq("id", item_id).execute()
+    return {"updated": True}
+
+
+@router.delete("/items/{item_id}")
+async def delete_item(item_id: str):
+    supabase = get_supabase_client()
+    supabase.table("survey_items").delete().eq("id", item_id).execute()
+    return {"deleted": True}

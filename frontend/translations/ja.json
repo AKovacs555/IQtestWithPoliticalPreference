@@ -53,7 +53,8 @@
     "leaderboard": "ランキング",
     "pricing": "料金",
     "nationality": "国籍",
-    "take_quiz": "テストを受ける"
+    "take_quiz": "テストを受ける",
+    "daily_survey": "デイリーアンケート"
   },
   "result.pro_prompt": "追加の受験、広告なし、詳細分析を利用するには月額{{price}}円のPro Passにアップグレードしてください。",
   "admin_sets.title": "問題セット",
