@@ -19,7 +19,7 @@ backend_dir = os.path.dirname(__file__)
 repo_root = os.path.join(backend_dir, "..")
 sys.path.extend([backend_dir, repo_root])
 
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, HTTPException, Depends, Request
 import io
 import contextlib
 from fastapi.middleware.cors import CORSMiddleware
@@ -68,6 +68,7 @@ from routes.admin_questions import router as admin_questions_router
 from routes.admin_import_questions import router as admin_import_router
 from routes.admin_surveys import router as admin_surveys_router
 from routes.admin_users import router as admin_users_router
+from routes.admin_pricing import router as admin_pricing_router
 from routes.settings import router as settings_router
 from routes.quiz import router as quiz_router
 from routes.surveys import router as surveys_router
@@ -104,6 +105,7 @@ app.include_router(admin_questions_router)
 app.include_router(admin_import_router)
 app.include_router(admin_surveys_router)
 app.include_router(admin_users_router)
+app.include_router(admin_pricing_router)
 app.include_router(settings_router)
 app.include_router(diagnostics.router)
 
@@ -132,6 +134,7 @@ from db import (
     insert_survey_responses,
     get_survey_answers,
     get_answered_survey_ids,
+    get_pricing_rule,
 )
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
 SUPABASE_API_KEY = os.environ.get("SUPABASE_API_KEY", "")
@@ -259,6 +262,7 @@ class PricingResponse(BaseModel):
     processor: str
     pro_price: int
     variant: int
+    currency: str = "JPY"
 
 
 class ScoreEntry(BaseModel):
@@ -314,7 +318,13 @@ def _assign_variant(user: dict) -> int:
 
 
 @app.get("/pricing/{user_id}", response_model=PricingResponse)
-async def pricing(user_id: str, region: str = "US"):
+async def pricing(user_id: str, request: Request, region: str = "US"):
+    country = (
+        request.headers.get("cf-country")
+        or request.headers.get("cf_country")
+        or request.headers.get("x-country")
+        or region
+    ).upper()
     max_free_attempts = await get_setting("max_free_attempts", 1)
     user = get_user(user_id)
     if not user:
@@ -337,19 +347,27 @@ async def pricing(user_id: str, region: str = "US"):
     elif user.get("free_attempts", 0) > max_free_attempts:
         user["free_attempts"] = max_free_attempts
         db_update_user(user_id, {"free_attempts": max_free_attempts})
-    processor = select_processor(region)
+    processor = select_processor(country)
     variant_idx = _assign_variant(user)
     log_event({"event": "pricing_shown", "user_id": user_id, "variant": variant_idx})
     price = PRICE_VARIANTS[variant_idx]
     retry_price = _retry_price(user)
+    rule_retry = get_pricing_rule(country, "retry")
+    if rule_retry:
+        retry_price = rule_retry["price_jpy"]
+    pro_price = PRO_PRICE_MONTHLY
+    rule_pro = get_pricing_rule(country, "pro_month")
+    if rule_pro:
+        pro_price = rule_pro["price_jpy"]
     return {
         "price": price,
         "retry_price": retry_price,
         "plays": user.get("plays", 0),
         "free_attempts": min(user.get("free_attempts", max_free_attempts), max_free_attempts),
         "processor": processor,
-        "pro_price": PRO_PRICE_MONTHLY,
+        "pro_price": pro_price,
         "variant": variant_idx,
+        "currency": "JPY",
     }
 
 

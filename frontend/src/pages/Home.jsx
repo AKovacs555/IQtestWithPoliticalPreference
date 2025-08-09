@@ -14,6 +14,7 @@ export default function Home() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [freeStats, setFreeStats] = useState(null);
+  const [proPrice, setProPrice] = useState(0);
   const handleStart = () => {
     if (!user) {
       navigate('/login');
@@ -37,9 +38,20 @@ export default function Home() {
           granted: (data.free_attempts ?? 0) + (data.plays ?? 0),
           consumed: data.plays ?? 0,
         });
+        setProPrice(data.pro_price || 0);
       })
       .catch(() => {});
   }, [userId]);
+
+  const handleProPurchase = () => {
+    fetch(`${API_BASE}/purchase`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: userId, amount: proPrice, pay_currency: 'usdttrc20' })
+    })
+      .then(res => res.json())
+      .then(data => { if (data.payment_url) window.location = data.payment_url; });
+  };
 
   return (
     <AppShell>
@@ -56,9 +68,24 @@ export default function Home() {
           Take our quick IQ test and see how you compare.
         </p>
         {freeStats && (
-          <p className="text-sm text-gray-600 dark:text-gray-400">
-            Free attempts: {freeStats.granted} - {freeStats.consumed}
-          </p>
+          <div className="w-full grid gap-4 md:grid-cols-2">
+            <div className="p-4 border rounded-md text-center">
+              <h3 className="font-semibold mb-2">Free Attempts</h3>
+              <p className="text-3xl font-bold">{freeStats.granted - freeStats.consumed}</p>
+              <p className="text-sm text-muted-foreground">remaining</p>
+            </div>
+            <div className="p-4 border rounded-md text-center">
+              <h3 className="font-semibold mb-2">Pro Pass</h3>
+              <p className="text-3xl font-bold">{proPrice}</p>
+              <p className="text-sm text-muted-foreground">JPY / mo</p>
+              <button
+                onClick={handleProPurchase}
+                className="mt-2 px-4 py-2 rounded-md bg-primary text-white"
+              >
+                Purchase
+              </button>
+            </div>
+          </div>
         )}
         
         <button

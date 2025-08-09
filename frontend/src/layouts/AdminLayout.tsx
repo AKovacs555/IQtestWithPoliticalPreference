@@ -11,6 +11,7 @@ export default function AdminLayout() {
     { to: '/admin/stats', label: 'Question Stats' },
     { to: '/admin/sets', label: t('admin_sets.title') },
     { to: '/admin/settings', label: t('settings', { defaultValue: 'Settings' }) },
+    { to: '/admin/pricing', label: 'Pricing' },
   ];
 
   return (
