@@ -15,6 +15,8 @@ export default function Dashboard() {
   const [selectedSurvey, setSelectedSurvey] = useState('');
   const [optionStats, setOptionStats] = useState(null);
   const [inviteCode, setInviteCode] = useState('');
+  const [history, setHistory] = useState([]);
+  const [tab, setTab] = useState('stats');
 
   useEffect(() => {
     fetch(`${API_BASE}/stats/iq_histogram?user_id=${userId}`)
@@ -34,6 +36,9 @@ export default function Dashboard() {
       fetch(`${API_BASE}/referral/code`, { headers: { Authorization: `Bearer ${token}` } })
         .then(r => r.json())
         .then(d => setInviteCode(d.invite_code || ''));
+      fetch(`${API_BASE}/user/history`, { headers: { Authorization: `Bearer ${token}` } })
+        .then(r => r.json())
+        .then(d => setHistory(d.attempts || []));
     }
   }, [i18n.language, userId]);
 
@@ -77,38 +82,83 @@ export default function Dashboard() {
     <AppShell>
       <div className="max-w-2xl mx-auto space-y-4 py-4">
         <h2 className="text-2xl font-bold text-center">{t('dashboard.title')}</h2>
-        {hist.user_score == null ? (
-          <p className="text-center">{t('dashboard.no_data')}</p>
+        <div className="tabs justify-center">
+          <a
+            className={`tab tab-bordered ${tab==='stats'?'tab-active':''}`}
+            onClick={() => setTab('stats')}
+          >
+            {t('dashboard.title')}
+          </a>
+          <a
+            className={`tab tab-bordered ${tab==='history'?'tab-active':''}`}
+            onClick={() => setTab('history')}
+          >
+            {t('dashboard.history', {defaultValue:'History'})}
+          </a>
+        </div>
+        {tab === 'stats' ? (
+          hist.user_score == null ? (
+            <p className="text-center">{t('dashboard.no_data')}</p>
+          ) : (
+            <>
+              {inviteCode && (
+                <p className="text-center text-sm">
+                  Invite link: {`${window.location.origin}/?r=${inviteCode}`}
+                </p>
+              )}
+              {hist.histogram.length ? (
+                <div className="h-64"><canvas ref={histRef}></canvas></div>
+              ) : null}
+              {hist.user_percentile != null && (
+                <p className="text-center">{t('dashboard.percentile', { pct: hist.user_percentile.toFixed(1) })}</p>
+              )}
+              <div>
+                <label className="block mb-1">{t('dashboard.select_survey', { defaultValue: 'Select survey' })}</label>
+                <select
+                  className="select select-bordered w-full"
+                  value={selectedSurvey}
+                  onChange={e => setSelectedSurvey(e.target.value)}
+                >
+                  <option value="">--</option>
+                  {surveyList.map(s => (
+                    <option key={s.group_id} value={s.group_id}>{s.statement}</option>
+                  ))}
+                </select>
+              </div>
+              {optionStats && optionStats.options.length ? (
+                <div className="h-64"><canvas ref={barRef}></canvas></div>
+              ) : null}
+            </>
+          )
         ) : (
-          <>
-            {inviteCode && (
-              <p className="text-center text-sm">
-                Invite link: {`${window.location.origin}/?r=${inviteCode}`}
-              </p>
+          <div className="overflow-x-auto">
+            {history.length ? (
+              <table className="table w-full">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Set</th>
+                    <th>Score</th>
+                    <th>Percentile</th>
+                    <th>Duration</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {history.map((h, i) => (
+                    <tr key={i}>
+                      <td>{h.date}</td>
+                      <td>{h.set}</td>
+                      <td>{h.score}</td>
+                      <td>{h.percentile}</td>
+                      <td>{h.duration}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <p className="text-center">{t('dashboard.no_data')}</p>
             )}
-            {hist.histogram.length ? (
-              <div className="h-64"><canvas ref={histRef}></canvas></div>
-            ) : null}
-            {hist.user_percentile != null && (
-              <p className="text-center">{t('dashboard.percentile', { pct: hist.user_percentile.toFixed(1) })}</p>
-            )}
-            <div>
-              <label className="block mb-1">{t('dashboard.select_survey', { defaultValue: 'Select survey' })}</label>
-              <select
-                className="select select-bordered w-full"
-                value={selectedSurvey}
-                onChange={e => setSelectedSurvey(e.target.value)}
-              >
-                <option value="">--</option>
-                {surveyList.map(s => (
-                  <option key={s.group_id} value={s.group_id}>{s.statement}</option>
-                ))}
-              </select>
-            </div>
-            {optionStats && optionStats.options.length ? (
-              <div className="h-64"><canvas ref={barRef}></canvas></div>
-            ) : null}
-          </>
+          </div>
         )}
       </div>
     </AppShell>
