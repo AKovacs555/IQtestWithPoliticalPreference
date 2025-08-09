@@ -45,6 +45,18 @@ export async function submitQuiz(sessionId, answers) {
   return handleJson(res);
 }
 
+export async function abandonQuiz(sessionId) {
+  try {
+    await fetch(`${API_BASE}/quiz/abandon`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify({ session_id: sessionId })
+    });
+  } catch {
+    // fire and forget
+  }
+}
+
 export async function getSurvey(lang, userId, nationality) {
   let url = `${API_BASE}/survey/start`;
   const params = [];

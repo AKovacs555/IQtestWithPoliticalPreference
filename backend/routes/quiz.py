@@ -2,9 +2,10 @@ import os
 import secrets
 import json
 import logging
+import uuid
 from pathlib import Path
 from typing import List, Optional
-from datetime import datetime
+from datetime import datetime, timedelta
 from fastapi import APIRouter, HTTPException, Request, Depends
 import random
 from pydantic import BaseModel
@@ -28,6 +29,7 @@ from backend.db import get_answered_survey_ids, insert_survey_responses
 router = APIRouter(prefix="/quiz", tags=["quiz"])
 
 NUM_QUESTIONS = int(os.getenv("NUM_QUESTIONS", "20"))
+QUIZ_DURATION_MINUTES = int(os.getenv("QUIZ_DURATION_MINUTES", "25"))
 
 _dist_path = Path(__file__).resolve().parents[1] / "data" / "normative_distribution.json"
 with _dist_path.open() as f:
@@ -58,6 +60,10 @@ class QuizSubmitRequest(BaseModel):
     session_id: str
     answers: List[QuizAnswer]
     surveys: Optional[List[SurveyAnswer]] = None
+
+
+class QuizAbandonRequest(BaseModel):
+    session_id: str
 
 @router.get("/sets")
 async def quiz_sets():
@@ -168,11 +174,26 @@ async def start_quiz(
         except Exception:
             logging.getLogger(__name__).error("No questions available for language %s", lang)
             raise HTTPException(status_code=500, detail="No questions available")
-    session_id = secrets.token_hex(8)
+
+    session_id = str(uuid.uuid4())
+    expires_at = datetime.utcnow() + timedelta(minutes=QUIZ_DURATION_MINUTES)
     request.app.state.sessions[session_id] = {
         str(q["id"]): {"answer": q["answer"], "a": q.get("irt_a"), "b": q.get("irt_b")}
         for q in questions
     }
+    supabase = get_supabase_client()
+    try:
+        supabase.table("quiz_sessions").insert(
+            {
+                "id": session_id,
+                "user_id": user.get("hashed_id"),
+                "status": "started",
+                "expires_at": expires_at.isoformat(),
+                "set_id": set_id,
+            }
+        ).execute()
+    except Exception as e:  # pragma: no cover - best effort only
+        logging.getLogger(__name__).warning("Could not create session record: %s", e)
     models = []
     for q in questions:
         models.append(
@@ -187,12 +208,36 @@ async def start_quiz(
     pending = get_random_pending_surveys(
         user["hashed_id"], user.get("nationality"), limit=3
     )
-    return {"session_id": session_id, "questions": models, "pending_surveys": pending}
+    return {"session_id": session_id, "expires_at": expires_at.isoformat(), "questions": models, "pending_surveys": pending}
 
 @router.post("/submit")
 async def submit_quiz(
     payload: QuizSubmitRequest, request: Request, user: dict = Depends(get_current_user)
 ):
+    supabase = get_supabase_client()
+    row = (
+        supabase.table("quiz_sessions")
+        .select("status,expires_at")
+        .eq("id", payload.session_id)
+        .single()
+        .execute()
+        .data
+    )
+    if not row or row.get("status") != "started":
+        raise HTTPException(status_code=400, detail="Invalid session")
+    try:
+        exp = datetime.fromisoformat(row["expires_at"])
+    except Exception:
+        exp = datetime.utcnow()
+    if datetime.utcnow() > exp:
+        try:
+            supabase.table("quiz_sessions").update({"status": "timeout"}).eq(
+                "id", payload.session_id
+            ).execute()
+        except Exception:
+            pass
+        request.app.state.sessions.pop(payload.session_id, None)
+        raise HTTPException(status_code=400, detail="Session expired")
     session = request.app.state.sessions.get(payload.session_id)
     if not session:
         raise HTTPException(status_code=400, detail="Invalid session")
@@ -211,7 +256,6 @@ async def submit_quiz(
     ability = ability_summary(theta)
     se = standard_error(theta, responses)
     share_url = generate_share_image(user["hashed_id"], iq, pct)
-    supabase = get_supabase_client()
     try:
         supabase.from_("user_scores").insert(
             {
@@ -279,6 +323,12 @@ async def submit_quiz(
                 ).execute()
         except Exception:
             pass
+    try:
+        supabase.table("quiz_sessions").update(
+            {"status": "submitted", "score": iq, "percentile": pct}
+        ).eq("id", payload.session_id).execute()
+    except Exception:
+        pass
     request.app.state.sessions.pop(payload.session_id, None)
     return {
         "theta": theta,
@@ -288,6 +338,21 @@ async def submit_quiz(
         "se": se,
         "share_url": share_url,
     }
+
+
+@router.post("/abandon")
+async def abandon_quiz(
+    payload: QuizAbandonRequest, request: Request, user: dict = Depends(get_current_user)
+):
+    supabase = get_supabase_client()
+    try:
+        supabase.table("quiz_sessions").update({"status": "abandoned"}).eq("id", payload.session_id).eq(
+            "status", "started"
+        ).execute()
+    except Exception:
+        pass
+    request.app.state.sessions.pop(payload.session_id, None)
+    return {"status": "abandoned"}
 
 
 def get_random_pending_surveys(

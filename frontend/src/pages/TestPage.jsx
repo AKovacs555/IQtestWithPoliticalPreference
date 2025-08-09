@@ -1,7 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import AppShell from '../components/AppShell';
-import { getQuizStart, submitQuiz } from '../api';
+import { getQuizStart, submitQuiz, abandonQuiz } from '../api';
 import LinearProgress from '@mui/material/LinearProgress';
 import { AnimatePresence, motion, MotionConfig } from 'framer-motion';
 import QuestionCard from '../components/QuestionCard';
@@ -13,7 +13,8 @@ export default function TestPage() {
   const [questions, setQuestions] = React.useState([]);
   const [answers, setAnswers] = React.useState([]);
   const [current, setCurrent] = React.useState(0);
-  const [timeLeft, setTimeLeft] = React.useState(300);
+  const DURATION = parseInt(import.meta.env.VITE_QUIZ_DURATION_MINUTES || '25', 10) * 60;
+  const [timeLeft, setTimeLeft] = React.useState(DURATION);
   const [suspicious, setSuspicious] = React.useState(false);
   const [blackout, setBlackout] = React.useState(false);
   const [loading, setLoading] = React.useState(true);
@@ -28,6 +29,16 @@ export default function TestPage() {
   React.useEffect(() => {
     if (!user) {
       navigate('/login');
+      return;
+    }
+    const status = sessionStorage.getItem('quiz_status');
+    const exp = sessionStorage.getItem('quiz_expires');
+    if (status && status !== 'started') {
+      navigate('/result');
+      return;
+    }
+    if (exp && Date.now() > Date.parse(exp)) {
+      navigate('/result');
       return;
     }
     const nat = localStorage.getItem('nationality');
@@ -49,6 +60,13 @@ export default function TestPage() {
         setSession(data.session_id);
         setQuestions(data.questions);
         setCurrent(0);
+        sessionStorage.setItem('quiz_session', data.session_id);
+        if (data.expires_at) {
+          sessionStorage.setItem('quiz_expires', data.expires_at);
+          const secs = Math.floor((new Date(data.expires_at) - Date.now()) / 1000);
+          setTimeLeft(secs > 0 ? secs : 0);
+        }
+        sessionStorage.setItem('quiz_status', 'started');
       } catch (err) {
         if (err.code === 'demographic_required') {
           navigate('/demographics');
@@ -128,6 +146,9 @@ export default function TestPage() {
     try {
       // console.log('submitQuiz called');
       const result = await submitQuiz(session, list);
+      sessionStorage.setItem('quiz_status', 'submitted');
+      sessionStorage.removeItem('quiz_session');
+      sessionStorage.removeItem('quiz_expires');
       const params = new URLSearchParams({
         iq: result.iq.toString(),
         percentile: result.percentile.toString(),
@@ -150,6 +171,31 @@ export default function TestPage() {
       })();
     }
   }, [timeLeft, loading, error]);
+
+  React.useEffect(() => {
+    const handleExit = () => {
+      const sid = sessionStorage.getItem('quiz_session');
+      if (sid) abandonQuiz(sid);
+    };
+    window.addEventListener('beforeunload', handleExit);
+    const vis = () => {
+      if (document.visibilityState === 'hidden') handleExit();
+    };
+    document.addEventListener('visibilitychange', vis);
+    return () => {
+      window.removeEventListener('beforeunload', handleExit);
+      document.removeEventListener('visibilitychange', vis);
+    };
+  }, []);
+
+  React.useEffect(() => {
+    const handlePop = () => {
+      window.history.pushState(null, '', window.location.href);
+    };
+    window.history.pushState(null, '', window.location.href);
+    window.addEventListener('popstate', handlePop);
+    return () => window.removeEventListener('popstate', handlePop);
+  }, []);
 
   React.useEffect(() => {
     let hideTime = null;
