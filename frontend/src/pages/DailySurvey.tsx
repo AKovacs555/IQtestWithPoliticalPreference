@@ -29,12 +29,12 @@ export default function DailySurvey() {
       const res = await fetch(`${apiBase}/surveys/daily3?lang=ja`, { headers });
       if (!res.ok) {
         if (res.status === 409) {
-          toast.info('本日のアンケートは回答済みです。');
+          toast.info('Daily 3 completed!');
           setDone(true);
           return;
         }
         const err = await res.json().catch(() => ({}));
-        throw new Error(err?.detail || '取得に失敗しました。しばらくして再度お試しください。');
+        throw new Error(err?.detail || 'Failed to load.');
       }
       const d = await res.json();
       setItems(d.items || []);
@@ -57,12 +57,18 @@ export default function DailySurvey() {
       });
       if (!res.ok) {
         if (res.status === 409) {
-          toast.info('本日のアンケートは回答済みです。');
-          setDone(true);
-          return;
+          const err = await res.json().catch(() => ({}));
+          if (err?.detail?.error === 'daily_quota_exceeded') {
+            toast.info('Daily 3 completed!');
+            setDone(true);
+            return;
+          }
+          if (err?.detail?.error === 'already_answered') {
+            throw new Error('Already answered');
+          }
         }
         const err = await res.json().catch(() => ({}));
-        throw new Error(err?.detail || '送信に失敗しました。しばらくして再度お試しください。');
+        throw new Error(err?.detail || 'Failed to submit.');
       }
       if (current + 1 < items.length) setCurrent(current + 1);
       else setDone(true);
@@ -97,7 +103,13 @@ export default function DailySurvey() {
   if (done || items.length === 0) {
     return (
       <div className="max-w-screen-md lg:max-w-screen-lg px-4 md:px-6 space-y-4 mx-auto text-center">
-        <p>当日分は完了しました</p>
+        <p>Daily 3 completed</p>
+        <a
+          className="px-4 py-2 rounded bg-[var(--btn-primary)] text-white"
+          href="/quiz"
+        >
+          Start IQ test
+        </a>
       </div>
     );
   }

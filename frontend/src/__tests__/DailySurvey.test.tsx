@@ -27,5 +27,6 @@ test('daily survey flow', async () => {
   fireEvent.click(screen.getByText('a'));
   expect(await screen.findByText('Q2')).toBeInTheDocument();
   fireEvent.click(screen.getByText('a'));
-  expect(await screen.findByText('当日分は完了しました')).toBeInTheDocument();
+  expect(await screen.findByText('Daily 3 completed')).toBeInTheDocument();
+  expect(screen.getByText('Start IQ test')).toBeInTheDocument();
 });
