@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import GoogleOAuthButton from '../components/GoogleOAuthButton.jsx';
 
 export default function LoginPage() {
   const [identifier, setIdentifier] = useState('');
@@ -57,6 +58,7 @@ export default function LoginPage() {
           </Link>
         </p>
       </form>
+      <GoogleOAuthButton />
     </div>
   );
 }

@@ -1,6 +1,8 @@
+import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import DailySurvey from '../pages/DailySurvey';
-import { vi, afterAll } from 'vitest';
+import { vi, afterAll, test, expect } from 'vitest';
+import '@testing-library/jest-dom/vitest';
 
 vi.stubGlobal('fetch', (url: RequestInfo, opts?: RequestInit) => {
   if (typeof url === 'string' && url.includes('/surveys/daily3')) {

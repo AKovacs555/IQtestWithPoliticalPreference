@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import GoogleOAuthButton from '../components/GoogleOAuthButton.jsx';
 
 export default function SignupPage() {
   const [username, setUsername] = useState('');
@@ -70,6 +71,7 @@ export default function SignupPage() {
           Sign Up
         </button>
       </form>
+      <GoogleOAuthButton />
     </div>
   );
 }
