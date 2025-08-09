@@ -130,9 +130,47 @@ def increment_free_attempts(user_id: str, delta: int = 1) -> None:
 
     supabase = get_supabase()
     current = (get_user(user_id) or {}).get("free_attempts") or 0
-    supabase.table("users").update({"free_attempts": current + delta}).eq(
+    supabase.table("app_users").update({"free_attempts": current + delta}).eq(
         "hashed_id", user_id
     ).execute()
+
+
+def get_free_attempts(user_id: str) -> int:
+    """Return the number of remaining ``free_attempts`` for ``user_id``."""
+
+    supabase = get_supabase()
+    resp = (
+        supabase.table("app_users")
+        .select("free_attempts")
+        .eq("hashed_id", user_id)
+        .single()
+        .execute()
+    )
+    data = resp.data or {}
+    return data.get("free_attempts") or 0
+
+
+def consume_free_attempt(user_id: str) -> Optional[int]:
+    """Atomically decrement ``free_attempts`` for ``user_id``.
+
+    Returns the remaining attempts on success, or ``None`` if no attempt was
+    consumed.
+    """
+
+    supabase = get_supabase()
+    current = get_free_attempts(user_id)
+    if current <= 0:
+        return None
+
+    # Perform a conditional update to avoid race conditions.
+    supabase.table("app_users").update({"free_attempts": current - 1}).eq(
+        "hashed_id", user_id
+    ).eq("free_attempts", current).execute()
+
+    remaining = get_free_attempts(user_id)
+    if remaining == current:
+        return None
+    return remaining
 
 
 def record_payment_event(

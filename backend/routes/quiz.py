@@ -1,5 +1,4 @@
 import os
-import secrets
 import json
 import logging
 import uuid
@@ -18,16 +17,17 @@ from backend.questions_loader import (
 def get_balanced_random_questions_by_set(n: int, set_id: str, lang: str | None = None):
     return get_questions_for_set(set_id, n, lang)
 
-from backend.questions import get_balanced_random_questions_global
+from backend.questions import get_balanced_random_questions_global  # noqa: E402
 
-from backend.scoring import estimate_theta, iq_score, ability_summary, standard_error
-from backend.irt import percentile
-from backend.features import generate_share_image
-from backend.deps.auth import get_current_user
-from backend.db import (
+from backend.scoring import estimate_theta, iq_score, ability_summary, standard_error  # noqa: E402
+from backend.irt import percentile  # noqa: E402
+from backend.features import generate_share_image  # noqa: E402
+from backend.deps.auth import get_current_user  # noqa: E402
+from backend.db import (  # noqa: E402
     get_answered_survey_ids,
     insert_survey_responses,
     get_daily_answer_count,
+    consume_free_attempt,
 )
 
 router = APIRouter(prefix="/quiz", tags=["quiz"])
@@ -120,6 +120,17 @@ async def start_quiz(
                 "reset_at": reset_at,
             },
         )
+    remaining = consume_free_attempt(user["hashed_id"])
+    if remaining is None:
+        logger.error("attempts_insufficient", extra={"user_id": user["hashed_id"]})
+        raise HTTPException(
+            status_code=402,
+            detail={"code": "NEED_PAYMENT"},
+        )
+
+    logger.info(
+        "attempts_consume_ok", extra={"user_id": user["hashed_id"], "remaining": remaining}
+    )
     logger.info("quiz_start_allowed")
     if set_id:
         try:
