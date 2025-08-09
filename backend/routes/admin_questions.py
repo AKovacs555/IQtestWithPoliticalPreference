@@ -1,11 +1,15 @@
 import os
 import logging
 from typing import Optional
-import asyncio
 from math import ceil
 from fastapi import APIRouter, Depends, HTTPException
 from backend.deps.supabase_client import get_supabase_client
-from backend.services.translator import translate_one
+from backend.db import (
+    get_group_key_by_id,
+    update_question_group,
+    approve_question_group,
+    delete_question_group,
+)
 from .dependencies import require_admin
 from pydantic import BaseModel
 
@@ -13,6 +17,7 @@ from pydantic import BaseModel
 class ApproveAllRequest(BaseModel):
     approved: bool = True
     lang: str | None = None
+    scope: str = "lang"  # "lang" or "group"
     only_delta: bool = True  # if True, update only rows that actually need change
 
 
@@ -94,6 +99,11 @@ async def question_stats():
 
 @router.post("/{group_id}/toggle_approved", dependencies=[Depends(require_admin)])
 async def toggle_approved(group_id: str):
+    """Toggle approval for a group.
+
+    Deprecated: prefer POST /{id}/approve or /{id}/unapprove which operate on
+    ``orig_id`` groups.
+    """
     supabase = get_supabase_client()
     records = (
         supabase.table("questions")
@@ -109,12 +119,35 @@ async def toggle_approved(group_id: str):
     return {"group_id": group_id, "approved": new_status}
 
 
+# ---------------------------------------------------------------------------
+# New group-aware approval endpoints
+# ---------------------------------------------------------------------------
+
+
+@router.post("/{question_id}/approve", dependencies=[Depends(require_admin)])
+async def approve_question(question_id: str):
+    """Approve all translations for the given question id."""
+    group_key = get_group_key_by_id(str(question_id))
+    if not group_key:
+        raise HTTPException(status_code=404, detail="Question not found")
+    approve_question_group(group_key, True)
+    return {"group_key": group_key, "approved": True}
+
+
+@router.post("/{question_id}/unapprove", dependencies=[Depends(require_admin)])
+async def unapprove_question(question_id: str):
+    group_key = get_group_key_by_id(str(question_id))
+    if not group_key:
+        raise HTTPException(status_code=404, detail="Question not found")
+    approve_question_group(group_key, False)
+    return {"group_key": group_key, "approved": False}
+
+
 @router.post("/approve_batch", dependencies=[Depends(require_admin)])
 async def approve_batch(payload: dict):
-    """
-    Bulk approve or disapprove questions.
-    Expects JSON body: {"group_ids": ["uuid1", "uuid2"], "approved": true}
-    or, alternatively, {"ids": [1,2,3], "approved": true} to update by question IDs.
+    """Bulk approve or disapprove questions.
+
+    Deprecated: use ``/approve_all`` with ``scope="group"`` instead.
     """
     ids = payload.get("group_ids") or []
     question_ids = payload.get("ids") or []
@@ -135,57 +168,55 @@ async def approve_batch(payload: dict):
 
 @router.post("/approve_all", dependencies=[Depends(require_admin)])
 async def approve_all(payload: ApproveAllRequest):
+    """Bulk approve or unapprove questions.
+
+    When ``scope`` is ``lang`` (default), update only rows in the specified
+    language. When ``scope`` is ``group``, fetch all distinct ``orig_id`` values
+    for the selection and apply the change to every translation in each group.
+    Returns the updated rows for UI refresh.
     """
-    Approve or unapprove all matching questions.
-    If `lang` is provided, select the affected groups in that language and
-    apply the change to ALL languages for those groups. If `lang` is None,
-    apply the change to all rows.
-    """
+
     supabase = get_supabase_client()
 
-    def chunk(xs: list[str], n: int = 500):
-        for i in range(0, len(xs), n):
-            yield xs[i:i+n]
+    if payload.scope == "group":
+        sel = supabase.table("questions").select("orig_id")
+        if payload.lang:
+            sel = sel.eq("lang", payload.lang)
+        if payload.only_delta:
+            sel = sel.is_("approved", not payload.approved)
+        rows = sel.execute().data or []
+        group_keys = sorted({r.get("orig_id") for r in rows if r.get("orig_id")})
+        if group_keys:
+            upd = supabase.table("questions").update({"approved": payload.approved}).in_("orig_id", group_keys)
+            if payload.only_delta:
+                upd = upd.is_("approved", not payload.approved)
+            upd.execute()
+            updated = supabase.table("questions").select("*").in_("orig_id", group_keys).execute().data or []
+        else:
+            updated = []
+        return {"updated": len(updated), "approved": payload.approved, "rows": updated}
 
-    # Case 1: a language is specified -> update all languages for those groups
+    # scope == "lang"
+    pre = supabase.table("questions").select("id")
     if payload.lang:
-        sel_groups = supabase.table("questions").select("group_id").eq("lang", payload.lang)
-        if payload.only_delta:
-            sel_groups = sel_groups.is_("approved", not payload.approved)
-        rows = sel_groups.execute().data or []
-        group_ids = sorted({r.get("group_id") for r in rows if r.get("group_id")})
-        if not group_ids:
-            upd = supabase.table("questions").update({"approved": payload.approved}).eq("lang", payload.lang)
-            if payload.only_delta:
-                upd = upd.is_("approved", not payload.approved)
-            upd.execute()
-            return {"updated": 0, "approved": payload.approved, "lang": payload.lang, "groups": 0}
-
-        # Count rows that will actually change across all languages
-        count_q = supabase.table("questions").select("id", count="exact").in_("group_id", group_ids)
-        if payload.only_delta:
-            count_q = count_q.is_("approved", not payload.approved)
-        target_count = (count_q.execute().count) or 0
-
-        # Update in batches across all languages for the selected groups
-        for ids in chunk(group_ids):
-            upd = supabase.table("questions").update({"approved": payload.approved}).in_("group_id", ids)
-            if payload.only_delta:
-                upd = upd.is_("approved", not payload.approved)
-            upd.execute()
-
-        return {"updated": target_count, "approved": payload.approved, "lang": payload.lang, "groups": len(group_ids)}
-
-    # Case 2: no language specified -> global update
-    sel = supabase.table("questions").select("id", count="exact")
+        pre = pre.eq("lang", payload.lang)
     if payload.only_delta:
-        sel = sel.is_("approved", not payload.approved)
-    target_count = (sel.execute().count) or 0
-    upd = supabase.table("questions")
-    if payload.only_delta:
-        upd = upd.is_("approved", not payload.approved)
-    upd.update({"approved": payload.approved}).execute()
-    return {"updated": target_count, "approved": payload.approved, "lang": None}
+        pre = pre.is_("approved", not payload.approved)
+    pre_rows = pre.execute().data or []
+    ids = [r.get("id") for r in pre_rows if r.get("id")]
+    upd = supabase.table("questions").update({"approved": payload.approved})
+    if ids:
+        upd = upd.in_("id", ids)
+    elif payload.lang:
+        upd = upd.eq("lang", payload.lang)
+    upd.execute()
+    if ids:
+        rows = (
+            supabase.table("questions").select("*").in_("id", ids).execute().data or []
+        )
+    else:
+        rows = []
+    return {"updated": len(rows), "approved": payload.approved, "rows": rows}
 
 
 @router.post("/unapprove_all", dependencies=[Depends(require_admin)])
@@ -195,78 +226,41 @@ async def unapprove_all(payload: ApproveAllRequest):
 
 
 @router.put("/{question_id}", dependencies=[Depends(require_admin)])
-async def update_question(question_id: int, payload: dict):
-    if not isinstance(payload.get("options"), list) or len(payload["options"]) != 4:
-        raise HTTPException(status_code=400, detail="Options must be a list of 4 items")
-    supabase = get_supabase_client()
-    record = (
-        supabase.table("questions")
-        .select("group_id,lang")
-        .eq("id", question_id)
-        .single()
-        .execute()
-    ).data
-    if not record:
+async def update_question(
+    question_id: str, payload: dict, apply_text_to_all: bool = False
+):
+    """Update a question across all translations.
+
+    Deprecated: the former single-language translation flow has been replaced by
+    group-wide updates. Set ``apply_text_to_all`` to True to overwrite text
+    fields in all languages.
+    """
+
+    group_key = get_group_key_by_id(str(question_id))
+    if not group_key:
         raise HTTPException(status_code=404, detail="Question not found")
 
-    data = {
-        "question": payload["question"],
-        "options": payload["options"],
-        "answer": payload["answer"],
-        "irt_a": payload["irt_a"],
-        "irt_b": payload["irt_b"],
-        "image_prompt": payload.get("image_prompt"),
-        "image": payload.get("image"),
-    }
-    supabase.table("questions").update(data).eq("id", question_id).execute()
-
-    if record.get("lang") == "ja":
-        base = {
-            "prompt": payload["question"],
-            "options": payload["options"],
-            "answer_index": payload["answer"],
-            "explanation": payload.get("explanation", ""),
-        }
-        tasks = [translate_one(base, "ja", lang) for lang in TARGET_LANGS]
-        results = await asyncio.gather(*tasks)
-        for lang, translated in zip(TARGET_LANGS, results):
-            update = {
-                "question": translated["prompt"],
-                "options": translated["options"],
-                "answer": translated["answer_index"],
-                "irt_a": payload["irt_a"],
-                "irt_b": payload["irt_b"],
-                "image_prompt": payload.get("image_prompt"),
-                "image": payload.get("image"),
-            }
-            supabase.table("questions").update(update).eq(
-                "group_id", record["group_id"]
-            ).eq("lang", lang).execute()
-
-    return {"updated": True}
+    TEXT_FIELDS = ["question", "A1", "A2", "A3", "A4", "explanation_text"]
+    update_question_group(group_key, payload, TEXT_FIELDS, apply_text_to_all)
+    return {"updated": True, "group_key": group_key}
 
 
 @router.delete("/{question_id}", dependencies=[Depends(require_admin)])
-async def delete_question(question_id: int):
-    supabase = get_supabase_client()
-    record = (
-        supabase.table("questions")
-        .select("group_id")
-        .eq("id", question_id)
-        .single()
-        .execute()
-    ).data
-    if record and record.get("group_id"):
-        supabase.table("questions").delete().eq(
-            "group_id", record["group_id"]
-        ).execute()
-    else:
-        supabase.table("questions").delete().eq("id", question_id).execute()
-    return {"deleted": True}
+async def delete_question(question_id: str):
+    group_key = get_group_key_by_id(str(question_id))
+    if not group_key:
+        raise HTTPException(status_code=404, detail="Question not found")
+    delete_question_group(group_key)
+    return {"deleted": True, "group_key": group_key}
 
 
 @router.post("/delete_batch", dependencies=[Depends(require_admin)])
 async def delete_questions_batch(ids: list[int]):
+    """Delete questions by id.
+
+    Deprecated: prefer DELETE /admin/questions/{id} which removes all
+    translations for a group.
+    """
     if not isinstance(ids, list) or not all(isinstance(i, int) for i in ids):
         raise HTTPException(status_code=400, detail="ids must be list of ints")
     supabase = get_supabase_client()

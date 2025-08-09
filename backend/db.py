@@ -1,8 +1,10 @@
 import os
-from typing import Any, Dict, Optional, List
+import logging
+from typing import Any, Dict, Optional, List, Iterable, Tuple
 from supabase import create_client, Client
 
 _supabase: Client | None = None
+logger = logging.getLogger(__name__)
 
 
 def get_supabase() -> Client:
@@ -145,6 +147,74 @@ def update_question(question_id: str, data: Dict[str, Any]) -> None:
 def delete_question(question_id: str) -> None:
     supabase = get_supabase()
     supabase.from_("questions").delete().eq("id", question_id).execute()
+
+
+def get_group_key_by_id(qid: str) -> Optional[str]:
+    """Return orig_id or group_id for the given question ``id``."""
+    supabase = get_supabase()
+    try:
+        res = (
+            supabase.table("questions")
+            .select("orig_id, group_id")
+            .eq("id", qid)
+            .single()
+            .execute()
+        )
+    except Exception as e:  # pragma: no cover - logging only
+        logger.error("Error fetching group key for %s: %s", qid, getattr(e, "message", e))
+        raise
+    row = res.data or {}
+    return row.get("orig_id") or row.get("group_id")
+
+
+def update_question_group(
+    group_key: str, values: Dict, text_fields: Iterable[str], apply_text_to_all: bool
+) -> None:
+    """Update all rows within the same group."""
+    supabase = get_supabase()
+    payload = dict(values)
+    if not apply_text_to_all:
+        for f in text_fields:
+            payload.pop(f, None)
+    try:
+        (
+            supabase.table("questions")
+            .update(payload)
+            .eq("orig_id", group_key)
+            .execute()
+        )
+    except Exception as e:  # pragma: no cover - logging only
+        logger.error(
+            "Error updating question group %s: %s", group_key, getattr(e, "message", e)
+        )
+        raise
+
+
+def approve_question_group(group_key: str, approved: bool) -> None:
+    supabase = get_supabase()
+    try:
+        (
+            supabase.table("questions")
+            .update({"approved": approved})
+            .eq("orig_id", group_key)
+            .execute()
+        )
+    except Exception as e:  # pragma: no cover - logging only
+        logger.error(
+            "Error approving question group %s: %s", group_key, getattr(e, "message", e)
+        )
+        raise
+
+
+def delete_question_group(group_key: str) -> None:
+    supabase = get_supabase()
+    try:
+        supabase.table("questions").delete().eq("orig_id", group_key).execute()
+    except Exception as e:  # pragma: no cover - logging only
+        logger.error(
+            "Error deleting question group %s: %s", group_key, getattr(e, "message", e)
+        )
+        raise
 
 
 # ---------------------------------------------------------------------------
