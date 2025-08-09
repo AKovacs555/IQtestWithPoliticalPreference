@@ -13,7 +13,7 @@ export default function useAuth() {
     const token = localStorage.getItem('authToken');
     if (!token) return null;
     const payload = decode(token);
-    return { token, is_admin: payload.is_admin };
+    return { token, ...payload };
   });
 
   useEffect(() => {
@@ -24,7 +24,7 @@ export default function useAuth() {
         return;
       }
       const payload = decode(token);
-      setUser({ token, is_admin: payload.is_admin });
+      setUser({ token, ...payload });
     };
     window.addEventListener('storage', handleStorage);
     return () => window.removeEventListener('storage', handleStorage);

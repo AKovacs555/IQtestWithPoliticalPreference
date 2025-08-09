@@ -9,9 +9,11 @@ export default function AdminLayout() {
   const items = [
     { to: '/admin/questions', label: 'Questions' },
     { to: '/admin/stats', label: 'Question Stats' },
+    { to: '/admin/surveys', label: 'Surveys' },
     { to: '/admin/sets', label: t('admin_sets.title') },
     { to: '/admin/settings', label: t('settings', { defaultValue: 'Settings' }) },
     { to: '/admin/pricing', label: 'Pricing' },
+    { to: '/admin/referral', label: 'Referral' },
   ];
 
   return (

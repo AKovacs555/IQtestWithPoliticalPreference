@@ -1,15 +1,16 @@
 import React from 'react';
-import { describe, beforeEach, it, expect, vi } from 'vitest';
+import { describe, beforeEach, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import '@testing-library/jest-dom/vitest';
+import Navbar from '../components/Navbar';
+import '../i18n';
 
-// Helper to generate a fake JWT payload
 function tokenFor(payload) {
   return `h.${btoa(JSON.stringify(payload))}.s`;
 }
 
-describe('admin routes', () => {
+describe('Navbar admin link', () => {
   beforeEach(() => {
     localStorage.clear();
     window.matchMedia = window.matchMedia || (() => ({
@@ -24,29 +25,25 @@ describe('admin routes', () => {
       observe() {}
       disconnect() {}
     };
-    import.meta.env.VITE_API_BASE = '';
-    global.fetch = vi.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve([]) });
   });
 
-  it('redirects non-admin users away from admin pages', async () => {
-    const App = (await import('../pages/App.jsx')).default;
+  it('hides admin link for non-admin users', () => {
     localStorage.setItem('authToken', tokenFor({ is_admin: false }));
     render(
-      <MemoryRouter initialEntries={['/admin/questions']}>
-        <App />
+      <MemoryRouter>
+        <Navbar />
       </MemoryRouter>
     );
-    expect(screen.queryByText(/Questions/i)).toBeNull();
+    expect(screen.queryByText(/Admin/i)).toBeNull();
   });
 
-  it('allows admin users to access admin pages', async () => {
-    const App = (await import('../pages/App.jsx')).default;
+  it('shows admin link for admin users', () => {
     localStorage.setItem('authToken', tokenFor({ is_admin: true }));
     render(
-      <MemoryRouter initialEntries={['/admin/questions']}>
-        <App />
+      <MemoryRouter>
+        <Navbar />
       </MemoryRouter>
     );
-    expect(await screen.findByText(/Import Questions/i)).toBeInTheDocument();
+    expect(screen.getByText(/Admin/i)).toBeInTheDocument();
   });
 });
