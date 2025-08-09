@@ -42,6 +42,7 @@ const AdminUsers = lazy(() => import('./AdminUsers'));
 const AdminSets = lazy(() => import('./AdminSets'));
 const AdminSettings = lazy(() => import('./AdminSettings.jsx'));
 const AdminQuestionStats = lazy(() => import('./AdminQuestionStats.jsx'));
+const AdminPricing = lazy(() => import('./AdminPricing.jsx'));
 
 const PageTransition = ({ children }) => (
   <motion.div
@@ -389,6 +390,7 @@ export default function App() {
           <Route path="users" element={<AdminUsers />} />
           <Route path="sets" element={<AdminSets />} />
           <Route path="settings" element={<AdminSettings />} />
+          <Route path="pricing" element={<AdminPricing />} />
         </Route>
       </Routes>
     </AnimatePresence>

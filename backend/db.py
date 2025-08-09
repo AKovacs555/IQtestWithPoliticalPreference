@@ -214,3 +214,35 @@ def insert_parties(rows: List[Dict[str, Any]]) -> None:
 
     # Parties feature disabled; do nothing
     return
+
+# ---------------------------------------------------------------------------
+# Pricing rules
+# ---------------------------------------------------------------------------
+
+def list_pricing_rules() -> List[Dict[str, Any]]:
+    supabase = get_supabase()
+    resp = supabase.from_("pricing_rules").select("*").execute()
+    return resp.data or []
+
+def get_pricing_rule(country: str, product: str) -> Optional[Dict[str, Any]]:
+    supabase = get_supabase()
+    resp = (
+        supabase.from_("pricing_rules")
+        .select("*")
+        .eq("country", country)
+        .eq("product", product)
+        .eq("active", True)
+        .limit(1)
+        .execute()
+    )
+    rows = resp.data or []
+    return rows[0] if rows else None
+
+def upsert_pricing_rule(data: Dict[str, Any]) -> Dict[str, Any]:
+    supabase = get_supabase()
+    resp = supabase.from_("pricing_rules").upsert(data).execute()
+    return resp.data[0]
+
+def delete_pricing_rule(rule_id: str) -> None:
+    supabase = get_supabase()
+    supabase.from_("pricing_rules").delete().eq("id", rule_id).execute()
