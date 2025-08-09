@@ -3,6 +3,9 @@
   --color-accent: #10B981;
   --color-surface: #F5F5F7;
   --color-text: #111827;
+  --btn-primary: #2563EB;
+  --btn-neutral: #6B7280;
+  --btn-destructive: #DC2626;
 }
 
 [data-theme="dark"] {
@@ -10,4 +13,7 @@
   --color-accent: #34D399;
   --color-surface: #1F2937;
   --color-text: #F9FAFB;
+  --btn-primary: #3B82F6;
+  --btn-neutral: #9CA3AF;
+  --btn-destructive: #F87171;
 }

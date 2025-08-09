@@ -11,6 +11,7 @@ import Leaderboard from './Leaderboard';
 import SelectSet from './SelectSet';
 import SelectNationality from './SelectNationality';
 import SurveyPage from './SurveyPage';
+import DailySurvey from './DailySurvey';
 import Dashboard from './Dashboard';
 import QuestionCard from '../components/QuestionCard';
 import Settings from './Settings.jsx';
@@ -357,6 +358,7 @@ export default function App() {
         <Route path="/quiz" element={<TestPage />} />
         <Route path="/test" element={<TestPage />} />
         <Route path="/survey" element={<SurveyPage />} />
+        <Route path="/daily-survey" element={<DailySurvey />} />
         <Route path="/pricing" element={<Pricing />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/result" element={<Result />} />

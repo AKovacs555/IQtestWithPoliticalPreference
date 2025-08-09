@@ -38,6 +38,9 @@ export default function Navbar() {
     { label: t('dashboard.title'), href: '/dashboard' },
     { label: t('nav.contact', { defaultValue: 'Contact' }), href: '/contact' },
   ];
+  if (user) {
+    links.unshift({ label: t('nav.daily_survey', { defaultValue: 'Daily Survey' }), href: '/daily-survey' });
+  }
 
   const isAdmin = useIsAdmin();
 

@@ -322,3 +322,34 @@ When a quiz is completed the backend creates a branded result image using Pillow
 IQ percentiles rely on `backend/data/normative_distribution.json`. Trigger the `/admin/update-norms` endpoint weekly to append recent scores and keep only the latest 5000 values.
 
 Screenshots of the new design can be found under [docs/screenshots](docs/screenshots/).
+
+## Daily Survey
+
+The Daily Survey feature presents up to three short questions per day. Users receive items they have not answered on the current day and may submit exactly one answer per item per day.
+
+### Tables
+
+New tables are created via Supabase migrations:
+
+- `surveys` – survey metadata such as title and language.
+- `survey_items` – question text and answer choices linked to a survey.
+- `survey_responses` – user answers with an `answered_on` date to enforce one response per day.
+
+### API
+
+Public endpoints under `/surveys`:
+
+- `GET /surveys/daily3?lang=ja` – return up to three random items the current user has not answered today.
+- `POST /surveys/answer` – body `{ "item_id": uuid, "answer_index": int }` records an answer.
+
+Admin endpoints (require `is_admin=true`):
+
+- `GET /admin/surveys`
+- `POST /admin/surveys`
+- `PUT /admin/surveys/{id}`
+- `DELETE /admin/surveys/{id}`
+- `GET /admin/surveys/{id}/items`
+- `POST /admin/surveys/{id}/items`
+- `PUT /admin/surveys/items/{item_id}`
+- `DELETE /admin/surveys/items/{item_id}`
+
