@@ -1,20 +1,16 @@
 import React from 'react';
-import { supabase } from '../lib/supabase';
+import { signInWithGoogle } from '../lib/auth';
 
 export default function GoogleOAuthButton() {
   const disabled = import.meta.env.VITE_DISABLE_GOOGLE === 'true';
   if (disabled) return null;
 
-  async function signInWithGoogle() {
-    const redirectTo = window.location.origin + '/auth/callback';
-    await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo },
-    });
+  function handleClick() {
+    signInWithGoogle().catch(err => console.error(err));
   }
 
   return (
-    <button onClick={signInWithGoogle} className="btn btn-primary w-full mt-4">
+    <button onClick={handleClick} className="btn btn-primary w-full mt-4">
       Continue with Google
     </button>
   );

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import GoogleOAuthButton from '../components/GoogleOAuthButton.jsx';
+import { signUpWithEmail } from '../lib/auth';
 
 export default function SignupPage() {
   const [username, setUsername] = useState('');
@@ -8,31 +9,14 @@ export default function SignupPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState(null);
   const navigate = useNavigate();
-  const params = new URLSearchParams(window.location.search);
-  const ref = params.get('r');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const res = await fetch(`${import.meta.env.VITE_API_BASE}/auth/register`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, email, password }),
-    });
-    if (res.ok) {
-      const data = await res.json();
-      localStorage.setItem('authToken', data.token);
-      localStorage.setItem('user_id', data.user_id);
-      if (ref) {
-        try {
-          await fetch(`${import.meta.env.VITE_API_BASE}/referral/claim?r=${ref}`, {
-            headers: { Authorization: `Bearer ${data.token}` },
-          });
-        } catch {}
-      }
+    try {
+      await signUpWithEmail(email, password);
       navigate('/');
-    } else {
-      const err = await res.json();
-      setError(err.detail || 'Registration failed');
+    } catch (err) {
+      setError(err.message);
     }
   };
 

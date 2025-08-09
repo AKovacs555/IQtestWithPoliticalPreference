@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import GoogleOAuthButton from '../components/GoogleOAuthButton.jsx';
-import { supabase } from '../lib/supabase';
+import { signInWithEmail } from '../lib/auth';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -14,17 +14,14 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true);
     setError(null);
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) {
-      setError(error.message);
-    } else {
-      const accessToken = data.session?.access_token;
-      const userId = data.user?.id;
-      if (accessToken) localStorage.setItem('authToken', accessToken);
-      if (userId) localStorage.setItem('user_id', userId);
+    try {
+      await signInWithEmail(email, password);
       navigate('/dashboard');
+    } catch (error) {
+      setError(error.message);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (

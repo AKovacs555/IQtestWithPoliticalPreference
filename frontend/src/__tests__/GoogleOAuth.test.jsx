@@ -4,9 +4,9 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import '@testing-library/jest-dom/vitest';
 
-const signInWithOAuth = vi.fn();
-vi.mock('../lib/supabase', () => ({
-  supabase: { auth: { signInWithOAuth } },
+const signInWithGoogle = vi.fn().mockResolvedValue(undefined);
+vi.mock('../lib/auth', () => ({
+  signInWithGoogle,
 }));
 
 describe('google oauth button', () => {
@@ -19,9 +19,6 @@ describe('google oauth button', () => {
     );
     const btn = screen.getByRole('button', { name: /google/i });
     fireEvent.click(btn);
-    expect(signInWithOAuth).toHaveBeenCalledWith({
-      provider: 'google',
-      options: { redirectTo: `${window.location.origin}/auth/callback` },
-    });
+    expect(signInWithGoogle).toHaveBeenCalled();
   });
 });
