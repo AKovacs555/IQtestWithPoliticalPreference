@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import List, Optional
 from datetime import datetime, timedelta
 from fastapi import APIRouter, HTTPException, Request, Depends
+from fastapi.responses import JSONResponse
 import random
 from pydantic import BaseModel
 from backend.deps.supabase_client import get_supabase_client
@@ -24,8 +25,13 @@ from backend.scoring import estimate_theta, iq_score, ability_summary, standard_
 from backend.irt import percentile
 from backend.features import generate_share_image
 from backend.deps.auth import get_current_user
-from backend.db import get_answered_survey_ids, insert_survey_responses
+from backend.db import (
+    get_answered_survey_ids,
+    insert_survey_responses,
+    consume_free_attempt,
+)
 
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/quiz", tags=["quiz"])
 
 NUM_QUESTIONS = int(os.getenv("NUM_QUESTIONS", "20"))
@@ -100,6 +106,17 @@ async def start_quiz(
                 "message": "Please complete the demographics form before taking the IQ test.",
             },
         )
+    remaining = consume_free_attempt(user["hashed_id"])
+    if remaining is None:
+        logger.info(
+            "attempts_insufficient",
+            extra={"user_id": user["hashed_id"], "remaining": 0},
+        )
+        return JSONResponse(status_code=402, content={"code": "NEED_PAYMENT"})
+    logger.info(
+        "attempts_consume_ok",
+        extra={"user_id": user["hashed_id"], "remaining": remaining},
+    )
     if set_id:
         try:
             questions = get_balanced_random_questions_by_set(NUM_QUESTIONS, set_id)

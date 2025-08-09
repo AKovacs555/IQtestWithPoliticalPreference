@@ -133,6 +133,43 @@ def increment_free_attempts(hashed_id: str, delta: int = 1) -> None:
     ).execute()
 
 
+def get_free_attempts(user_id: str) -> int:
+    """Return the remaining free attempts for ``user_id``.
+
+    If the user record is missing or the field is ``NULL`` this returns ``0``.
+    """
+
+    supabase = get_supabase()
+    resp = (
+        supabase.table("app_users")
+        .select("free_attempts")
+        .eq("hashed_id", user_id)
+        .limit(1)
+        .execute()
+    )
+    data = resp.data or []
+    if not data:
+        return 0
+    return int(data[0].get("free_attempts") or 0)
+
+
+def consume_free_attempt(user_id: str) -> Optional[int]:
+    """Atomically decrement ``free_attempts`` for ``user_id``.
+
+    Returns the remaining number of free attempts on success, or ``None`` if the
+    user had no attempts left or did not exist.
+    """
+
+    supabase = get_supabase()
+    current = get_free_attempts(user_id)
+    if current <= 0:
+        return None
+    supabase.table("app_users").update({"free_attempts": current - 1}).eq(
+        "hashed_id", user_id
+    ).execute()
+    return current - 1
+
+
 def get_all_users() -> List[Dict[str, Any]]:
     supabase = get_supabase()
     resp = supabase.from_("app_users").select("*").execute()
