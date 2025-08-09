@@ -10,11 +10,15 @@ import PointsBadge from './PointsBadge';
 import LanguageSelector from './LanguageSelector';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../auth/useAuth';
-import { supabase } from '../lib/supabase';
+import { signInWithGoogle, signOut } from '../lib/auth';
 import OverflowNav from './nav/OverflowNav';
 import MobileDrawer from './nav/MobileDrawer';
 import type { NavItem } from './nav/types';
 import { useIsAdmin } from '../lib/admin';
+
+if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY) {
+  console.error('Supabase envs missing. Check Vercel project env and redeploy.');
+}
 
 export default function Navbar() {
   const userId = typeof window !== 'undefined' ? localStorage.getItem('user_id') : null;
@@ -26,16 +30,8 @@ export default function Navbar() {
 
   const googleEnabled = import.meta.env.VITE_DISABLE_GOOGLE !== 'true';
 
-  async function signInWithGoogle() {
-    const redirectTo = window.location.origin + '/auth/callback';
-    await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo },
-    });
-  }
-
   const logout = () => {
-    supabase.auth.signOut().catch(() => {});
+    signOut().catch(() => {});
     localStorage.removeItem('authToken');
     localStorage.removeItem('user_id');
     navigate('/login');
@@ -80,7 +76,7 @@ export default function Navbar() {
             {
               label: 'google',
               element: (
-                <Button onClick={signInWithGoogle} size="small" variant="contained" fullWidth>
+                <Button onClick={() => signInWithGoogle().catch(err => console.error(err))} size="small" variant="contained" fullWidth>
                   Continue with Google
                 </Button>
               ),
@@ -114,7 +110,7 @@ export default function Navbar() {
       {!user ? (
         <>
           {googleEnabled && (
-            <Button onClick={signInWithGoogle} size="small" variant="contained" sx={{ minHeight: '48px' }}>
+            <Button onClick={() => signInWithGoogle().catch(err => console.error(err))} size="small" variant="contained" sx={{ minHeight: '48px' }}>
               Continue with Google
             </Button>
           )}
