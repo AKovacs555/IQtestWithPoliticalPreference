@@ -294,35 +294,12 @@ async def submit_quiz(
         ]
         insert_survey_responses(rows)
 
-    if user.get("referrer_id"):
-        try:
-            ref_id = user["referrer_id"]
-            limit_resp = (
-                supabase.table("settings")
-                .select("invitation_reward_limit")
-                .limit(1)
-                .execute()
-            )
-            limit = (
-                (limit_resp.data or [{}])[0].get("invitation_reward_limit")
-                or int(os.getenv("INVITATION_REWARD_LIMIT", "0"))
-            )
-            count_resp = (
-                supabase.table("invitation_rewards")
-                .select("id")
-                .eq("referrer_id", ref_id)
-                .execute()
-            )
-            count = len(count_resp.data or [])
-            if count < int(limit):
-                supabase.table("users").update({"free_tests": "free_tests + 1"}).eq(
-                    "hashed_id", ref_id
-                ).execute()
-                supabase.table("invitation_rewards").insert(
-                    {"referrer_id": ref_id, "referred_id": user["hashed_id"]}
-                ).execute()
-        except Exception:
-            pass
+    try:
+        from backend.referral import credit_referral_if_applicable
+
+        credit_referral_if_applicable(user["hashed_id"])
+    except Exception:
+        pass
     try:
         supabase.table("quiz_sessions").update(
             {"status": "submitted", "score": iq, "percentile": pct}

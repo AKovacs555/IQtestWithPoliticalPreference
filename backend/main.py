@@ -75,6 +75,7 @@ from routes.surveys import router as surveys_router
 from routes.user import router as user_router
 from routes.auth import router as auth_router
 from routes.sms import router as sms_router
+from routes.referral import router as referral_router
 from routes.custom_survey import (
     router as custom_survey_router,
     admin_router as custom_survey_admin_router,
@@ -115,6 +116,7 @@ app.include_router(surveys_router)
 app.include_router(user_router)
 app.include_router(auth_router)
 app.include_router(sms_router)
+app.include_router(referral_router)
 app.include_router(custom_survey_router)
 app.include_router(custom_survey_admin_router)
 

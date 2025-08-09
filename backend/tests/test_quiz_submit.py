@@ -1,6 +1,8 @@
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 import sys, os
+from types import SimpleNamespace
+from datetime import datetime, timedelta
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
@@ -19,7 +21,13 @@ def test_submit_quiz_handles_missing_user_scores(monkeypatch):
         def __init__(self, name):
             self.name = name
 
+        def select(self, *args, **kwargs):
+            return self
+
         def insert(self, data):
+            return self
+
+        def single(self):
             return self
 
         def update(self, data):
@@ -31,11 +39,15 @@ def test_submit_quiz_handles_missing_user_scores(monkeypatch):
         def execute(self):
             if self.name == "user_scores":
                 raise Exception("missing table")
-            return self
+            if self.name == "quiz_sessions":
+                return SimpleNamespace(data={"status": "started", "expires_at": (datetime.utcnow() + timedelta(minutes=5)).isoformat()})
+            return SimpleNamespace(data=None)
 
     class DummySupabase:
         def from_(self, name):
             return DummyTable(name)
+
+        table = from_
 
     monkeypatch.setattr(quiz, "get_supabase_client", lambda: DummySupabase())
     monkeypatch.setattr(quiz, "generate_share_image", lambda uid, iq, pct: "")

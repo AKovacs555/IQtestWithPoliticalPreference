@@ -27,6 +27,7 @@ import ErrorChunkReload from '../components/common/ErrorChunkReload';
 import ThemeDemo from './ThemeDemo.jsx';
 import Button from '@mui/material/Button';
 import RequireAdmin from '../components/RequireAdmin';
+import { shareResult, buildLineShareUrl, buildFacebookShareUrl } from '../utils/share';
 const API_BASE = import.meta.env.VITE_API_BASE || "";
 
 const AdminLayout = lazy(() =>
@@ -264,13 +265,10 @@ const Result = () => {
       });
   }, []);
 
-  const url = encodeURIComponent(window.location.href);
-  const text = encodeURIComponent(
-    t('result.share_text', {
-      score: Number(score).toFixed(1),
-      percentile: Number(percentile).toFixed(1)
-    })
-  );
+  const shareText = t('result.share_text', {
+    score: Number(score).toFixed(1),
+    percentile: Number(percentile).toFixed(1)
+  });
 
   return (
     <PageTransition>
@@ -285,10 +283,7 @@ const Result = () => {
           {share && (
             <div className="space-x-2">
               <Button
-                component="a"
-                href={`https://twitter.com/intent/tweet?url=${url}&text=${text}`}
-                target="_blank"
-                rel="noreferrer"
+                onClick={() => shareResult({ text: shareText, url: window.location.href })}
                 variant="contained"
                 size="small"
               >
@@ -296,7 +291,7 @@ const Result = () => {
               </Button>
               <Button
                 component="a"
-                href={`https://social-plugins.line.me/lineit/share?url=${url}`}
+                href={buildLineShareUrl(window.location.href)}
                 target="_blank"
                 rel="noreferrer"
                 variant="contained"
@@ -305,18 +300,24 @@ const Result = () => {
                 LINE
               </Button>
               <Button
+                component="a"
+                href={buildFacebookShareUrl(window.location.href)}
+                target="_blank"
+                rel="noreferrer"
+                variant="contained"
+                size="small"
+              >
+                Facebook
+              </Button>
+              <Button
                 onClick={() => {
-                  if (navigator.share) {
-                    navigator.share({ url: window.location.href, text: decodeURIComponent(text) });
-                  } else {
-                    navigator.clipboard.writeText(window.location.href);
-                    alert(t('result.link_copied'));
-                  }
+                  navigator.clipboard.writeText(window.location.href);
+                  alert(t('result.link_copied'));
                 }}
                 variant="contained"
                 size="small"
               >
-                {t('result.share')}
+                Copy
               </Button>
             </div>
           )}

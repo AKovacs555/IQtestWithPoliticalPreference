@@ -7,6 +7,8 @@ export default function SignupPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState(null);
   const navigate = useNavigate();
+  const params = new URLSearchParams(window.location.search);
+  const ref = params.get('r');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -19,6 +21,13 @@ export default function SignupPage() {
       const data = await res.json();
       localStorage.setItem('authToken', data.token);
       localStorage.setItem('user_id', data.user_id);
+      if (ref) {
+        try {
+          await fetch(`${import.meta.env.VITE_API_BASE}/referral/claim?r=${ref}`, {
+            headers: { Authorization: `Bearer ${data.token}` },
+          });
+        } catch {}
+      }
       navigate('/');
     } else {
       const err = await res.json();

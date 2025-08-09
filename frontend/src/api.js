@@ -109,12 +109,19 @@ export async function setNationality(userId, nationality) {
 
 export async function registerAccount({ username, email, password, ref }) {
   const payload = { username, email, password };
-  if (ref) payload.referral_code = ref;
   const res = await fetch(`${API_BASE}/auth/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload)
   });
-  return handleJson(res);
+  const data = await handleJson(res);
+  if (ref && data.token) {
+    try {
+      await fetch(`${API_BASE}/referral/claim?r=${ref}`, {
+        headers: { Authorization: `Bearer ${data.token}` }
+      });
+    } catch {}
+  }
+  return data;
 }
 

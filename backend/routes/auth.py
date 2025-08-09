@@ -16,7 +16,6 @@ class RegisterPayload(BaseModel):
     username: str | None = None
     email: str
     password: str
-    referral_code: str | None = None
 
 
 class LoginPayload(BaseModel):
@@ -48,7 +47,7 @@ async def register(payload: RegisterPayload):
     password_hash = bcrypt.hashpw(payload.password.encode(), bcrypt.gensalt()).decode()
     hashed_id = secrets.token_hex(16)
 
-    referral_code = "".join(
+    invite_code = "".join(
         random.choice("ABCDEFGHJKLMNPQRSTUVWXYZ23456789") for _ in range(6)
     )
 
@@ -58,24 +57,8 @@ async def register(payload: RegisterPayload):
         "email": payload.email,
         "password_hash": password_hash,
         "free_tests": 0,
-        "referrer_id": None,
-        "referral_code": referral_code,
+        "invite_code": invite_code,
     }
-
-    if payload.referral_code:
-        try:
-            ref_resp = (
-                supabase.from_("users")
-                .select("hashed_id")
-                .eq("referral_code", payload.referral_code)
-                .limit(1)
-                .execute()
-            )
-            rows = ref_resp.data or []
-            if rows:
-                data["referrer_id"] = rows[0]["hashed_id"]
-        except Exception:
-            pass
 
     supabase.from_("users").insert(data).execute()
     token = create_token(hashed_id, False)
