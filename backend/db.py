@@ -4,6 +4,9 @@ from typing import Any, Dict, Optional, List, Iterable, Tuple
 from supabase import create_client, Client
 from postgrest.exceptions import APIError
 
+
+_processed_payments: set[str] = set()
+
 _supabase: Client | None = None
 logger = logging.getLogger(__name__)
 
@@ -120,10 +123,36 @@ def update_user(hashed_id: str, update_data: Dict[str, Any]) -> None:
         supabase.from_("app_users").update(data_to_update).eq("hashed_id", hashed_id).execute()
 
 
+def increment_free_attempts(hashed_id: str, delta: int = 1) -> None:
+    """Increase a user's ``free_attempts`` by ``delta``."""
+
+    supabase = get_supabase()
+    current = (get_user(hashed_id) or {}).get("free_attempts") or 0
+    supabase.table("users").update({"free_attempts": current + delta}).eq(
+        "hashed_id", hashed_id
+    ).execute()
+
+
 def get_all_users() -> List[Dict[str, Any]]:
     supabase = get_supabase()
     resp = supabase.from_("app_users").select("*").execute()
     return resp.data or []
+
+
+def is_payment_processed(payment_id: str) -> bool:
+    """Return ``True`` if ``payment_id`` has already been handled.
+
+    The current implementation keeps the set in memory only.  TODO: persist to
+    Supabase for durability and cross-process safety.
+    """
+
+    return payment_id in _processed_payments
+
+
+def mark_payment_processed(payment_id: str) -> None:
+    """Mark ``payment_id`` as processed."""
+
+    _processed_payments.add(payment_id)
 
 
 # ---------------------------------------------------------------------------

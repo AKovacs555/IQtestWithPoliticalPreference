@@ -60,7 +60,6 @@ from scoring import (
 from payment import (
     select_processor,
     create_nowpayments_invoice,
-    get_nowpayments_status,
 )
 from analytics import log_event as track_event
 from tools.dif_analysis import dif_report
@@ -144,6 +143,9 @@ from db import (
     log_event,
     DEFAULT_RETRY_PRICE,
     DEFAULT_PRO_PRICE,
+    increment_free_attempts,
+    mark_payment_processed,
+    is_payment_processed,
 )
 from postgrest.exceptions import APIError
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
@@ -377,10 +379,37 @@ async def purchase(payload: PurchaseRequest, region: str = "US"):
 
 
 @app.post("/payment/nowpayments/callback")
-async def nowpayments_callback(payment_id: str):
-    data = get_nowpayments_status(payment_id)
-    if data.get("payment_status") == "finished":
-        track_event({"event": "nowpayments_finished", "payment_id": payment_id})
+async def nowpayments_callback(request: Request):
+    ipn_secret = os.getenv("NOWPAYMENTS_IPN_SECRET", "")
+    raw_body = await request.body()
+    try:
+        payload = json.loads(raw_body)
+    except Exception:  # pragma: no cover - invalid payload
+        raise HTTPException(status_code=400, detail={"error": "invalid_json"})
+
+    signature = request.headers.get("x-nowpayments-sig", "")
+    sorted_payload = json.dumps(payload, separators=(",", ":"), sort_keys=True)
+    expected = hmac.new(ipn_secret.encode(), sorted_payload.encode(), hashlib.sha512).hexdigest()
+    if not signature or not hmac.compare_digest(signature, expected):
+        logger.warning(
+            "NOWP IPN invalid signature for payment_id=%s", payload.get("payment_id")
+        )
+        return JSONResponse(status_code=401, content={"error": "invalid_signature"})
+
+    payment_id = str(payload.get("payment_id"))
+    status = payload.get("payment_status")
+    if status in {"finished", "confirmed"}:
+        if is_payment_processed(payment_id):
+            logger.info(
+                "NOWP IPN processed already, skipping credit payment_id=%s", payment_id
+            )
+        else:
+            user_id = payload.get("order_id") or payload.get("user_id")
+            if user_id:
+                increment_free_attempts(user_id, 1)
+            mark_payment_processed(payment_id)
+            track_event({"event": "nowpayments_finished", "payment_id": payment_id})
+
     return {"status": "ok"}
 
 
