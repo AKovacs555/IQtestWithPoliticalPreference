@@ -10,7 +10,7 @@ import PointsBadge from './PointsBadge';
 import LanguageSelector from './LanguageSelector';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../auth/useAuth';
-import { supabase } from '../lib/supabaseClient';
+import { supabase } from '../lib/supabase';
 import OverflowNav from './nav/OverflowNav';
 import MobileDrawer from './nav/MobileDrawer';
 import type { NavItem } from './nav/types';
@@ -24,8 +24,10 @@ export default function Navbar() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
+  const googleEnabled = import.meta.env.VITE_DISABLE_GOOGLE !== 'true';
+
   async function signInWithGoogle() {
-    const redirectTo = window.location.origin + '/#/auth/callback';
+    const redirectTo = window.location.origin + '/auth/callback';
     await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: { redirectTo },
@@ -73,14 +75,18 @@ export default function Navbar() {
     drawerItems.push(
       { label: t('nav.login', { defaultValue: 'Log in' }), href: '/login' },
       { label: t('nav.signup', { defaultValue: 'Sign up' }), href: '/signup' },
-      {
-        label: 'google',
-        element: (
-          <Button onClick={signInWithGoogle} size="small" variant="contained" fullWidth>
-            Continue with Google
-          </Button>
-        ),
-      },
+      ...(googleEnabled
+        ? [
+            {
+              label: 'google',
+              element: (
+                <Button onClick={signInWithGoogle} size="small" variant="contained" fullWidth>
+                  Continue with Google
+                </Button>
+              ),
+            },
+          ]
+        : []),
     );
   } else {
     drawerItems.push({ label: t('nav.logout', { defaultValue: 'Log out' }), onClick: logout });
@@ -107,9 +113,11 @@ export default function Navbar() {
       <PointsBadge userId={userId} />
       {!user ? (
         <>
-          <Button onClick={signInWithGoogle} size="small" variant="contained" sx={{ minHeight: '48px' }}>
-            Continue with Google
-          </Button>
+          {googleEnabled && (
+            <Button onClick={signInWithGoogle} size="small" variant="contained" sx={{ minHeight: '48px' }}>
+              Continue with Google
+            </Button>
+          )}
           <Button href="/login" size="small" sx={{ minHeight: '48px' }}>
             {t('nav.login', { defaultValue: 'Log in' })}
           </Button>

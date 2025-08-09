@@ -5,7 +5,7 @@ import { MemoryRouter } from 'react-router-dom';
 import '@testing-library/jest-dom/vitest';
 
 const signInWithOAuth = vi.fn();
-vi.mock('../lib/supabaseClient', () => ({
+vi.mock('../lib/supabase', () => ({
   supabase: { auth: { signInWithOAuth } },
 }));
 
@@ -21,7 +21,7 @@ describe('google oauth button', () => {
     fireEvent.click(btn);
     expect(signInWithOAuth).toHaveBeenCalledWith({
       provider: 'google',
-      options: { redirectTo: `${window.location.origin}/#/auth/callback` },
+      options: { redirectTo: `${window.location.origin}/auth/callback` },
     });
   });
 });
