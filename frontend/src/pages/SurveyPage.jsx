@@ -4,7 +4,7 @@ import LanguageSelector from '../components/LanguageSelector';
 import { getSurvey, submitSurvey, completeSurvey } from '../api';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import useAuth from '../hooks/useAuth';
+import { useAuth } from '../auth/useAuth';
 
 export default function SurveyPage() {
   const [items, setItems] = useState([]);

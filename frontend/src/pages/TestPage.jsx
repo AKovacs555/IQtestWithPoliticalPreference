@@ -6,7 +6,7 @@ import LinearProgress from '@mui/material/LinearProgress';
 import { AnimatePresence, motion, MotionConfig } from 'framer-motion';
 import QuestionCard from '../components/QuestionCard';
 import { useNavigate } from 'react-router-dom';
-import useAuth from '../hooks/useAuth';
+import { useAuth } from '../auth/useAuth';
 
 export default function TestPage() {
   const [session, setSession] = React.useState(null);

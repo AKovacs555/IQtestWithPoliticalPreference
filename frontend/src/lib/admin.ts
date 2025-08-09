@@ -1,4 +1,4 @@
-import useAuth from "../hooks/useAuth";
+import { useAuth } from "../auth/useAuth";
 
 /** Derive isAdmin from JWT claims or user metadata. */
 export function useIsAdmin(): boolean {
