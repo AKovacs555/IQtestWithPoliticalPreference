@@ -1,8 +1,8 @@
--- Users: ensure has baseline columns used below (add if missing)
-alter table users add column if not exists free_credits int not null default 1;
-alter table users add column if not exists free_credits_used int not null default 0;
-alter table users add column if not exists referral_code text unique;
-alter table users add column if not exists referred_by text;
+-- App users: ensure baseline columns exist
+alter table app_users add column if not exists free_credits int not null default 1;
+alter table app_users add column if not exists free_credits_used int not null default 0;
+alter table app_users add column if not exists referral_code text unique;
+alter table app_users add column if not exists referred_by text;
 
 -- Attempts (IQ test sessions)
 create table if not exists attempts (

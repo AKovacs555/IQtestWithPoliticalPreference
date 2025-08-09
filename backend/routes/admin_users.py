@@ -9,7 +9,7 @@ router = APIRouter(prefix="/admin", tags=["admin-users"])
 async def list_users():
     """Return a list of all users with their hashed_id and free_attempts."""
     supabase = get_supabase()
-    rows = supabase.from_("users").select("hashed_id, free_attempts").execute().data
+    rows = supabase.from_("app_users").select("hashed_id, free_attempts").execute().data
     return {"users": rows or []}
 
 
@@ -24,5 +24,5 @@ async def update_free_attempts(payload: dict):
     if user_id is None or free_attempts is None:
         raise HTTPException(status_code=400, detail="Missing parameters")
     supabase = get_supabase()
-    supabase.from_("users").update({"free_attempts": free_attempts}).eq("hashed_id", user_id).execute()
+    supabase.from_("app_users").update({"free_attempts": free_attempts}).eq("hashed_id", user_id).execute()
     return {"status": "ok"}

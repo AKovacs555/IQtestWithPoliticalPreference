@@ -23,7 +23,7 @@ async def get_leaderboard(limit: int = 100):
             entry["best_iq"] = iq
         if pct > entry["best_percentile"]:
             entry["best_percentile"] = pct
-    users = supabase.table("users").select("hashed_id,display_name").execute().data or []
+    users = supabase.table("app_users").select("hashed_id,display_name").execute().data or []
     name_map = {u.get("hashed_id"): u.get("display_name") for u in users}
     rows = []
     for uid, vals in best.items():

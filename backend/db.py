@@ -26,7 +26,7 @@ def get_user(hashed_id: str) -> Optional[Dict[str, Any]]:
     """Return the user record for the given hash or ``None`` if missing."""
     supabase = get_supabase()
     resp = (
-        supabase.from_("users")
+        supabase.from_("app_users")
         .select("*")
         .eq("hashed_id", hashed_id)
         .limit(1)
@@ -38,7 +38,7 @@ def get_user(hashed_id: str) -> Optional[Dict[str, Any]]:
 
 def create_user(user_data: Dict[str, Any]) -> Dict[str, Any]:
     supabase = get_supabase()
-    resp = supabase.from_("users").insert(user_data).execute()
+    resp = supabase.from_("app_users").insert(user_data).execute()
     return resp.data[0]
 
 
@@ -51,15 +51,15 @@ def upsert_user(user_id: str) -> None:
 
     supabase = get_supabase()
     res = (
-        supabase.table("users").select("id").eq("id", user_id).limit(1).execute()
+        supabase.table("app_users").select("id").eq("id", user_id).limit(1).execute()
     )
     if res.data:
         return
-    supabase.table("users").insert({"id": user_id}).execute()
+    supabase.table("app_users").insert({"id": user_id}).execute()
 
 
 def get_or_create_user_id_from_hashed(supabase: Client, hashed_id: str) -> str:
-    """Return ``users.id`` (UUID) for a hashed identifier.
+    """Return ``app_users.id`` (UUID) for a hashed identifier.
 
     If the user does not yet exist a new record is inserted and the generated
     ``id`` is returned.  Always returns a UUID string.
@@ -67,7 +67,7 @@ def get_or_create_user_id_from_hashed(supabase: Client, hashed_id: str) -> str:
 
     # Attempt to fetch an existing ID first.
     r = (
-        supabase.table("users")
+        supabase.table("app_users")
         .select("id")
         .eq("hashed_id", hashed_id)
         .limit(1)
@@ -78,12 +78,12 @@ def get_or_create_user_id_from_hashed(supabase: Client, hashed_id: str) -> str:
 
     # Insert a new record and try to obtain the generated ID.  Some drivers
     # require an explicit select afterwards if ``returning"` isn't enabled.
-    ins = supabase.table("users").insert({"hashed_id": hashed_id}).execute()
+    ins = supabase.table("app_users").insert({"hashed_id": hashed_id}).execute()
     if ins.data and "id" in ins.data[0]:
         return ins.data[0]["id"]
 
     r2 = (
-        supabase.table("users")
+        supabase.table("app_users")
         .select("id")
         .eq("hashed_id", hashed_id)
         .limit(1)
@@ -96,7 +96,7 @@ def update_user(hashed_id: str, update_data: Dict[str, Any]) -> None:
     """Update a user record with the allowed fields.
 
     Unknown keys or ``None`` values are stripped from ``update_data`` before
-    sending the update to Supabase. The ``users`` table must include a
+    sending the update to Supabase. The ``app_users`` table must include a
     ``demographic_completed`` column if that field is provided.
     """
 
@@ -117,12 +117,12 @@ def update_user(hashed_id: str, update_data: Dict[str, Any]) -> None:
         k: v for k, v in update_data.items() if v is not None and k in allowed_fields
     }
     if data_to_update:
-        supabase.from_("users").update(data_to_update).eq("hashed_id", hashed_id).execute()
+        supabase.from_("app_users").update(data_to_update).eq("hashed_id", hashed_id).execute()
 
 
 def get_all_users() -> List[Dict[str, Any]]:
     supabase = get_supabase()
-    resp = supabase.from_("users").select("*").execute()
+    resp = supabase.from_("app_users").select("*").execute()
     return resp.data or []
 
 

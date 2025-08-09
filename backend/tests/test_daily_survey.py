@@ -26,7 +26,7 @@ def _seed_items(supa, count=3):
 
 
 def _create_user(supa, uid: str):
-    supa.tables.setdefault("users", []).append({"hashed_id": uid})
+    supa.tables.setdefault("app_users", []).append({"hashed_id": uid})
 
 
 def test_daily3_skips_answered(fake_supabase):

@@ -18,7 +18,7 @@ async def get_invite_code(user: dict = Depends(get_current_user)):
     code = user.get("invite_code")
     if not code:
         code = _generate_code()
-        supabase.table("users").update({"invite_code": code}).eq(
+        supabase.table("app_users").update({"invite_code": code}).eq(
             "hashed_id", user["hashed_id"]
         ).execute()
     return {"invite_code": code}
@@ -37,7 +37,7 @@ async def claim_referral(r: str, user: dict = Depends(get_current_user)):
     if supabase.table("referrals").select("id").eq("invitee_user", user["hashed_id"]).execute().data:
         return {"status": "exists"}
     inviter = (
-        supabase.table("users")
+        supabase.table("app_users")
         .select("hashed_id")
         .eq("invite_code", r)
         .single()
@@ -49,7 +49,7 @@ async def claim_referral(r: str, user: dict = Depends(get_current_user)):
     supabase.table("referrals").insert(
         {"inviter_code": r, "invitee_user": user["hashed_id"], "credited": False}
     ).execute()
-    supabase.table("users").update({"referred_by": inviter["hashed_id"]}).eq(
+    supabase.table("app_users").update({"referred_by": inviter["hashed_id"]}).eq(
         "hashed_id", user["hashed_id"]
     ).execute()
     return {"status": "ok"}
