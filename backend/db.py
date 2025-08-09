@@ -35,6 +35,22 @@ def create_user(user_data: Dict[str, Any]) -> Dict[str, Any]:
     return resp.data[0]
 
 
+def upsert_user(user_id: str) -> None:
+    """Ensure a user row exists for ``user_id``.
+
+    Inserts a new record if the given ``id`` is missing. Existing rows are left
+    untouched.
+    """
+
+    supabase = get_supabase()
+    res = (
+        supabase.table("users").select("id").eq("id", user_id).limit(1).execute()
+    )
+    if res.data:
+        return
+    supabase.table("users").insert({"id": user_id}).execute()
+
+
 def get_or_create_user_id_from_hashed(supabase: Client, hashed_id: str) -> str:
     """Return ``users.id`` (UUID) for a hashed identifier.
 
