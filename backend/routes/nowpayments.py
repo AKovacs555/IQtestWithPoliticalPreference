@@ -8,7 +8,14 @@ from typing import Any
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 
-from .. import db
+# Import the database module using an absolute import to avoid
+# "attempted relative import beyond top-level package" errors. When this
+# module is loaded as part of the standalone ``routes`` package (because
+# the backend directory is added to ``sys.path``), using ``from ..`` would
+# attempt to resolve a parent package that does not exist. Importing via
+# ``backend`` ensures the module is resolved correctly regardless of the
+# package context.
+from backend import db
 
 router = APIRouter(prefix="/payments/nowpayments", tags=["payments"])
 logger = logging.getLogger(__name__)
