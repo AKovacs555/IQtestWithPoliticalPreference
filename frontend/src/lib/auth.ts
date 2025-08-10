@@ -1,10 +1,12 @@
 import { supabase } from './supabaseClient';
 
+const redirectTo = `${window.location.origin}/auth/callback`;
+
 export async function signInWithGoogle() {
   const { error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: `${window.location.origin}/auth/callback`,
+      redirectTo,
       queryParams: { access_type: 'offline', prompt: 'consent' }
     }
   });
@@ -15,7 +17,7 @@ export async function signUpWithEmail(email: string, password: string) {
   const { error } = await supabase.auth.signUp({
     email,
     password,
-    options: { emailRedirectTo: `${window.location.origin}/auth/callback` }
+    options: { emailRedirectTo: redirectTo }
   });
   if (error) throw error;
 }

@@ -359,12 +359,9 @@ export default function App() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // When Supabase redirects to /?code=... ensure the callback route handles it
-    if (
-      window.location.pathname === '/' &&
-      window.location.search.includes('code=')
-    ) {
-      navigate('/auth/callback' + window.location.search, { replace: true });
+    const u = new URL(window.location.href);
+    if (u.pathname === '/' && u.searchParams.get('code')) {
+      navigate('/auth/callback' + u.search, { replace: true });
     }
   }, [navigate]);
   return (
