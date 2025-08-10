@@ -16,7 +16,12 @@ export default function AuthCallback() {
           const { error: exErr } = await supabase.auth.exchangeCodeForSession(code);
           if (exErr) {
             // eslint-disable-next-line no-console
-            console.error('exchangeCodeForSession error:', exErr);
+            console.error('exchangeCodeForSession error', exErr);
+          }
+          const { data } = await supabase.auth.getSession();
+          if (data?.session) {
+            localStorage.setItem('authToken', data.session.access_token);
+            localStorage.setItem('user_id', data.session.user?.id || '');
           }
         } else if (error) {
           // eslint-disable-next-line no-console
