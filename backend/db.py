@@ -47,11 +47,11 @@ def create_user(user_data: Dict[str, Any]) -> Dict[str, Any]:
     return resp.data[0]
 
 
-def upsert_user(user_id: str) -> None:
+def upsert_user(user_id: str, username: str | None = None) -> None:
     """Ensure a user row exists for ``user_id``.
 
     Inserts a new record if the given ``id`` is missing. Existing rows are left
-    untouched.
+    untouched. When ``username`` is provided it is stored or updated.
     """
 
     supabase = get_supabase()
@@ -59,16 +59,21 @@ def upsert_user(user_id: str) -> None:
         supabase.table("app_users").select("id").eq("id", user_id).limit(1).execute()
     )
     if res.data:
+        if username:
+            supabase.table("app_users").update({"username": username}).eq(
+                "id", user_id
+            ).execute()
         return
-    supabase.table("app_users").upsert(
-        {
-            "id": user_id,
-            "hashed_id": user_id,
-            "points": 0,
-            "free_attempts": 1,
-            "survey_completed": False,
-        }
-    ).execute()
+    data = {
+        "id": user_id,
+        "hashed_id": user_id,
+        "points": 0,
+        "free_attempts": 1,
+        "survey_completed": False,
+    }
+    if username:
+        data["username"] = username
+    supabase.table("app_users").upsert(data).execute()
 
 
 def get_or_create_user_id_from_hashed(
@@ -133,6 +138,8 @@ def update_user(hashed_id: str, update_data: Dict[str, Any]) -> None:
         "free_attempts",
         "nationality",
         "survey_completed",
+        "username",
+        "is_admin",
     }
     data_to_update = {
         k: v for k, v in update_data.items() if v is not None and k in allowed_fields

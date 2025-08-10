@@ -29,6 +29,22 @@ function authHeaders() {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
+export async function getProfile() {
+  const headers = authHeaders();
+  const res = await fetch(`${API_BASE}/user/profile`, { headers });
+  return handleJson(res);
+}
+
+export async function updateProfile(data) {
+  const headers = { 'Content-Type': 'application/json', ...authHeaders() };
+  const res = await fetch(`${API_BASE}/user/profile`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(data)
+  });
+  return handleJson(res);
+}
+
 export async function getQuizStart(setId, lang) {
   let url = setId ? `${API_BASE}/quiz/start?set_id=${setId}` : `${API_BASE}/quiz/start`;
   if (lang) {

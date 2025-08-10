@@ -177,11 +177,12 @@ def detect_country(request: Request) -> str:
 
 class UpsertUserIn(BaseModel):
     user_id: str
+    username: str | None = None
 
 
 @router.post("/auth/upsert_user")
 def upsert_user_api(payload: UpsertUserIn):
-    upsert_user(payload.user_id)
+    upsert_user(payload.user_id, payload.username)
     return {"ok": True}
 
 

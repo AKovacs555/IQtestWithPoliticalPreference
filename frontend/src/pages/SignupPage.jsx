@@ -13,6 +13,9 @@ export default function SignupPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      if (username) {
+        localStorage.setItem('pending_username', username);
+      }
       await signUpWithEmail(email, password);
       navigate('/');
     } catch (err) {

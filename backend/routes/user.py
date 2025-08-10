@@ -5,6 +5,38 @@ from backend.deps.auth import get_current_user
 
 router = APIRouter(prefix="/user", tags=["user"])
 
+
+class ProfilePayload(BaseModel):
+    username: str | None = None
+
+
+@router.get("/profile")
+async def get_profile(user: dict = Depends(get_current_user)):
+    return {"username": user.get("username")}
+
+
+@router.post("/profile")
+async def update_profile(payload: ProfilePayload, user: dict = Depends(get_current_user)):
+    supabase = get_supabase_client()
+    data = {}
+    if payload.username is not None:
+        resp = (
+            supabase.table("app_users")
+            .select("id")
+            .eq("username", payload.username)
+            .neq("hashed_id", user.get("hashed_id"))
+            .execute()
+        )
+        if resp.data:
+            raise HTTPException(status_code=400, detail="Username already taken")
+        data["username"] = payload.username
+    if data:
+        supabase.table("app_users").update(data).eq(
+            "hashed_id", user.get("hashed_id")
+        ).execute()
+        return {"status": "ok", **data}
+    return {"status": "ok"}
+
 class NationalityPayload(BaseModel):
     user_id: str
     nationality: str

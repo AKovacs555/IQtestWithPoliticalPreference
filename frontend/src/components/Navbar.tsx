@@ -54,6 +54,7 @@ export default function Navbar() {
     { label: t('nav.contact', { defaultValue: 'Contact' }), href: '/contact' },
   ];
   if (user) {
+    links.unshift({ label: t('nav.profile', { defaultValue: 'Profile' }), href: '/profile' });
     links.unshift({ label: t('nav.daily_survey', { defaultValue: 'Daily Survey' }), href: '/daily-survey' });
   }
 
