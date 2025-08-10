@@ -13,15 +13,17 @@ export default function AuthCallback() {
     async function run() {
       try {
         if (code) {
+          // PKCEコードをセッションに交換
           const { error: exErr } = await supabase.auth.exchangeCodeForSession(code);
           if (exErr) {
             // eslint-disable-next-line no-console
             console.error('exchangeCodeForSession error', exErr);
           }
-          const { data } = await supabase.auth.getSession();
-          if (data?.session) {
-            localStorage.setItem('authToken', data.session.access_token);
-            localStorage.setItem('user_id', data.session.user?.id || '');
+          // 交換後にセッションを取得してローカルストレージに保存
+          const { data: sessionData } = await supabase.auth.getSession();
+          if (sessionData?.session) {
+            localStorage.setItem('authToken', sessionData.session.access_token);
+            localStorage.setItem('user_id', sessionData.session.user?.id || '');
           }
         } else if (error) {
           // eslint-disable-next-line no-console

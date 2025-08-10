@@ -14,7 +14,7 @@ export default function DemographicsForm() {
   const [gender, setGender] = useState('other');
   const [income, setIncome] = useState('0-3m');
   const [occupation, setOccupation] = useState('student');
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
 
   const save = () => {
     const uid = localStorage.getItem('user_id') || 'testuser';
@@ -36,10 +36,11 @@ export default function DemographicsForm() {
   };
 
   React.useEffect(() => {
+    if (loading) return;
     if (!user) navigate('/login');
-  }, [user, navigate]);
+  }, [user, loading, navigate]);
 
-  if (!user) return null;
+  if (loading || !user) return null;
 
   return (
     <AppShell>

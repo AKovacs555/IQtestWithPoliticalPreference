@@ -11,10 +11,11 @@ const API_BASE = import.meta.env.VITE_API_BASE || "";
 export default function Home() {
   const { t } = useTranslation();
   const userId = localStorage.getItem('user_id') || '';
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const navigate = useNavigate();
   const [proPrice, setProPrice] = useState(0);
   const handleStart = () => {
+    if (loading) return;
     if (!user) {
       navigate('/login');
     } else if (!localStorage.getItem('nationality')) {
