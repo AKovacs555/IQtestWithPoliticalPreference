@@ -21,6 +21,9 @@ export function useAuth() {
 
     const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
+      if (session?.access_token) {
+        localStorage.setItem('authToken', session.access_token);
+      }
       if (session?.user?.id) {
         localStorage.setItem('user_id', session.user.id);
         // Ensure we have a row in public.users
