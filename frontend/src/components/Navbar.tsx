@@ -10,7 +10,8 @@ import PointsBadge from './PointsBadge';
 import LanguageSelector from './LanguageSelector';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../auth/useAuth';
-import { signInWithGoogle, signOut } from '../lib/auth';
+import { signOut } from '../lib/auth';
+import GoogleOAuthButton from './GoogleOAuthButton';
 import OverflowNav from './nav/OverflowNav';
 import MobileDrawer from './nav/MobileDrawer';
 import type { NavItem } from './nav/types';
@@ -75,11 +76,7 @@ export default function Navbar() {
         ? [
             {
               label: 'google',
-              element: (
-                <Button onClick={() => signInWithGoogle().catch(err => console.error(err))} size="small" variant="contained" fullWidth>
-                  Continue with Google
-                </Button>
-              ),
+              element: <GoogleOAuthButton size="small" fullWidth />,
             },
           ]
         : []),
@@ -109,11 +106,7 @@ export default function Navbar() {
       <PointsBadge userId={userId} />
       {!user ? (
         <>
-          {googleEnabled && (
-            <Button onClick={() => signInWithGoogle().catch(err => console.error(err))} size="small" variant="contained" sx={{ minHeight: '48px' }}>
-              Continue with Google
-            </Button>
-          )}
+          {googleEnabled && <GoogleOAuthButton size="small" sx={{ minHeight: '48px' }} />}
           <Button href="/login" size="small" sx={{ minHeight: '48px' }}>
             {t('nav.login', { defaultValue: 'Log in' })}
           </Button>
