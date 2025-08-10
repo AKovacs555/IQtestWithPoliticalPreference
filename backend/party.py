@@ -4,7 +4,7 @@ from __future__ import annotations
 from datetime import datetime, timedelta
 from typing import List
 
-from db import get_user, create_user, update_user
+from db import get_user, create_user, update_user, get_supabase
 
 ONE_MONTH = timedelta(days=30)
 
@@ -38,4 +38,5 @@ async def update_party_affiliation(user_id: str, party_ids: List[int]) -> None:
     if 12 in party_ids and len(party_ids) > 1:
         raise ValueError("無党派 cannot be selected with other parties")
     log.append({"timestamp": datetime.utcnow().isoformat(), "party_ids": party_ids})
-    update_user(user_id, {"party_log": log})
+    supabase = get_supabase()
+    update_user(supabase, user_id, {"party_log": log})
