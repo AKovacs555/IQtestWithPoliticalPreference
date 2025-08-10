@@ -2,12 +2,13 @@ import { supabase } from './supabaseClient';
 
 const redirectTo = `${window.location.origin}/auth/callback`;
 
-export async function signInWithGoogle() {
+export async function signInWithGoogle(captchaToken?: string) {
   const { error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
       redirectTo,
-      queryParams: { access_type: 'offline', prompt: 'consent' }
+      queryParams: { access_type: 'offline', prompt: 'consent' },
+      ...(captchaToken ? { captchaToken } : {})
     }
   });
   if (error) throw error;
