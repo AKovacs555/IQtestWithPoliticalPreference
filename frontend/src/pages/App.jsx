@@ -29,6 +29,7 @@ import ThemeDemo from './ThemeDemo.jsx';
 import Button from '@mui/material/Button';
 import RequireAdmin from '../components/RequireAdmin';
 import { shareResult, buildLineShareUrl, buildFacebookShareUrl } from '../utils/share';
+import Profile from './Profile.jsx';
 const API_BASE = import.meta.env.VITE_API_BASE || "";
 
 const AdminLayout = lazy(() =>
@@ -381,6 +382,7 @@ export default function App() {
         <Route path="/leaderboard" element={<Leaderboard />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/settings/:userId" element={<Settings />} />
+        <Route path="/profile" element={<Profile />} />
         <Route path="/history/:userId" element={<History />} />
         <Route path="/select-nationality" element={<SelectNationality />} />
         <Route path="/signup" element={<SignupPage />} />

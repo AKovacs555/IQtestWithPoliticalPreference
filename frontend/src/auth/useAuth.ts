@@ -31,12 +31,19 @@ export function useAuth() {
         if (session.user?.id) {
           localStorage.setItem('user_id', session.user.id);
           if (event === 'SIGNED_IN') {
-            // Ensure we have a row in public.users on first sign in
+            // Ensure we have a row in public.app_users on first sign in
+            const pending = localStorage.getItem('pending_username');
+            const body: any = { user_id: session.user.id };
+            if (pending) body.username = pending;
             fetch('/auth/upsert_user', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ user_id: session.user.id })
-            }).catch(() => {});
+              body: JSON.stringify(body)
+            })
+              .then(() => {
+                if (pending) localStorage.removeItem('pending_username');
+              })
+              .catch(() => {});
           }
         }
       } else if (event === 'SIGNED_OUT') {

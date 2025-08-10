@@ -6,7 +6,7 @@ import jwt
 from fastapi import HTTPException, Header
 from backend.db import get_user
 
-JWT_SECRET = os.getenv("JWT_SECRET", "change-me")
+JWT_SECRET = os.getenv("SUPABASE_JWT_SECRET") or os.getenv("JWT_SECRET", "change-me")
 ALGORITHM = "HS256"
 
 
@@ -38,7 +38,10 @@ def get_current_user(authorization: Optional[str] = Header(None)) -> User:
         raise HTTPException(status_code=401, detail="Unauthorized")
     token = authorization.split(" ", 1)[1]
     payload = decode_token(token)
-    user_data = get_user(payload["user_id"])
+    user_id = payload.get("user_id") or payload.get("sub")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="User id missing")
+    user_data = get_user(user_id)
     if not user_data:
         raise HTTPException(status_code=401, detail="User not found")
     return User(user_data)
