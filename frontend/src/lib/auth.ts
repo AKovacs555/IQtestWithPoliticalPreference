@@ -1,6 +1,8 @@
 import { supabase } from './supabaseClient';
 
-const redirectTo = `${window.location.origin}/auth/callback`;
+const redirectTo =
+  window.location.origin +
+  (import.meta.env.PROD ? '/#/auth/callback' : '/auth/callback');
 
 export async function signInWithGoogle(captchaToken?: string) {
   const { error } = await supabase.auth.signInWithOAuth({

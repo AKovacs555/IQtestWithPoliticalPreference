@@ -5,8 +5,8 @@ import { BrowserRouter, HashRouter } from 'react-router-dom';
 
 const Router = import.meta.env.PROD ? HashRouter : BrowserRouter;
 
-// In production we use HashRouter; if someone lands on /admin/xyz without a hash,
-// redirect to the hash equivalent so routes resolve correctly.
+// In production we use HashRouter; if someone lands on a path like /auth/callback
+// without a hash, redirect to the hash equivalent so routes resolve correctly.
 if (import.meta.env.PROD && !location.hash && location.pathname !== '/') {
   const path = location.pathname + location.search;
   location.replace('/#' + (path.startsWith('/') ? path : '/' + path));
