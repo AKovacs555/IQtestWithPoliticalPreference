@@ -469,6 +469,7 @@ async def referral(action: UserAction):
     if not user:
         user = db_create_user(
             {
+                "id": action.user_id,
                 "hashed_id": action.user_id,
                 "salt": "",
                 "plays": 0,
@@ -490,6 +491,7 @@ async def ads_start(action: UserAction):
     if not user:
         user = db_create_user(
             {
+                "id": action.user_id,
                 "hashed_id": action.user_id,
                 "salt": "",
                 "plays": 0,
