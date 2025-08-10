@@ -41,6 +41,10 @@ class DummyTable:
         self._insert = data
         return self
 
+    def upsert(self, data):
+        """Simplified upsert behaving like insert for tests."""
+        return self.insert(data)
+
     def update(self, data):
         self._update = data
         return self

@@ -70,38 +70,45 @@ def upsert_user(user_id: str) -> None:
     ).execute()
 
 
-def get_or_create_user_id_from_hashed(supabase: Client, hashed_id: str) -> str:
-    """Return ``app_users.id`` (UUID) for a hashed identifier.
+def get_or_create_user_id_from_hashed(
+    supabase: Client, hashed_id: str
+) -> str | None:
+    """Return ``app_users.id`` for a hashed identifier.
 
-    If the user does not yet exist a new record is inserted and the generated
-    ``id`` is returned.  Always returns a UUID string.
+    If the user does not exist a new record is created with the ``id`` field
+    set to ``hashed_id`` and default values for ``points`` and
+    ``free_attempts``.  Returns the resulting ``id`` or ``None`` on failure.
     """
 
-    # Attempt to fetch an existing ID first.
-    r = (
+    # Look up an existing user first.
+    res = (
         supabase.table("app_users")
         .select("id")
         .eq("hashed_id", hashed_id)
-        .limit(1)
         .execute()
     )
-    if r.data:
-        return r.data[0]["id"]
+    data = res.data or []
+    if data:
+        return data[0]["id"]
 
-    # Insert a new record and try to obtain the generated ID.  Some drivers
-    # require an explicit select afterwards if ``returning"` isn't enabled.
-    ins = supabase.table("app_users").insert({"hashed_id": hashed_id}).execute()
-    if ins.data and "id" in ins.data[0]:
-        return ins.data[0]["id"]
+    # Create the user when missing.
+    supabase.table("app_users").upsert(
+        {
+            "id": hashed_id,
+            "hashed_id": hashed_id,
+            "points": 0,
+            "free_attempts": 1,
+        }
+    ).execute()
 
-    r2 = (
+    res = (
         supabase.table("app_users")
         .select("id")
         .eq("hashed_id", hashed_id)
-        .limit(1)
         .execute()
     )
-    return r2.data[0]["id"]
+    data = res.data or []
+    return data[0]["id"] if data else None
 
 
 def update_user(hashed_id: str, update_data: Dict[str, Any]) -> None:
