@@ -86,6 +86,8 @@ def _setup(monkeypatch):
             return DummyTable()
 
     monkeypatch.setattr("backend.routes.quiz.get_supabase_client", lambda: DummySupabase())
+    monkeypatch.setattr("backend.db.consume_free_attempt", lambda uid: 0, raising=False)
+    monkeypatch.setattr("backend.routes.quiz.consume_free_attempt", lambda uid: 0, raising=False)
 
     # reduce number of questions
     monkeypatch.setattr("backend.routes.quiz.NUM_QUESTIONS", 1, raising=False)

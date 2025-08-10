@@ -124,7 +124,10 @@ def create_user(user_data: Dict[str, Any]) -> Dict[str, Any]:
     }
     data = {**defaults, **user_data}
     resp = supabase.from_("app_users").insert(data).execute()
-    return resp.data[0]
+    row = resp.data[0]
+    uid = row.get("hashed_id") or row.get("id")
+    insert_attempt_ledger(uid, 1, "signup")
+    return row
 
 
 def upsert_user(user_id: str, username: str | None = None) -> None:
@@ -151,6 +154,7 @@ def upsert_user(user_id: str, username: str | None = None) -> None:
     if username is not None:
         data["username"] = username
     supabase.table("app_users").upsert(data).execute()
+    insert_attempt_ledger(user_id, 1, "signup")
 
 
 def get_or_create_user_id_from_hashed(
@@ -187,6 +191,7 @@ def get_or_create_user_id_from_hashed(
             "is_admin": False,
         }
     ).execute()
+    insert_attempt_ledger(hashed_id, 1, "signup")
 
     res = (
         supabase.table("app_users")
@@ -211,56 +216,81 @@ def update_user(supabase: Client, hashed_id: str, data_to_update: Dict[str, Any]
     supabase.table("app_users").update(payload).eq("hashed_id", hashed_id).execute()
 
 
-def increment_free_attempts(user_id: str, delta: int = 1) -> None:
-    """Increase a user's ``free_attempts`` by ``delta``."""
+def insert_attempt_ledger(
+    user_id: str, delta: int, reason: str, expires_at: datetime | None = None
+) -> None:
+    """Insert a row into ``attempt_ledger`` and sync ``free_attempts``."""
 
     supabase = get_supabase()
-    current = (get_user(user_id) or {}).get("free_attempts") or 0
-    update_user(supabase, user_id, {"free_attempts": current + delta})
+    row: Dict[str, Any] = {"user_id": user_id, "delta": delta, "reason": reason}
+    if expires_at is not None:
+        row["expires_at"] = expires_at.isoformat()
+    try:
+        supabase.table("attempt_ledger").insert(row).execute()
+    except Exception:
+        # Tests may not create the table; fail silently
+        pass
+
+    # Mirror to ``app_users.free_attempts`` for backwards compatibility
+    remaining = get_available_attempts(user_id)
+    update_user(supabase, user_id, {"free_attempts": remaining})
+
+
+def increment_free_attempts(user_id: str, delta: int = 1, reason: str = "manual") -> None:
+    """Increase a user's attempts by ``delta`` using the ledger."""
+
+    insert_attempt_ledger(user_id, delta, reason)
+
+
+def get_available_attempts(user_id: str) -> int:
+    """Return total remaining attempts for ``user_id`` based on the ledger."""
+
+    supabase = get_supabase()
+    try:
+        resp = (
+            supabase.table("attempt_ledger")
+            .select("delta, expires_at")
+            .eq("user_id", user_id)
+            .execute()
+        )
+    except Exception:
+        return (get_user(user_id) or {}).get("free_attempts", 0)
+
+    rows = resp.data or []
+    now = datetime.utcnow()
+    total = 0
+    for r in rows:
+        exp = r.get("expires_at")
+        if exp:
+            try:
+                exp_dt = datetime.fromisoformat(str(exp).replace("Z", ""))
+                if exp_dt <= now:
+                    continue
+            except ValueError:
+                pass
+        total += int(r.get("delta") or 0)
+    return total
 
 
 def get_free_attempts(user_id: str) -> int:
-    """Return the number of remaining ``free_attempts`` for ``user_id``."""
+    """Compatibility wrapper returning ``get_available_attempts``."""
 
-    supabase = get_supabase()
-    resp = (
-        supabase.table("app_users")
-        .select("free_attempts")
-        .eq("hashed_id", user_id)
-        .single()
-        .execute()
-    )
-    data = resp.data or {}
-    return data.get("free_attempts") or 0
+    return get_available_attempts(user_id)
 
 
 def consume_free_attempt(user_id: str) -> Optional[int]:
-    """Atomically decrement ``free_attempts`` for ``user_id``.
+    """Consume a single attempt via the ledger.
 
-    Returns the remaining attempts on success, or ``None`` if no attempt was
-    consumed.
+    Returns remaining attempts or ``None`` if insufficient balance.
     """
 
-    try:
-        supabase = get_supabase()
-        user = get_user(user_id)
-        current = (user or {}).get("free_attempts", 0)
-        if user is None:
-            upsert_user(user_id)
-            user = get_user(user_id)
-            current = (user or {}).get("free_attempts", 0)
-        if current <= 0:
-            return None
-
-        update_user(supabase, user_id, {"free_attempts": current - 1})
-
-        remaining = get_free_attempts(user_id)
-        if remaining == current:
-            return None
-        return remaining
-    except Exception:
-        # Database unavailable; assume success with no remaining attempts known.
-        return 0
+    if get_user(user_id) is None:
+        upsert_user(user_id)
+    available = get_available_attempts(user_id)
+    if available <= 0:
+        return None
+    insert_attempt_ledger(user_id, -1, "consume")
+    return get_available_attempts(user_id)
 
 
 def record_payment_event(

@@ -121,13 +121,25 @@ async def start_quiz(
                 "reset_at": reset_at,
             },
         )
-    remaining = consume_free_attempt(user["hashed_id"])
-    if remaining is None:
-        logger.error("attempts_insufficient", extra={"user_id": user["hashed_id"]})
-        raise HTTPException(
-            status_code=402,
-            detail={"code": "NEED_PAYMENT"},
-        )
+    # Determine subscription status
+    pro_active = False
+    pro_until = user.get("pro_active_until")
+    if pro_until:
+        try:
+            pro_dt = datetime.fromisoformat(str(pro_until).replace("Z", ""))
+            pro_active = pro_dt > datetime.utcnow()
+        except ValueError:
+            pro_active = False
+
+    remaining = None
+    if not pro_active:
+        remaining = consume_free_attempt(user["hashed_id"])
+        if remaining is None:
+            logger.error("attempts_insufficient", extra={"user_id": user["hashed_id"]})
+            raise HTTPException(
+                status_code=402,
+                detail={"code": "NEED_PAYMENT"},
+            )
 
     logger.info(
         "attempts_consume_ok", extra={"user_id": user["hashed_id"], "remaining": remaining}

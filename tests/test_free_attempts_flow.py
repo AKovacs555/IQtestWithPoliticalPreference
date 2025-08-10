@@ -82,7 +82,7 @@ class DummyTable:
 
 class DummySupabase:
     def __init__(self):
-        self.tables = {"app_users": []}
+        self.tables = {"app_users": [], "attempt_ledger": []}
 
     def table(self, name):
         if name not in self.tables:
@@ -108,6 +108,8 @@ def _setup_app(monkeypatch, fake_supabase, free_attempts: int):
 
     uid = "u1"
     fake_supabase.table("app_users").insert({"hashed_id": uid, "free_attempts": free_attempts}).execute()
+    if free_attempts:
+        fake_supabase.table("attempt_ledger").insert({"user_id": uid, "delta": free_attempts, "reason": "seed"}).execute()
 
     app.dependency_overrides[get_current_user] = lambda: {
         "hashed_id": uid,
@@ -134,10 +136,10 @@ def test_consume_ok(monkeypatch, fake_supabase, caplog):
     with TestClient(app) as client, caplog.at_level("INFO"):
         res = client.get("/quiz/start?set_id=s1")
     assert res.status_code == 200
-    row = (
-        fake_supabase.table("app_users").select("*").eq("hashed_id", uid).execute().data[0]
-    )
-    assert row["free_attempts"] == 1
+    from backend.db import get_available_attempts
+
+    remaining = get_available_attempts(uid)
+    assert remaining == 1
     assert "attempts_consume_ok" in caplog.text
 
 
