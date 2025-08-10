@@ -1,10 +1,10 @@
-import os, sys, uuid
+import os
+import sys
+import uuid
 from fastapi.testclient import TestClient
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
-import main
 from main import app
-from backend import db
 
 
 def test_payment_flow(monkeypatch):

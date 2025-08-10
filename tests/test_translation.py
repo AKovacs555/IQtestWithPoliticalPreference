@@ -1,8 +1,9 @@
-import os, sys
-from openai import BadRequestError, APIError
+import os
+import sys
+from openai import APIError, BadRequestError
 
 sys.path.insert(0, os.path.abspath("backend"))
-from services.translation import is_reasoning, translate_text, _client
+from services.translation import _client, is_reasoning, translate_text
 
 
 class DummyResp:

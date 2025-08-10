@@ -6,16 +6,15 @@ import os
 import time
 from typing import List, Optional
 
-MIN_BUCKET_SIZE = int(os.getenv("DP_MIN_COUNT", "100"))
+from db import get_all_users
+from dp import add_laplace
 
 try:
     from PIL import Image, ImageDraw, ImageFont
 except Exception:  # Pillow not installed
     Image = ImageDraw = ImageFont = None
 
-
-from db import get_all_users
-from dp import add_laplace
+MIN_BUCKET_SIZE = int(os.getenv("DP_MIN_COUNT", "100"))
 
 
 def dp_average(

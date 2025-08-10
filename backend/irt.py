@@ -1,7 +1,6 @@
 """Simple IRT utilities."""
 
 from math import exp
-from typing import Tuple
 
 
 def prob_correct(theta: float, a: float, b: float) -> float:

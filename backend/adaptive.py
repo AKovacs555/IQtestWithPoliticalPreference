@@ -1,10 +1,8 @@
-from typing import List, Optional, Dict
+from typing import Dict, List, Optional
 
 try:
-    from .questions import QUESTION_MAP
     from .scoring import standard_error
 except ImportError:  # fallback when not part of package
-    from questions import QUESTION_MAP
     from scoring import standard_error
 
 

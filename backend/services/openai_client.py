@@ -1,6 +1,12 @@
 from __future__ import annotations
-from typing import Any, Sequence
+
 import logging
+import os
+import time
+from typing import Any, Sequence
+
+from httpx import HTTPError
+from openai import OpenAI
 
 log = logging.getLogger(__name__)
 
@@ -76,10 +82,6 @@ def extract_response_text(resp: Any) -> str:
     )
     raise ValueError("No text content in OpenAI response")
 
-
-import os, time
-from openai import OpenAI
-from httpx import HTTPError
 
 # In production the OpenAI client requires an API key.  Importing this module
 # in the test environment previously attempted to create the client
