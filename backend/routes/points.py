@@ -1,12 +1,12 @@
 from fastapi import APIRouter
-from backend.deps.supabase_client import get_supabase_client
+import backend.db as db
 
 router = APIRouter(prefix="/points", tags=["points"])
 
 
 @router.get("/{user_id}")
 async def get_points(user_id: str):
-    supabase = get_supabase_client()
+    supabase = db.get_supabase()
     from postgrest.exceptions import APIError
 
     try:

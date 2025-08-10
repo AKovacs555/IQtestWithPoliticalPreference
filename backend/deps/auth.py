@@ -38,7 +38,10 @@ def get_current_user(authorization: Optional[str] = Header(None)) -> User:
         raise HTTPException(status_code=401, detail="Unauthorized")
     token = authorization.split(" ", 1)[1]
     payload = decode_token(token)
-    user_id = payload.get("user_id") or payload.get("sub")
+    # Supabase JWTs store the user id in the ``sub`` claim. Older tokens issued
+    # by our own backend used ``user_id`` instead, so check both for
+    # compatibility.
+    user_id = payload.get("sub") or payload.get("user_id")
     if not user_id:
         raise HTTPException(status_code=401, detail="User id missing")
     user_data = get_user(user_id)
