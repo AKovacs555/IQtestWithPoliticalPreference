@@ -1,6 +1,7 @@
 import os
 from datetime import datetime
 from backend.deps.supabase_client import get_supabase_client
+from backend.db import update_user
 
 
 def credit_referral_if_applicable(user_id: str) -> None:
@@ -48,9 +49,7 @@ def credit_referral_if_applicable(user_id: str) -> None:
         credited_count = len(getattr(count_resp, "data", []) or [])
         if credited_count < max_credits:
             current = inviter.get("free_attempts") or 0
-            supabase.table("app_users").update({"free_attempts": current + 1}).eq(
-                "hashed_id", inviter["hashed_id"]
-            ).execute()
+            update_user(supabase, inviter["hashed_id"], {"free_attempts": current + 1})
         supabase.table("referrals").update(
             {"credited": True, "credited_at": datetime.utcnow().isoformat()}
         ).eq("invitee_user", user_id).execute()

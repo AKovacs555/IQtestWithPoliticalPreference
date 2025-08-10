@@ -9,6 +9,7 @@ from fastapi import APIRouter, HTTPException, Request, Depends
 import random
 from pydantic import BaseModel
 from backend.deps.supabase_client import get_supabase_client
+from backend.db import update_user
 from backend.questions_loader import (
     get_question_sets,
     get_questions_for_set,
@@ -97,7 +98,7 @@ async def start_quiz(
                 "message": "Please complete the survey before taking the IQ test.",
             },
         )
-    if user and not user.get("demographic_completed"):
+    if user and not (user.get("demographic") or user.get("demographic_completed")):
         raise HTTPException(
             status_code=400,
             detail={
@@ -308,9 +309,7 @@ async def submit_quiz(
             }
         ]
         plays = (user.get("plays") or 0) + 1
-        supabase.from_("app_users").update({"scores": scores, "plays": plays}).eq(
-            "hashed_id", user["hashed_id"]
-        ).execute()
+        update_user(supabase, user["hashed_id"], {"scores": scores, "plays": plays})
     except Exception as e:  # pragma: no cover - best effort only
         logging.getLogger(__name__).warning("Could not update user record: %s", e)
 

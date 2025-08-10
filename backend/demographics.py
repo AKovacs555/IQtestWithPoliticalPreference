@@ -6,7 +6,7 @@ application this would persist to Supabase with hashed identifiers.
 from __future__ import annotations
 
 from datetime import datetime
-from db import update_user
+from db import update_user, get_supabase
 
 
 async def collect_demographics(
@@ -19,17 +19,13 @@ async def collect_demographics(
     records the update timestamp. When deploying with a real database this
     function should perform an UPSERT into the demographics table.
     """
-    update_user(
-        user_id,
-        {
-            "demographic": {
-                "age_band": age_band,
-                "gender": gender,
-                "income_band": income_band,
-                "occupation": occupation,
-                "updated": datetime.utcnow().isoformat(),
-            },
-            "demographic_completed": True,
-        },
-    )
+    demo = {
+        "age_band": age_band,
+        "gender": gender,
+        "income_band": income_band,
+        "occupation": occupation,
+        "updated": datetime.utcnow().isoformat(),
+    }
+    supabase = get_supabase()
+    update_user(supabase, user_id, {"demographic": demo})
 

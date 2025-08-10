@@ -1,6 +1,7 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Response
 from pydantic import BaseModel
 from backend.deps.supabase_client import get_supabase_client
+from backend.db import update_user
 from backend.deps.auth import get_current_user
 
 router = APIRouter(prefix="/user", tags=["user"])
@@ -31,9 +32,7 @@ async def update_profile(payload: ProfilePayload, user: dict = Depends(get_curre
             raise HTTPException(status_code=400, detail="Username already taken")
         data["username"] = payload.username
     if data:
-        supabase.table("app_users").update(data).eq(
-            "hashed_id", user.get("hashed_id")
-        ).execute()
+        update_user(supabase, user.get("hashed_id"), data)
         return {"status": "ok", **data}
     return {"status": "ok"}
 
@@ -41,15 +40,12 @@ class NationalityPayload(BaseModel):
     user_id: str
     nationality: str
 
-@router.post('/nationality')
+
+@router.post("/nationality", status_code=204)
 async def set_nationality(payload: NationalityPayload):
     supabase = get_supabase_client()
-    data = {'nationality': payload.nationality}
-    try:
-        supabase.table('app_users').update(data).eq('hashed_id', payload.user_id).execute()
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-    return {'status': 'ok'}
+    update_user(supabase, payload.user_id, {"nationality": payload.nationality})
+    return Response(status_code=204)
 
 
 @router.get("/credits")

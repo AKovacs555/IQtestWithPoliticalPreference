@@ -447,11 +447,16 @@ async def record_play(action: UserAction):
                 detail={"error": "max_free_attempts_reached", "message": "Please upgrade"},
             )
     user["plays"] = user.get("plays", 0) + 1
-    db_update_user(action.user_id, {
-        "plays": user["plays"],
-        "points": user.get("points", 0),
-        "free_attempts": user.get("free_attempts", 0),
-    })
+    supabase = get_supabase()
+    db_update_user(
+        supabase,
+        action.user_id,
+        {
+            "plays": user["plays"],
+            "points": user.get("points", 0),
+            "free_attempts": user.get("free_attempts", 0),
+        },
+    )
     track_event({"event": "play_record", "user_id": action.user_id, "paid": paid})
     return {"plays": user["plays"], "points": user.get("points", 0), "free_attempts": user.get("free_attempts", 0)}
 
@@ -474,7 +479,8 @@ async def referral(action: UserAction):
             }
         )
     user["referrals"] = user.get("referrals", 0) + 1
-    db_update_user(action.user_id, {"referrals": user["referrals"]})
+    supabase = get_supabase()
+    db_update_user(supabase, action.user_id, {"referrals": user["referrals"]})
     return {"referrals": user["referrals"]}
 
 
@@ -516,7 +522,8 @@ async def ads_complete(action: UserAction):
             }
         )
     user["points"] = user.get("points", 0) + AD_REWARD_POINTS
-    db_update_user(action.user_id, {"points": user["points"]})
+    supabase = get_supabase()
+    db_update_user(supabase, action.user_id, {"points": user["points"]})
     track_event({"event": "ad_complete", "user_id": action.user_id})
     return {"points": user["points"]}
 
@@ -794,7 +801,8 @@ async def survey_submit(payload: SurveySubmitRequest):
             else:
                 return JSONResponse({"error": "db_error", "detail": str(e)}, status_code=500)
         # Ensure the user's survey completion is recorded
-        db_update_user(hashed_human_id, {"survey_completed": True})
+        supabase = get_supabase()
+        db_update_user(supabase, hashed_human_id, {"survey_completed": True})
 
     if lr_score > 0.3:
         category = "Conservative"
@@ -822,7 +830,8 @@ class UserAction(BaseModel):
 
 @app.post("/survey/complete")
 async def survey_complete(action: UserAction):
-    db_update_user(action.user_id, {"survey_completed": True})
+    supabase = get_supabase()
+    db_update_user(supabase, action.user_id, {"survey_completed": True})
     return {"status": "ok"}
 
 

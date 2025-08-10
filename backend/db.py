@@ -12,6 +12,21 @@ _processed_payments: set[str] = set()
 _supabase: Client | None = None
 logger = logging.getLogger(__name__)
 
+ALLOWED_USER_UPDATE_FIELDS = {
+    "nationality",
+    "demographic",
+    "username",
+    "survey_completed",
+    "is_admin",
+    "points",
+    "free_attempts",
+    "plays",
+    "referrals",
+    "party_log",
+    "scores",
+    "invite_code",
+    "referred_by",
+}
 
 DEFAULT_RETRY_PRICE = {"currency": "JPY", "amount_minor": 0, "product": "retry"}
 DEFAULT_PRO_PRICE = {"currency": "JPY", "amount_minor": 0, "product": "pro_pass"}
@@ -123,9 +138,7 @@ def upsert_user(user_id: str, username: str | None = None) -> None:
     res = supabase.table("app_users").select("id").eq("id", user_id).execute()
     if res.data:
         if username:
-            supabase.table("app_users").update({"username": username}).eq(
-                "id", user_id
-            ).execute()
+            update_user(supabase, user_id, {"username": username})
         return
     data = {
         "id": user_id,
@@ -185,34 +198,17 @@ def get_or_create_user_id_from_hashed(
     return data[0]["id"] if data else None
 
 
-def update_user(hashed_id: str, update_data: Dict[str, Any]) -> None:
-    """Update a user record with the allowed fields.
+def update_user(supabase: Client, hashed_id: str, data_to_update: Dict[str, Any]) -> None:
+    """Update a single ``app_users`` row with a safe payload."""
 
-    Unknown keys or ``None`` values are stripped from ``update_data`` before
-    sending the update to Supabase. The ``app_users`` table must include a
-    ``demographic_completed`` column if that field is provided.
-    """
+    if not data_to_update:
+        return
 
-    supabase = get_supabase()
-    allowed_fields = {
-        "plays",
-        "points",
-        "scores",
-        "party_log",
-        "referrals",
-        "demographic",
-        "demographic_completed",
-        "free_attempts",
-        "nationality",
-        "survey_completed",
-        "username",
-        "is_admin",
-    }
-    data_to_update = {
-        k: v for k, v in update_data.items() if v is not None and k in allowed_fields
-    }
-    if data_to_update:
-        supabase.from_("app_users").update(data_to_update).eq("hashed_id", hashed_id).execute()
+    payload = {k: v for k, v in data_to_update.items() if k in ALLOWED_USER_UPDATE_FIELDS}
+    if not payload:
+        return
+
+    supabase.table("app_users").update(payload).eq("hashed_id", hashed_id).execute()
 
 
 def increment_free_attempts(user_id: str, delta: int = 1) -> None:
@@ -220,9 +216,7 @@ def increment_free_attempts(user_id: str, delta: int = 1) -> None:
 
     supabase = get_supabase()
     current = (get_user(user_id) or {}).get("free_attempts") or 0
-    supabase.table("app_users").update({"free_attempts": current + delta}).eq(
-        "hashed_id", user_id
-    ).execute()
+    update_user(supabase, user_id, {"free_attempts": current + delta})
 
 
 def get_free_attempts(user_id: str) -> int:
@@ -258,10 +252,7 @@ def consume_free_attempt(user_id: str) -> Optional[int]:
         if current <= 0:
             return None
 
-        # Perform a conditional update to avoid race conditions.
-        supabase.table("app_users").update({"free_attempts": current - 1}).eq(
-            "hashed_id", user_id
-        ).eq("free_attempts", current).execute()
+        update_user(supabase, user_id, {"free_attempts": current - 1})
 
         remaining = get_free_attempts(user_id)
         if remaining == current:

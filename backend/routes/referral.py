@@ -1,8 +1,10 @@
 import random
+
 from fastapi import APIRouter, HTTPException, Depends
 
 from backend.deps.supabase_client import get_supabase_client
 from backend.deps.auth import get_current_user
+from backend.db import update_user
 
 router = APIRouter(prefix="/referral", tags=["referral"])
 
@@ -18,9 +20,7 @@ async def get_invite_code(user: dict = Depends(get_current_user)):
     code = user.get("invite_code")
     if not code:
         code = _generate_code()
-        supabase.table("app_users").update({"invite_code": code}).eq(
-            "hashed_id", user["hashed_id"]
-        ).execute()
+        update_user(supabase, user["hashed_id"], {"invite_code": code})
     return {"invite_code": code}
 
 
@@ -49,7 +49,5 @@ async def claim_referral(r: str, user: dict = Depends(get_current_user)):
     supabase.table("referrals").insert(
         {"inviter_code": r, "invitee_user": user["hashed_id"], "credited": False}
     ).execute()
-    supabase.table("app_users").update({"referred_by": inviter["hashed_id"]}).eq(
-        "hashed_id", user["hashed_id"]
-    ).execute()
+    update_user(supabase, user["hashed_id"], {"referred_by": inviter["hashed_id"]})
     return {"status": "ok"}
