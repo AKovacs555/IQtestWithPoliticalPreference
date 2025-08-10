@@ -787,7 +787,6 @@ async def survey_submit(payload: SurveySubmitRequest):
         rows = rows_with(uuid)
         try:
             supabase.from_("survey_responses").insert(rows).execute()
-            db_update_user(hashed_human_id, {"survey_completed": True})
         except APIError as e:
             code = getattr(e, "code", "")
             msg = (getattr(e, "message", "") or "").lower()
@@ -796,9 +795,10 @@ async def survey_submit(payload: SurveySubmitRequest):
             if code in ("23503",) or "foreign key" in msg:
                 uuid = get_or_create_user_id_from_hashed(supabase, hashed_human_id)
                 supabase.from_("survey_responses").insert(rows_with(uuid)).execute()
-                db_update_user(hashed_human_id, {"survey_completed": True})
             else:
                 return JSONResponse({"error": "db_error", "detail": str(e)}, status_code=500)
+        # Ensure the user's survey completion is recorded
+        db_update_user(hashed_human_id, {"survey_completed": True})
 
     if lr_score > 0.3:
         category = "Conservative"
