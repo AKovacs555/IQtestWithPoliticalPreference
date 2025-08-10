@@ -47,28 +47,29 @@ def get_supabase() -> Client:
 def get_user(user_id: str) -> Optional[Dict[str, Any]]:
     """Return the user record for the given id or hashed_id.
 
-    The function first attempts to find a match on ``hashed_id`` for backwards
-    compatibility with older tokens. If no record is found it then looks up the
-    row by ``id``.
+    Supabase JWTs encode the user's UUID in the ``sub`` claim, so we first
+    attempt to resolve the row by ``id``.  For backwards compatibility with
+    older tokens that supplied a ``hashed_id`` we fall back to that column if no
+    match is found.
     """
 
     supabase = get_supabase()
-    # Try hashed_id first for compatibility with existing callers
+    # Primary lookup by id for Supabase-authenticated users
     resp = (
         supabase.from_("app_users")
         .select("*")
-        .eq("hashed_id", user_id)
+        .eq("id", user_id)
         .execute()
     )
     data = resp.data or []
     if data:
         return data[0]
 
-    # Fall back to direct id lookup in app_users
+    # Fallback to hashed_id for legacy callers
     resp = (
         supabase.from_("app_users")
         .select("*")
-        .eq("id", user_id)
+        .eq("hashed_id", user_id)
         .execute()
     )
     data = resp.data or []
@@ -145,8 +146,9 @@ def get_or_create_user_id_from_hashed(
     """Return ``app_users.id`` for a hashed identifier.
 
     If the user does not exist a new record is created with the ``id`` field
-    set to ``hashed_id`` and default values for ``points`` and
-    ``free_attempts``.  Returns the resulting ``id`` or ``None`` on failure.
+    set to ``hashed_id`` and default values for ``points``, ``free_attempts``,
+    ``survey_completed``, ``username`` and ``is_admin``. Returns the resulting
+    ``id`` or ``None`` on failure.
     """
 
     # Look up an existing user first.
@@ -168,6 +170,7 @@ def get_or_create_user_id_from_hashed(
             "points": 0,
             "free_attempts": 1,
             "survey_completed": False,
+            "username": hashed_id,
             "is_admin": False,
         }
     ).execute()

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
+import { fetchWithAuth } from '../api';
 
 export function useAuth() {
   const [user, setUser] = useState<any>(null);
@@ -35,7 +36,7 @@ export function useAuth() {
             const pending = localStorage.getItem('pending_username');
             const body: any = { user_id: session.user.id };
             if (pending) body.username = pending;
-            fetch('/auth/upsert_user', {
+            fetchWithAuth('/auth/upsert_user', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify(body)
