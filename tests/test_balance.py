@@ -1,5 +1,7 @@
-import os, sys
-sys.path.insert(0, os.path.abspath('backend'))
+import os
+import sys
+
+sys.path.insert(0, os.path.abspath("backend"))
 from questions import get_balanced_random_questions
 
 

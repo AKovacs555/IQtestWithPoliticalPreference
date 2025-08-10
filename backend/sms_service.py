@@ -1,5 +1,4 @@
 import os
-import random
 import logging
 
 SMS_PROVIDER = os.getenv("SMS_PROVIDER", "twilio")

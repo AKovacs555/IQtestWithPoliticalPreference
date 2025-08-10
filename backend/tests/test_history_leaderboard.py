@@ -1,5 +1,3 @@
-import uuid
-from fastapi import FastAPI
 import os
 import sys
 from fastapi import FastAPI

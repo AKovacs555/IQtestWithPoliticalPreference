@@ -1,14 +1,14 @@
+"""FastAPI backend application."""
+
+# ruff: noqa: E402
+
 import os
 import hashlib
 import hmac
 import secrets
-import random
-import time
-from datetime import datetime
 from typing import List, Optional
 
 import sys
-import os
 import logging
 
 logging.basicConfig(level=logging.INFO)
@@ -29,7 +29,6 @@ from pathlib import Path
 import tempfile
 from tools.generate_questions import import_dir
 
-from backend.sms_service import send_otp, SMS_PROVIDER
 from backend.routes.dependencies import require_admin
 from features import (
     generate_share_image,
@@ -38,16 +37,10 @@ from features import (
     MIN_BUCKET_SIZE,
 )
 from demographics import collect_demographics
-from dp import add_laplace
 
 from questions import (
-    DEFAULT_QUESTIONS,
     QUESTION_MAP,
     get_random_questions,
-    get_balanced_random_questions,
-    get_balanced_random_questions_by_set,
-    get_balanced_random_questions_global,
-    available_sets,
 )
 from adaptive import select_next_question, should_stop
 from irt import update_theta, percentile

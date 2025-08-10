@@ -1,4 +1,6 @@
-import os, sys, json
+import json
+import os
+import sys
 from pathlib import Path
 from jsonschema import validate
 

@@ -1,4 +1,7 @@
-import argparse, json, subprocess, pathlib, sys
+import argparse
+import json
+import pathlib
+import subprocess
 MUST_KEEP = {
     'frontend','backend','e2e','tests','docs','static','tools','.github',
     'render.yaml','vercel.json','Makefile','requirements.txt','.env.example',

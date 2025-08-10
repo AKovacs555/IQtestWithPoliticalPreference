@@ -1,5 +1,7 @@
-import os, sys
-sys.path.insert(0, os.path.abspath('backend'))
+import os
+import sys
+
+sys.path.insert(0, os.path.abspath("backend"))
 from adaptive import select_next_question, should_stop
 from irt import update_theta
 
@@ -31,7 +33,6 @@ def test_adaptive_progress():
             first_b = q['irt']['b']
         if should_stop(theta, answers):
             break
-    avg_b = sum(a['b'] for a in answers) / len(answers)
     assert theta > 0
     assert len(answers) <= 20
     assert len(answers) > 0
