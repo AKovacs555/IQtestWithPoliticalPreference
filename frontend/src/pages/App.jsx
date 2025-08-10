@@ -79,9 +79,10 @@ const Quiz = () => {
   const navigate = useNavigate();
   const watermark = React.useMemo(() => `${session?.slice(0,6) || ''}-${Date.now()}`,[session]);
 
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
 
   React.useEffect(() => {
+    if (authLoading) return;
     if (!user) {
       navigate('/login');
       return;
@@ -112,7 +113,7 @@ const Quiz = () => {
       }
     }
     load();
-  }, [setId, navigate, user]);
+  }, [setId, navigate, user, authLoading]);
 
   // Prevent copying or cutting text and disable context menu
   React.useEffect(() => {

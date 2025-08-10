@@ -22,11 +22,13 @@ export default function TestPage() {
   const [submitting, setSubmitting] = React.useState(false);
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const isMobile = /Mobi|Android/i.test(navigator.userAgent);
   const watermark = React.useMemo(() => `${session?.slice(0,6) || ''}-${Date.now()}`,[session]);
 
   React.useEffect(() => {
+    // 認証状態の取得中は何もしない
+    if (authLoading) return;
     if (!user) {
       navigate('/login');
       return;
@@ -86,7 +88,7 @@ export default function TestPage() {
       }
     }
     load();
-  }, [i18n.language, navigate, user]);
+  }, [i18n.language, navigate, user, authLoading]);
 
   React.useEffect(() => {
     if (

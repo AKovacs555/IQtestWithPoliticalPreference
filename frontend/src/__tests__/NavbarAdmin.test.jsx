@@ -3,17 +3,19 @@ import { describe, beforeEach, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import '@testing-library/jest-dom/vitest';
-import Navbar from '../components/Navbar';
 import '../i18n';
 import { vi } from 'vitest';
 
 let mockUser = null;
 vi.mock('../auth/useAuth', () => ({
-  useAuth: () => ({ user: mockUser, supabase: { auth: {} } }),
+  useAuth: () => ({ user: mockUser, loading: false }),
 }));
+vi.mock('../lib/auth', () => ({ signOut: vi.fn(), signInWithGoogle: vi.fn() }));
+
+let Navbar;
 
 describe('Navbar admin link', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     localStorage.clear();
     window.matchMedia = window.matchMedia || (() => ({
       matches: false,
@@ -27,6 +29,7 @@ describe('Navbar admin link', () => {
       observe() {}
       disconnect() {}
     };
+    Navbar = (await import('../components/Navbar')).default;
   });
 
   it('hides admin link for non-admin users', () => {

@@ -13,9 +13,11 @@ export default function SurveyPage() {
   const [error, setError] = useState(null);
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
 
   useEffect(() => {
+    // 認証状態の確認中は処理を行わない
+    if (authLoading) return;
     if (!user) {
       navigate('/login');
       return;
@@ -53,7 +55,7 @@ export default function SurveyPage() {
         setError(e.message);
       })
       .finally(() => setLoading(false));
-  }, [user, i18n.language, navigate]);
+  }, [user, authLoading, i18n.language, navigate]);
 
   const handleChange = (item, optionIdx) => {
     setAnswers(a => {

@@ -6,8 +6,10 @@ import '@testing-library/jest-dom/vitest';
 
 let mockUser = null;
 vi.mock('../auth/useAuth', () => ({
-  useAuth: () => ({ user: mockUser, supabase: { auth: {} } }),
+  useAuth: () => ({ user: mockUser, loading: false }),
 }));
+vi.mock('../lib/auth', () => ({ signOut: vi.fn() }));
+vi.mock('../pages/AuthCallback', () => ({ default: () => <div /> }));
 
 describe('admin routes', () => {
   beforeEach(() => {
