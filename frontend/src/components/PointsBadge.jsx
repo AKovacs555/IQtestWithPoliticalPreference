@@ -7,9 +7,25 @@ export default function PointsBadge({ userId }) {
 
   useEffect(() => {
     if (!userId) return;
-    fetch(`${API_BASE}/points/${userId}`)
-      .then(res => res.json())
-      .then(data => setPoints(data.points));
+
+    async function fetchPoints() {
+      const accessToken = localStorage.getItem('authToken');
+      try {
+        const res = await fetch(`${API_BASE}/points/${userId}`, {
+          headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+        });
+        if (res.status === 404) {
+          setPoints(0);
+          return;
+        }
+        const data = await res.json();
+        setPoints(data?.points ?? 0);
+      } catch {
+        setPoints(0);
+      }
+    }
+
+    fetchPoints();
   }, [userId]);
 
   return (

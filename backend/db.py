@@ -60,7 +60,14 @@ def upsert_user(user_id: str) -> None:
     )
     if res.data:
         return
-    supabase.table("app_users").insert({"id": user_id}).execute()
+    supabase.table("app_users").insert(
+        {
+            "id": user_id,
+            "hashed_id": user_id,
+            "points": 0,
+            "free_attempts": 1,
+        }
+    ).execute()
 
 
 def get_or_create_user_id_from_hashed(supabase: Client, hashed_id: str) -> str:
