@@ -116,13 +116,8 @@ def create_user(user_data: Dict[str, Any]) -> Dict[str, Any]:
     """Insert a new user row with sensible defaults."""
 
     supabase = get_supabase()
-    defaults = {
-        "points": 0,
-        "free_attempts": 1,
-        "survey_completed": False,
-        "is_admin": False,
-    }
-    data = {**defaults, **user_data}
+    base = {"survey_completed": False, "is_admin": False}
+    data = {**base, **user_data}
     resp = supabase.from_("app_users").insert(data).execute()
     row = resp.data[0]
     uid = row.get("hashed_id") or row.get("id")
@@ -143,17 +138,10 @@ def upsert_user(user_id: str, username: str | None = None) -> None:
         if username:
             update_user(supabase, user_id, {"username": username})
         return
-    data = {
-        "id": user_id,
-        "hashed_id": user_id,
-        "points": 0,
-        "free_attempts": 1,
-        "survey_completed": False,
-        "is_admin": False,
-    }
+    payload = {"id": user_id, "hashed_id": user_id}
     if username is not None:
-        data["username"] = username
-    supabase.table("app_users").upsert(data).execute()
+        payload["username"] = username
+    supabase.table("app_users").upsert(payload).execute()
     insert_attempt_ledger(user_id, 1, "signup")
 
 
@@ -162,9 +150,9 @@ def get_or_create_user_id_from_hashed(
 ) -> str | None:
     """Return ``app_users.id`` for a hashed identifier.
 
-    If the user does not exist a new record is created with the ``id`` field
-    set to ``hashed_id`` and default values for ``points``, ``free_attempts``,
-    ``survey_completed``, ``username`` and ``is_admin``. Returns the resulting
+    If the user does not exist a new record is created with ``id`` and
+    ``hashed_id`` set to ``hashed_id`` and ``username`` defaulting to the same
+    value. A signup attempt is granted via the ledger. Returns the resulting
     ``id`` or ``None`` on failure.
     """
 
@@ -181,15 +169,7 @@ def get_or_create_user_id_from_hashed(
 
     # Create the user when missing.
     supabase.table("app_users").upsert(
-        {
-            "id": hashed_id,
-            "hashed_id": hashed_id,
-            "points": 0,
-            "free_attempts": 1,
-            "survey_completed": False,
-            "username": hashed_id,
-            "is_admin": False,
-        }
+        {"id": hashed_id, "hashed_id": hashed_id, "username": hashed_id}
     ).execute()
     insert_attempt_ledger(hashed_id, 1, "signup")
 
@@ -212,8 +192,17 @@ def update_user(supabase: Client, hashed_id: str, data_to_update: Dict[str, Any]
     payload = {k: v for k, v in data_to_update.items() if k in ALLOWED_USER_UPDATE_FIELDS}
     if not payload:
         return
-
-    supabase.table("app_users").update(payload).eq("hashed_id", hashed_id).execute()
+    try:
+        supabase.table("app_users").update(payload).eq("hashed_id", hashed_id).execute()
+    except APIError as exc:  # ignore unknown column errors for backwards compatibility
+        code = getattr(exc, "code", "")
+        msg = str(exc).lower()
+        if code in ("PGRST204", "42703") or (
+            "column" in msg and "does not exist" in msg
+        ):
+            logger.warning("Ignored unknown column(s) on app_users: %s", payload.keys())
+            return
+        raise
 
 
 def insert_attempt_ledger(
@@ -233,7 +222,12 @@ def insert_attempt_ledger(
 
     # Mirror to ``app_users.free_attempts`` for backwards compatibility
     remaining = get_available_attempts(user_id)
-    update_user(supabase, user_id, {"free_attempts": remaining})
+    try:
+        update_user(supabase, user_id, {"free_attempts": remaining})
+    except APIError as exc:  # pragma: no cover - relies on external schema
+        code = getattr(exc, "code", "")
+        if code not in ("PGRST204", "42703"):
+            raise
 
 
 def increment_free_attempts(user_id: str, delta: int = 1, reason: str = "manual") -> None:
