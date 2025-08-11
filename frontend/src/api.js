@@ -1,12 +1,7 @@
-const API_BASE = import.meta.env.VITE_API_BASE || "";
+import { fetchWithAuth } from './lib/api';
+export { fetchWithAuth };
 
-export async function fetchWithAuth(url, options = {}) {
-  const token =
-    typeof localStorage !== "undefined" ? localStorage.getItem("authToken") : null;
-  const headers = { ...(options.headers || {}) };
-  if (token) headers["Authorization"] = `Bearer ${token}`;
-  return fetch(`${API_BASE}${url}`, { ...options, headers });
-}
+const API_BASE = import.meta.env.VITE_API_BASE || "";
 
 async function handleJson(res) {
   if (!res.ok) {

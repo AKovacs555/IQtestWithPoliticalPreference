@@ -7,8 +7,9 @@ export const supabase = createClient(
     auth: {
       flowType: 'pkce',
       persistSession: true,
-      detectSessionInUrl: true,
       autoRefreshToken: true,
+      detectSessionInUrl: true,
+      storage: window.localStorage,
     },
   }
 );
