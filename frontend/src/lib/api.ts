@@ -1,4 +1,4 @@
-import { supabase } from "./supabaseClient";
+import { supabase } from "../supabaseClient";
 
 export async function getAccessToken(): Promise<string | null> {
   const { data } = await supabase.auth.getSession();
@@ -11,7 +11,7 @@ export async function fetchWithAuth(path: string, init: RequestInit = {}) {
   const headers = new Headers(init.headers || {});
   if (token) headers.set("Authorization", `Bearer ${token}`);
   if (!headers.has("Content-Type")) headers.set("Content-Type", "application/json");
-  const base = import.meta.env.VITE_API_BASE || "";
+  const base = import.meta.env.VITE_API_BASE!;
   return fetch(`${base}${path}`, { ...init, headers });
 }
 

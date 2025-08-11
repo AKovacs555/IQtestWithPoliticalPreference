@@ -86,14 +86,13 @@ app.state.sessions = {}
 app.state.otps = {}
 
 # CORS for SPA
-frontend_origins = os.getenv("FRONTEND_ORIGINS", "").split(",")
-frontend_origins = [o.strip() for o in frontend_origins if o.strip()] or ["*"]
+allow_origins = os.getenv("FRONTEND_ORIGINS", "*").split(",")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=frontend_origins,
+    allow_origins=allow_origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["Authorization", "Content-Type", "Accept"],
+    allow_methods=["GET", "POST", "OPTIONS", "PUT", "DELETE"],
+    allow_headers=["Authorization", "Content-Type"],
 )
 
 app.include_router(exam_router)

@@ -356,3 +356,9 @@ Admin endpoints (require `is_admin=true`):
 - `PUT /admin/surveys/items/{item_id}`
 - `DELETE /admin/surveys/items/{item_id}`
 
+## Smoke test checklist
+
+- **Supabase Auth** → URL Configuration: set `SITE_URL` to your deployed frontend URL and add `https://<your-app>/auth/callback` to Additional Redirect URLs.
+- **Google Cloud**: Authorized JavaScript origins should include your domain and Authorized redirect URIs must include both the Supabase callback and your `/auth/callback` route if using One Tap.
+- After toggling `is_admin` in the database, users must log out and back in for the JWT to include the claim.
+
