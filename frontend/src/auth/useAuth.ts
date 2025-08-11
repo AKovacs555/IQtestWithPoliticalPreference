@@ -1,93 +1,73 @@
 import { useEffect, useState } from 'react';
-import { supabase } from '../lib/supabaseClient';
-import { fetchWithAuth, fetchProfile } from '../lib/api';
+import { supabase } from '../supabaseClient';
+import { fetchProfile } from '../lib/api';
 
 export function useAuth() {
   const [user, setUser] = useState<any>(null);
-  // ユーザー情報を取得中かどうかを示すフラグ
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // 初回マウント時にセッションを取得
     (async () => {
-      const { data } = await supabase.auth.getSession();
-      const session = data?.session;
-      const supaUser = session?.user ?? null;
-      if (session?.access_token) {
-        localStorage.setItem('authToken', session.access_token);
-        if (supaUser?.id) localStorage.setItem('user_id', supaUser.id);
+      const url = new URL(window.location.href);
+      const hasCode = url.searchParams.get('code');
+      let { data: sess } = await supabase.auth.getSession();
+      if (!sess.session && hasCode) {
+        const { data, error } = await supabase.auth.exchangeCodeForSession(
+          url.toString(),
+        );
+        if (error) console.error(error);
+        sess = { session: data.session } as any;
+        window.history.replaceState({}, '', url.origin + url.pathname);
       }
-      let mergedUser: any = supaUser ? { ...supaUser } : null;
-      if (supaUser) {
+      if (sess.session?.access_token) {
+        localStorage.setItem('authToken', sess.session.access_token);
+        if (sess.session.user?.id) {
+          localStorage.setItem('user_id', sess.session.user.id);
+        }
         try {
           const profile = await fetchProfile();
-          mergedUser.is_admin = profile.is_admin;
-          mergedUser.app_metadata = {
-            ...(mergedUser.app_metadata || {}),
+          setUser({
+            ...(sess.session.user as any),
             is_admin: profile.is_admin,
-          };
-        } catch (e) {
-          console.warn('Failed to fetch profile', e);
-        }
-      } else if (localStorage.getItem('authToken')) {
-        try {
-          const profile = await fetchProfile();
-          mergedUser = {
-            ...profile,
-            is_admin: profile.is_admin,
-            app_metadata: { is_admin: profile.is_admin },
-          } as any;
-        } catch (e) {
-          console.warn('Failed to fetch profile', e);
+            app_metadata: {
+              ...(sess.session.user?.app_metadata || {}),
+              is_admin: profile.is_admin,
+            },
+          });
+        } catch {
+          /* ignore */
         }
       }
-      setUser(mergedUser);
       setLoading(false);
     })();
 
-    const { data: sub } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (session?.user) {
-        const supaUser = session.user;
-        if (session.access_token) {
-          localStorage.setItem('authToken', session.access_token);
+    const { data: sub } = supabase.auth.onAuthStateChange(async (ev, session) => {
+      if (ev === 'SIGNED_IN' && session?.access_token) {
+        localStorage.setItem('authToken', session.access_token);
+        if (session.user?.id) {
+          localStorage.setItem('user_id', session.user.id);
         }
-        if (supaUser?.id) {
-          localStorage.setItem('user_id', supaUser.id);
-          if (event === 'SIGNED_IN') {
-            // Ensure we have a row in public.app_users on first sign in
-            const pending = localStorage.getItem('pending_username');
-            const body: any = { user_id: supaUser.id };
-            if (pending) body.username = pending;
-            fetchWithAuth('/auth/upsert_user', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(body),
-            })
-              .then(() => {
-                if (pending) localStorage.removeItem('pending_username');
-              })
-              .catch(() => {});
-          }
-          let merged: any = { ...supaUser };
-          try {
-            const profile = await fetchProfile();
-            merged.is_admin = profile.is_admin;
-            merged.app_metadata = {
-              ...(merged.app_metadata || {}),
+        try {
+          const profile = await fetchProfile();
+          setUser({
+            ...(session.user as any),
+            is_admin: profile.is_admin,
+            app_metadata: {
+              ...(session.user?.app_metadata || {}),
               is_admin: profile.is_admin,
-            };
-          } catch (e) {
-            console.warn('Failed to fetch profile', e);
-          }
-          setUser(merged);
+            },
+          });
+        } catch {
+          /* ignore */
         }
-      } else if (event === 'SIGNED_OUT') {
-        setUser(null);
+      }
+      if (ev === 'SIGNED_OUT') {
         localStorage.removeItem('authToken');
         localStorage.removeItem('user_id');
+        setUser(null);
       }
     });
-    return () => sub.subscription.unsubscribe();
+    return () => sub.subscription?.unsubscribe();
   }, []);
 
   return { user, loading };
