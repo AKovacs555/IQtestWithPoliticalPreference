@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Depends, Response
 from pydantic import BaseModel
 from backend.deps.supabase_client import get_supabase_client
 from backend.db import update_user
-from backend.deps.auth import get_current_user
+from .dependencies import get_current_user
 
 router = APIRouter(prefix="/user", tags=["user"])
 
@@ -12,12 +12,14 @@ class ProfilePayload(BaseModel):
 
 
 @router.get("/profile")
-async def get_profile(user: dict = Depends(get_current_user)):
+async def get_profile(user=Depends(get_current_user)):
     return {
-        "id": user.get("id"),
-        "email": user.get("email"),
-        "username": user.get("username"),
-        "is_admin": bool(user.get("is_admin")),
+        "id": str(user["id"]) if isinstance(user, dict) else str(user.id),
+        "email": user.get("email") if isinstance(user, dict) else getattr(user, "email", None),
+        "username": user.get("username") if isinstance(user, dict) else getattr(user, "username", None),
+        "is_admin": bool(
+            user.get("is_admin") if isinstance(user, dict) else getattr(user, "is_admin", False)
+        ),
     }
 
 
