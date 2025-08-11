@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
-import { fetchWithAuth } from '../api';
+import { fetchWithAuth, getProfile } from '../api';
 
 export function useAuth() {
   const [user, setUser] = useState<any>(null);
@@ -12,13 +12,18 @@ export function useAuth() {
     (async () => {
       const { data } = await supabase.auth.getSession();
       const session = data?.session;
-      setUser(session?.user ?? null);
+      let u = session?.user ?? null;
       if (session?.access_token) {
         localStorage.setItem('authToken', session.access_token);
       }
       if (session?.user?.id) {
         localStorage.setItem('user_id', session.user.id);
+        try {
+          const profile = await getProfile();
+          u = { ...u, ...profile };
+        } catch {}
       }
+      setUser(u);
       // セッション取得が完了したので loading を解除
       setLoading(false);
     })();
@@ -46,6 +51,11 @@ export function useAuth() {
               })
               .catch(() => {});
           }
+          getProfile()
+            .then((profile) => {
+              setUser((prev) => ({ ...prev, ...profile }));
+            })
+            .catch(() => {});
         }
       } else if (event === 'SIGNED_OUT') {
         setUser(null);
