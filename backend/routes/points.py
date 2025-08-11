@@ -1,7 +1,12 @@
 from fastapi import APIRouter
 from postgrest.exceptions import APIError
 
-from backend.db import get_supabase, insert_attempt_ledger
+from backend.db import insert_attempt_ledger
+from backend import db
+
+
+def get_supabase():
+    return db.get_supabase()
 
 router = APIRouter(prefix="/points", tags=["points"])
 

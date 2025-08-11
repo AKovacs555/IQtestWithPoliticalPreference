@@ -12,7 +12,6 @@ from backend import db
 def _create_user(uid):
     data = {
         'hashed_id': uid,
-        'salt': '',
         'plays': 0,
         'referrals': 0,
         'points': 0,

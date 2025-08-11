@@ -84,7 +84,6 @@ def test_history_sorted():
     user_id = 'hist_user'
     db.create_user({
         'hashed_id': user_id,
-        'salt': '',
         'plays': 0,
         'referrals': 0,
         'points': 0,

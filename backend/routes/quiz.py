@@ -262,7 +262,7 @@ async def submit_quiz(
     supabase = get_supabase_client()
     row = (
         supabase.table("quiz_sessions")
-        .select("status,expires_at")
+        .select("status,expires_at,set_id")
         .eq("id", payload.session_id)
         .single()
         .execute()
@@ -312,6 +312,18 @@ async def submit_quiz(
         ).execute()
     except Exception as e:  # pragma: no cover - best effort only
         logging.getLogger(__name__).warning("Could not store user score: %s", e)
+    try:
+        supabase.table("quiz_attempts").insert(
+            {
+                "user_id": user["hashed_id"],
+                "set_id": row.get("set_id"),
+                "status": "submitted",
+                "iq_score": iq,
+                "percentile": pct,
+            }
+        ).execute()
+    except Exception:  # pragma: no cover - best effort only
+        pass
     try:
         scores = (user.get("scores") or []) + [
             {

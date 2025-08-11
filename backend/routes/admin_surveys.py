@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends
 
 from backend.routes.dependencies import require_admin
 from backend.deps.supabase_client import get_supabase_client
+from backend.db import insert_attempt_ledger
 
 router = APIRouter(
     prefix="/admin/surveys",
@@ -11,11 +12,21 @@ router = APIRouter(
 )
 
 
-def grant_free_tests(countries: list[str]) -> None:
+def grant_free_attempts(countries: list[str]) -> None:
+    """Grant a free attempt to all users in ``countries`` via the ledger."""
+
     if not countries:
         return
     supabase = get_supabase_client()
-    supabase.table("app_users").update({"free_tests": "free_tests + 1"}).in_("nationality", countries).execute()
+    rows = (
+        supabase.table("app_users")
+        .select("hashed_id")
+        .in_("nationality", countries)
+        .execute()
+        .data
+    )
+    for r in rows or []:
+        insert_attempt_ledger(r.get("hashed_id"), 1, "ad")
 
 
 @router.get("/")

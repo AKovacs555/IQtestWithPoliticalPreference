@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
-from db import get_supabase, update_user
+from db import get_supabase, get_available_attempts, insert_attempt_ledger
 from .dependencies import require_admin
 
 router = APIRouter(prefix="/admin", tags=["admin-users"])
@@ -23,6 +23,8 @@ async def update_free_attempts(payload: dict):
     free_attempts = payload.get("free_attempts")
     if user_id is None or free_attempts is None:
         raise HTTPException(status_code=400, detail="Missing parameters")
-    supabase = get_supabase()
-    update_user(supabase, user_id, {"free_attempts": free_attempts})
+    current = get_available_attempts(user_id)
+    delta = int(free_attempts) - current
+    if delta:
+        insert_attempt_ledger(user_id, delta, "manual")
     return {"status": "ok"}

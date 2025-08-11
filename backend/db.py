@@ -3,6 +3,7 @@ import logging
 import uuid
 from datetime import datetime, timedelta, date
 from typing import Any, Dict, Optional, List, Iterable
+import random
 from supabase import create_client, Client
 from postgrest.exceptions import APIError
 
@@ -112,12 +113,32 @@ def get_user(user_id: str) -> Optional[Dict[str, Any]]:
     return data[0] if data else None
 
 
+def _generate_invite_code() -> str:
+    """Return a short random invite code."""
+
+    return "".join(
+        random.choice("ABCDEFGHJKLMNPQRSTUVWXYZ23456789") for _ in range(6)
+    )
+
+
 def create_user(user_data: Dict[str, Any]) -> Dict[str, Any]:
     """Insert a new user row with sensible defaults."""
 
     supabase = get_supabase()
-    base = {"survey_completed": False, "is_admin": False}
+    base = {
+        "survey_completed": False,
+        "is_admin": False,
+        "free_attempts": 0,
+        "points": 0,
+        "plays": 0,
+        "referrals": 0,
+        "party_log": [],
+        "scores": [],
+    }
+    if "invite_code" not in user_data:
+        base["invite_code"] = _generate_invite_code()
     data = {**base, **user_data}
+    data.pop("salt", None)
     resp = supabase.from_("app_users").insert(data).execute()
     row = resp.data[0]
     uid = row.get("hashed_id") or row.get("id")
@@ -138,7 +159,17 @@ def upsert_user(user_id: str, username: str | None = None) -> None:
         if username:
             update_user(supabase, user_id, {"username": username})
         return
-    payload = {"id": user_id, "hashed_id": user_id}
+    payload = {
+        "id": user_id,
+        "hashed_id": user_id,
+        "free_attempts": 0,
+        "points": 0,
+        "plays": 0,
+        "referrals": 0,
+        "party_log": [],
+        "scores": [],
+        "invite_code": _generate_invite_code(),
+    }
     if username is not None:
         payload["username"] = username
     supabase.table("app_users").upsert(payload).execute()
