@@ -13,7 +13,12 @@ class ProfilePayload(BaseModel):
 
 @router.get("/profile")
 async def get_profile(user: dict = Depends(get_current_user)):
-    return {"username": user.get("username")}
+    return {
+        "id": user.get("id"),
+        "email": user.get("email"),
+        "username": user.get("username"),
+        "is_admin": bool(user.get("is_admin")),
+    }
 
 
 @router.post("/profile")
