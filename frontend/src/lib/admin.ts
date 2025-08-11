@@ -1,10 +1,7 @@
-import { useAuth } from "../auth/useAuth";
+import { useAuth } from '../auth/useAuth';
 
-/** Derive isAdmin from JWT claims or user metadata. */
-export function useIsAdmin(): boolean {
+export function useIsAdmin() {
   const { user } = useAuth();
-  const claim = (user as any)?.is_admin;
-  const meta = (user as any)?.user_metadata?.is_admin;
-  const appMeta = (user as any)?.app_metadata?.is_admin;
-  return Boolean(claim ?? meta ?? appMeta);
+  const u: any = user;
+  return Boolean(u?.is_admin ?? u?.user_metadata?.is_admin ?? u?.app_metadata?.is_admin);
 }
