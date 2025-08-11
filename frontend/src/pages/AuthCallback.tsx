@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
+import { fetchWithAuth } from '../lib/api';
 
 export default function AuthCallback() {
   const navigate = useNavigate();
@@ -8,7 +9,7 @@ export default function AuthCallback() {
   useEffect(() => {
     (async () => {
       try {
-        // Support both /auth/callback?code=... and /#/auth/callback?code=...
+        // 1) pick up code from either ?code=... or #/auth/callback?code=...
         const search = new URLSearchParams(window.location.search);
         let code = search.get('code');
 
@@ -26,17 +27,26 @@ export default function AuthCallback() {
           return;
         }
 
+        // 2) exchange code -> session (PKCE)
         const { data, error } = await supabase.auth.exchangeCodeForSession(code);
         if (error) throw error;
 
+        // 3) mirror token for legacy helpers
         const at = data.session?.access_token;
         const uid = data.session?.user?.id;
         if (at) localStorage.setItem('authToken', at);
         if (uid) localStorage.setItem('user_id', uid);
 
+        // 4) ensure app_users row exists (server will upsert)
+        try {
+          await fetchWithAuth('/user/ensure', { method: 'POST', body: JSON.stringify({}) });
+        } catch (e) {
+          console.warn('ensure profile failed; will rely on DB trigger or next fetch', e);
+        }
       } catch (e) {
         console.error('Auth callback failed', e);
       } finally {
+        // clear code from URL and go home
         navigate('/', { replace: true });
       }
     })();

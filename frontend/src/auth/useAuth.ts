@@ -1,44 +1,44 @@
 import { useEffect, useState } from 'react';
+import type { Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabaseClient';
-import { fetchProfile } from '../lib/api';
+import { fetchProfile, fetchWithAuth } from '../lib/api';
 
 export function useAuth() {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
+  async function loadProfile(session: Session) {
+    localStorage.setItem('authToken', session.access_token);
+    if (session.user?.id) localStorage.setItem('user_id', session.user.id);
+    try {
+      let profile;
+      try {
+        profile = await fetchProfile();
+      } catch (err: any) {
+        if (String(err.message) === '401') {
+          await fetchWithAuth('/user/ensure', { method: 'POST', body: JSON.stringify({}) });
+          profile = await fetchProfile();
+        } else {
+          throw err;
+        }
+      }
+      setUser({
+        ...(session.user as any),
+        is_admin: profile.is_admin,
+        app_metadata: { ...(session.user?.app_metadata || {}), is_admin: profile.is_admin },
+      });
+    } catch {
+      setUser(session.user as any);
+    }
+  }
+
   useEffect(() => {
     (async () => {
       try {
-        const { data: sess } = await supabase.auth.getSession();
-        if (sess.session?.access_token) {
-          localStorage.setItem('authToken', sess.session.access_token);
-          if (sess.session.user?.id) {
-            localStorage.setItem('user_id', sess.session.user.id);
-          }
-          try {
-            const profile = await fetchProfile();
-            setUser({
-              ...(sess.session.user as any),
-              is_admin: profile.is_admin,
-              app_metadata: {
-                ...(sess.session.user?.app_metadata || {}),
-                is_admin: profile.is_admin,
-              },
-            });
-          } catch {
-            /* ignore */
-          }
-        } else if (localStorage.getItem('authToken')) {
-          try {
-            const profile = await fetchProfile();
-            setUser({
-              id: profile.id,
-              is_admin: profile.is_admin,
-              app_metadata: { is_admin: profile.is_admin },
-            });
-          } catch {
-            /* ignore */
-          }
+        const { data } = await supabase.auth.getSession();
+        const session = data.session;
+        if (session?.access_token) {
+          await loadProfile(session);
         }
       } finally {
         setLoading(false);
@@ -46,24 +46,8 @@ export function useAuth() {
     })();
 
     const { data: sub } = supabase.auth.onAuthStateChange(async (ev, session) => {
-      if (ev === 'SIGNED_IN' && session?.access_token) {
-        localStorage.setItem('authToken', session.access_token);
-        if (session.user?.id) {
-          localStorage.setItem('user_id', session.user.id);
-        }
-        try {
-          const profile = await fetchProfile();
-          setUser({
-            ...(session.user as any),
-            is_admin: profile.is_admin,
-            app_metadata: {
-              ...(session.user?.app_metadata || {}),
-              is_admin: profile.is_admin,
-            },
-          });
-        } catch {
-          /* ignore */
-        }
+      if (ev === 'SIGNED_IN' && session) {
+        await loadProfile(session);
       }
       if (ev === 'SIGNED_OUT') {
         localStorage.removeItem('authToken');
@@ -71,7 +55,9 @@ export function useAuth() {
         setUser(null);
       }
     });
-    return () => sub.subscription?.unsubscribe();
+    return () => {
+      sub.subscription?.unsubscribe();
+    };
   }, []);
 
   return { user, loading };
