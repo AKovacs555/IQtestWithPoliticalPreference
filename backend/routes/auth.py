@@ -1,4 +1,3 @@
-import random
 import secrets
 
 from fastapi import APIRouter, HTTPException
@@ -16,6 +15,7 @@ class RegisterPayload(BaseModel):
     username: str | None = None
     email: str
     password: str
+    inviter_code: str | None = None
 
 
 class LoginPayload(BaseModel):
@@ -47,20 +47,37 @@ async def register(payload: RegisterPayload):
     password_hash = bcrypt.hashpw(payload.password.encode(), bcrypt.gensalt()).decode()
     hashed_id = secrets.token_hex(16)
 
-    invite_code = "".join(
-        random.choice("ABCDEFGHJKLMNPQRSTUVWXYZ23456789") for _ in range(6)
-    )
-
     data = {
         "hashed_id": hashed_id,
         "username": payload.username,
         "email": payload.email,
         "password_hash": password_hash,
-        "free_tests": 0,
-        "invite_code": invite_code,
     }
 
-    supabase.from_("app_users").insert(data).execute()
+    inviter = None
+    if payload.inviter_code:
+        inviter = (
+            supabase.from_("app_users")
+            .select("hashed_id")
+            .eq("invite_code", payload.inviter_code)
+            .single()
+            .execute()
+            .data
+        )
+        if inviter and inviter.get("hashed_id") != hashed_id:
+            data["referred_by"] = inviter.get("hashed_id")
+        else:
+            inviter = None
+
+    db.create_user(data)
+    if inviter:
+        supabase.table("referrals").insert(
+            {
+                "inviter_code": payload.inviter_code,
+                "invitee_user": hashed_id,
+                "credited": False,
+            }
+        ).execute()
     token = create_token(hashed_id, False)
     return {"token": token, "user_id": hashed_id, "is_admin": False}
 

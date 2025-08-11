@@ -419,17 +419,7 @@ async def record_play(action: UserAction):
     user = get_user(action.user_id)
     if not user:
         user = db_create_user(
-            {
-                "hashed_id": action.user_id,
-                "salt": "",
-                "plays": 0,
-                "referrals": 0,
-                "points": 0,
-                "scores": [],
-                "party_log": [],
-                "demographic": {},
-                "free_attempts": max_free_attempts,
-            }
+            {"hashed_id": action.user_id, "free_attempts": max_free_attempts}
         )
     paid = False
     remaining = min(user.get("free_attempts", max_free_attempts), max_free_attempts)
@@ -465,19 +455,7 @@ async def record_play(action: UserAction):
 async def referral(action: UserAction):
     user = get_user(action.user_id)
     if not user:
-        user = db_create_user(
-            {
-                "id": action.user_id,
-                "hashed_id": action.user_id,
-                "salt": "",
-                "plays": 0,
-                "referrals": 0,
-                "points": 0,
-                "scores": [],
-                "party_log": [],
-                "demographic": {},
-            }
-        )
+        user = db_create_user({"id": action.user_id, "hashed_id": action.user_id})
     user["referrals"] = user.get("referrals", 0) + 1
     supabase = get_supabase()
     db_update_user(supabase, action.user_id, {"referrals": user["referrals"]})
@@ -488,19 +466,7 @@ async def referral(action: UserAction):
 async def ads_start(action: UserAction):
     user = get_user(action.user_id)
     if not user:
-        user = db_create_user(
-            {
-                "id": action.user_id,
-                "hashed_id": action.user_id,
-                "salt": "",
-                "plays": 0,
-                "referrals": 0,
-                "points": 0,
-                "scores": [],
-                "party_log": [],
-                "demographic": {},
-            }
-        )
+        user = db_create_user({"id": action.user_id, "hashed_id": action.user_id})
     track_event({"event": "ad_start", "user_id": action.user_id})
     return {"status": "started"}
 
@@ -509,18 +475,7 @@ async def ads_start(action: UserAction):
 async def ads_complete(action: UserAction):
     user = get_user(action.user_id)
     if not user:
-        user = db_create_user(
-            {
-                "hashed_id": action.user_id,
-                "salt": "",
-                "plays": 0,
-                "referrals": 0,
-                "points": 0,
-                "scores": [],
-                "party_log": [],
-                "demographic": {},
-            }
-        )
+        user = db_create_user({"hashed_id": action.user_id})
     user["points"] = user.get("points", 0) + AD_REWARD_POINTS
     supabase = get_supabase()
     db_update_user(supabase, action.user_id, {"points": user["points"]})

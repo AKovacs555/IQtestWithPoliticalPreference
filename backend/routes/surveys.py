@@ -32,7 +32,6 @@ async def get_daily_three(lang: str = "ja", user: dict = Depends(get_current_use
         supabase.table("survey_responses")
         .select("item_id")
         .eq("user_id", user["hashed_id"])
-        .eq("answered_on", today)
         .execute()
     )
     answered_ids = {r["item_id"] for r in (answered_resp.data or [])}

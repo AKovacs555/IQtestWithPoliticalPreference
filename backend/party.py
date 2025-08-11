@@ -21,13 +21,6 @@ async def update_party_affiliation(user_id: str, party_ids: List[int]) -> None:
         user = create_user(
             {
                 "hashed_id": user_id,
-                "salt": "",
-                "plays": 0,
-                "referrals": 0,
-                "points": 0,
-                "scores": [],
-                "party_log": [],
-                "demographic": {},
             }
         )
     log = user.get("party_log") or []
