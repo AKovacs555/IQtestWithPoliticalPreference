@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
-import { fetchWithAuth, getProfile } from '../api';
+import { fetchWithAuth, fetchProfile } from '../lib/api';
 
 export function useAuth() {
   const [user, setUser] = useState<any>(null);
@@ -12,50 +12,74 @@ export function useAuth() {
     (async () => {
       const { data } = await supabase.auth.getSession();
       const session = data?.session;
-      let u = session?.user ?? null;
+      const supaUser = session?.user ?? null;
       if (session?.access_token) {
         localStorage.setItem('authToken', session.access_token);
+        if (supaUser?.id) localStorage.setItem('user_id', supaUser.id);
       }
-      if (session?.user?.id) {
-        localStorage.setItem('user_id', session.user.id);
+      let mergedUser: any = supaUser ? { ...supaUser } : null;
+      if (supaUser) {
         try {
-          const profile = await getProfile();
-          u = { ...u, ...profile };
-        } catch {}
+          const profile = await fetchProfile();
+          mergedUser.is_admin = profile.is_admin;
+          mergedUser.app_metadata = {
+            ...(mergedUser.app_metadata || {}),
+            is_admin: profile.is_admin,
+          };
+        } catch (e) {
+          console.warn('Failed to fetch profile', e);
+        }
+      } else if (localStorage.getItem('authToken')) {
+        try {
+          const profile = await fetchProfile();
+          mergedUser = {
+            ...profile,
+            is_admin: profile.is_admin,
+            app_metadata: { is_admin: profile.is_admin },
+          } as any;
+        } catch (e) {
+          console.warn('Failed to fetch profile', e);
+        }
       }
-      setUser(u);
-      // セッション取得が完了したので loading を解除
+      setUser(mergedUser);
       setLoading(false);
     })();
 
-    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: sub } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (session?.user) {
-        setUser(session.user);
+        const supaUser = session.user;
         if (session.access_token) {
           localStorage.setItem('authToken', session.access_token);
         }
-        if (session.user?.id) {
-          localStorage.setItem('user_id', session.user.id);
+        if (supaUser?.id) {
+          localStorage.setItem('user_id', supaUser.id);
           if (event === 'SIGNED_IN') {
             // Ensure we have a row in public.app_users on first sign in
             const pending = localStorage.getItem('pending_username');
-            const body: any = { user_id: session.user.id };
+            const body: any = { user_id: supaUser.id };
             if (pending) body.username = pending;
             fetchWithAuth('/auth/upsert_user', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(body)
+              body: JSON.stringify(body),
             })
               .then(() => {
                 if (pending) localStorage.removeItem('pending_username');
               })
               .catch(() => {});
           }
-          getProfile()
-            .then((profile) => {
-              setUser((prev) => ({ ...prev, ...profile }));
-            })
-            .catch(() => {});
+          let merged: any = { ...supaUser };
+          try {
+            const profile = await fetchProfile();
+            merged.is_admin = profile.is_admin;
+            merged.app_metadata = {
+              ...(merged.app_metadata || {}),
+              is_admin: profile.is_admin,
+            };
+          } catch (e) {
+            console.warn('Failed to fetch profile', e);
+          }
+          setUser(merged);
         }
       } else if (event === 'SIGNED_OUT') {
         setUser(null);

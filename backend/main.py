@@ -93,7 +93,7 @@ app.add_middleware(
     allow_origins=frontend_origins,
     allow_credentials=True,
     allow_methods=["*"],
-    allow_headers=["*"],
+    allow_headers=["Authorization", "Content-Type", "Accept"],
 )
 
 app.include_router(exam_router)
