@@ -10,6 +10,9 @@ let mockUser = null;
 vi.mock('../auth/useAuth', () => ({
   useAuth: () => ({ user: mockUser, loading: false, loaded: true }),
 }));
+vi.mock('../hooks/useSession', () => ({
+  useSession: () => ({ session: null, loaded: true }),
+}));
 vi.mock('../lib/auth', () => ({ signOut: vi.fn(), signInWithGoogle: vi.fn() }));
 
 let Navbar;
@@ -51,6 +54,8 @@ describe('Navbar admin link', () => {
         <Navbar />
       </MemoryRouter>
     );
-    expect(screen.getByText(/Admin/i)).toBeInTheDocument();
+    const link = screen.getByRole('link', { name: /Admin/i });
+    expect(link).toBeInTheDocument();
+    expect(link).toHaveAttribute('href', '/admin');
   });
 });
