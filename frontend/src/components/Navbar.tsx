@@ -10,6 +10,7 @@ import PointsBadge from './PointsBadge';
 import LanguageSelector from './LanguageSelector';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../auth/useAuth';
+import { useSession } from '../hooks/useSession';
 import { signOut } from '../lib/auth';
 import GoogleOAuthButton from './GoogleOAuthButton';
 import OverflowNav from './nav/OverflowNav';
@@ -31,12 +32,17 @@ export default function Navbar() {
     }
   }
   const { user } = useAuth();
+  const { loaded: sessionLoaded } = useSession();
   const { t } = useTranslation();
   const navigate = useNavigate();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
   const googleEnabled = import.meta.env.VITE_DISABLE_GOOGLE !== 'true';
+
+  if (!sessionLoaded) {
+    return null;
+  }
 
   const logout = () => {
     signOut().catch(() => {});
