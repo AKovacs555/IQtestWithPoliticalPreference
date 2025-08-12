@@ -28,16 +28,10 @@ export default function AuthCallback() {
         }
 
         // 2) exchange code -> session (PKCE)
-        const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+        const { error } = await supabase.auth.exchangeCodeForSession(code);
         if (error) throw error;
 
-        // 3) mirror token for legacy helpers
-        const at = data.session?.access_token;
-        const uid = data.session?.user?.id;
-        if (at) localStorage.setItem('authToken', at);
-        if (uid) localStorage.setItem('user_id', uid);
-
-        // 4) ensure app_users row exists (server will upsert)
+        // 3) ensure app_users row exists (server will upsert)
         try {
           await fetchWithAuth('/user/ensure', { method: 'POST', body: JSON.stringify({}) });
         } catch (e) {

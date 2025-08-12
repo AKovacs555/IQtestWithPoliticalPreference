@@ -1,12 +1,8 @@
 import { supabase } from './supabaseClient';
 
-export async function getAccessToken(): Promise<string | null> {
-  const { data } = await supabase.auth.getSession();
-  return data?.session?.access_token ?? localStorage.getItem('authToken');
-}
-
 export async function fetchWithAuth(path: string, init: RequestInit = {}) {
-  const token = await getAccessToken();
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
   const headers = new Headers(init.headers || {});
   if (token) headers.set('Authorization', `Bearer ${token}`);
   if (!headers.has('Content-Type')) headers.set('Content-Type', 'application/json');

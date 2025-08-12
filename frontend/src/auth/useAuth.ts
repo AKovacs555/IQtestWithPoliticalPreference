@@ -8,8 +8,12 @@ export function useAuth() {
   const [loaded, setLoaded] = useState(false);
 
   async function loadProfile(session: Session) {
-    localStorage.setItem('authToken', session.access_token);
-    if (session.user?.id) localStorage.setItem('user_id', session.user.id);
+    try {
+      localStorage.setItem('authToken', session.access_token);
+      if (session.user?.id) localStorage.setItem('user_id', session.user.id);
+    } catch {
+      /* storage might be unavailable (e.g. Safari private mode) */
+    }
     try {
       let profile;
       try {
@@ -50,8 +54,12 @@ export function useAuth() {
         await loadProfile(session);
       }
       if (ev === 'SIGNED_OUT') {
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('user_id');
+        try {
+          localStorage.removeItem('authToken');
+          localStorage.removeItem('user_id');
+        } catch {
+          /* ignore */
+        }
         setUser(null);
       }
     });
