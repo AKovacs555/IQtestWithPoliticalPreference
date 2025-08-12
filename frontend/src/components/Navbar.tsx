@@ -72,7 +72,7 @@ export default function Navbar() {
     ...links,
     { label: t('nav.take_quiz'), onClick: handleStart },
     ...(isAdmin
-      ? [{ label: t('nav.admin', { defaultValue: 'Admin' }), href: '/admin/surveys' }]
+      ? [{ label: t('nav.admin', { defaultValue: 'Admin' }), href: '/admin' }]
       : []),
   ];
 

@@ -37,7 +37,7 @@ describe('admin routes', () => {
 
   it('redirects non-admin users away from admin pages', async () => {
     const App = (await import('../pages/App.jsx')).default;
-    mockUser = { id: '1', is_admin: false };
+    mockUser = { id: '1', app_metadata: { is_admin: false } };
     render(
       <MemoryRouter initialEntries={['/admin/surveys']}>
         <App />
@@ -48,7 +48,7 @@ describe('admin routes', () => {
 
   it('allows admin users to access admin pages', async () => {
     const App = (await import('../pages/App.jsx')).default;
-    mockUser = { id: '1', is_admin: true };
+    mockUser = { id: '1', app_metadata: { is_admin: true } };
     render(
       <MemoryRouter initialEntries={['/admin/surveys']}>
         <App />

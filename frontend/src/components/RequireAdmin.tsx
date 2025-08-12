@@ -1,18 +1,15 @@
 import React from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
-import Spinner from './common/Spinner';
+import { Navigate } from 'react-router-dom';
 import { useSession } from '../hooks/useSession';
-import { useIsAdmin } from '../lib/admin';
 
 export default function RequireAdmin({
   children,
 }: {
-  children: React.ReactNode;
+  children: JSX.Element;
 }) {
-  const { user, loading } = useSession();
-  const isAdmin = useIsAdmin();
-  const loc = useLocation();
-  if (loading) return <Spinner />;
-  if (!user || !isAdmin) return <Navigate to="/" replace state={{ from: loc }} />;
-  return <>{children}</>;
+  const { session, loading } = useSession();
+  if (loading) return null;
+  const isAdmin = Boolean(session?.user?.app_metadata?.is_admin);
+  return isAdmin ? children : <Navigate to="/" replace />;
 }
+
