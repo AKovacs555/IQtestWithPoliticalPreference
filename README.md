@@ -13,7 +13,10 @@ The following variables must be configured for local development and deployments
 - `VITE_SUPABASE_ANON_KEY` – Supabase anon key for the frontend
 - `SUPABASE_API_KEY` – service role or API key for Supabase access
 - `SUPABASE_SERVICE_ROLE_KEY` – service role key used by backend jobs
-- `SUPABASE_JWT_SECRET` – JWT secret from Supabase settings
+- `SUPABASE_JWT_SECRET` – JWT secret from Supabase settings. This value must
+  match *exactly* what appears under **Authentication → Settings** in the
+  Supabase dashboard; using an incorrect or placeholder secret will cause all
+  protected endpoints to return `401 Unauthorized`.
 - `AWS_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` *or* Twilio credentials (`TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_VERIFY_SERVICE_SID`) depending on `SMS_PROVIDER`
 - `NOWPAYMENTS_API_KEY` (or PayPal client credentials) for payments
 For details on preparing question files and importing them into Supabase see [docs/import_tests.md](docs/import_tests.md).
