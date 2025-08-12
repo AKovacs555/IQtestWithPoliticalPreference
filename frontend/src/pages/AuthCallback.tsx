@@ -5,14 +5,15 @@ import { useNavigate } from 'react-router-dom';
 export default function AuthCallback() {
   const navigate = useNavigate();
   useEffect(() => {
-    let mounted = true;
-    (async () => {
-      // detectSessionInUrl already exchanged the code.
-      await supabase.auth.getSession();
-      if (mounted) navigate('/', { replace: true });
-    })();
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if ((event === 'INITIAL_SESSION' || event === 'SIGNED_IN') && session) {
+        navigate('/', { replace: true });
+      }
+    });
     return () => {
-      mounted = false;
+      subscription.unsubscribe();
     };
   }, [navigate]);
 

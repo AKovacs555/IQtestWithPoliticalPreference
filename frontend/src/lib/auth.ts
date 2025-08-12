@@ -7,6 +7,7 @@ export async function signInWithGoogle(captchaToken?: string) {
     provider: 'google',
     options: {
       redirectTo,
+      queryParams: { access_type: 'offline', prompt: 'consent' },
       ...(captchaToken ? { captchaToken } : {}),
     },
   });

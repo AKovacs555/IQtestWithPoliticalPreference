@@ -9,20 +9,19 @@ import ThemeToggle from './ThemeToggle';
 import PointsBadge from './PointsBadge';
 import LanguageSelector from './LanguageSelector';
 import { useTranslation } from 'react-i18next';
-import { useSession } from '../hooks/useSession';
 import { signOut } from '../lib/auth';
 import GoogleOAuthButton from './GoogleOAuthButton';
 import OverflowNav from './nav/OverflowNav';
 import MobileDrawer from './nav/MobileDrawer';
 import type { NavItem } from './nav/types';
-import { useIsAdmin } from '../lib/admin';
+import { useAuth } from '../auth/useAuth';
 
 if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY) {
   console.error('Supabase envs missing. Check Vercel project env and redeploy.');
 }
 
 export default function Navbar() {
-  const { user, loading: sessionLoading } = useSession();
+  const { user, loading } = useAuth();
   const userId = user?.id ?? null;
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -31,7 +30,7 @@ export default function Navbar() {
 
   const googleEnabled = import.meta.env.VITE_DISABLE_GOOGLE !== 'true';
 
-  if (sessionLoading) {
+  if (loading) {
     return null;
   }
 
@@ -66,7 +65,7 @@ export default function Navbar() {
     links.unshift({ label: t('nav.daily_survey', { defaultValue: 'Daily Survey' }), href: '/daily-survey' });
   }
 
-  const isAdmin = useIsAdmin();
+  const isAdmin = user?.is_admin;
 
   const items: NavItem[] = [
     ...links,
