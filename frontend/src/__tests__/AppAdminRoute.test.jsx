@@ -5,11 +5,25 @@ import { MemoryRouter } from 'react-router-dom';
 import '@testing-library/jest-dom/vitest';
 
 let mockUser = null;
+let mockIsAdmin = false;
 vi.mock('../auth/useAuth', () => ({
-  useAuth: () => ({ user: mockUser, loading: false, loaded: true }),
+  useAuth: () => ({
+    user: mockUser,
+    loading: false,
+    loaded: true,
+    isAdmin: mockIsAdmin,
+    userId: mockUser?.id ?? null,
+  }),
 }));
 vi.mock('../hooks/useSession', () => ({
-  useSession: () => ({ user: mockUser, session: mockUser ? { user: mockUser } : null, loading: false, refresh: async () => {} }),
+  useSession: () => ({
+    user: mockUser,
+    userId: mockUser?.id ?? null,
+    isAdmin: mockIsAdmin,
+    session: mockUser ? { user: mockUser } : null,
+    loading: false,
+    refresh: async () => {},
+  }),
 }));
 vi.mock('../lib/auth', () => ({ signOut: vi.fn() }));
 vi.mock('../pages/AuthCallback', () => ({ default: () => <div /> }));
@@ -37,7 +51,8 @@ describe('admin routes', () => {
 
   it('redirects non-admin users away from admin pages', async () => {
     const App = (await import('../pages/App.jsx')).default;
-    mockUser = { id: '1', app_metadata: { is_admin: false } };
+    mockUser = { id: '1' };
+    mockIsAdmin = false;
     render(
       <MemoryRouter initialEntries={['/admin/surveys']}>
         <App />
@@ -48,7 +63,8 @@ describe('admin routes', () => {
 
   it('allows admin users to access admin pages', async () => {
     const App = (await import('../pages/App.jsx')).default;
-    mockUser = { id: '1', app_metadata: { is_admin: true } };
+    mockUser = { id: '1' };
+    mockIsAdmin = true;
     render(
       <MemoryRouter initialEntries={['/admin/surveys']}>
         <App />

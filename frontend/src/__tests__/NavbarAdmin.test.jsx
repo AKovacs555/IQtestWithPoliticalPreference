@@ -6,8 +6,15 @@ import '@testing-library/jest-dom/vitest';
 import '../i18n';
 
 let mockUser = null;
-vi.mock('../auth/useAuth', () => ({
-  useAuth: () => ({ user: mockUser, loading: false }),
+let mockIsAdmin = false;
+vi.mock('../hooks/useSession', () => ({
+  useSession: () => ({
+    user: mockUser,
+    userId: mockUser?.id ?? null,
+    isAdmin: mockIsAdmin,
+    loading: false,
+    refresh: async () => {},
+  }),
 }));
 vi.mock('../lib/auth', () => ({ signOut: vi.fn(), signInWithGoogle: vi.fn() }));
 
@@ -34,7 +41,8 @@ describe('Navbar admin link', () => {
   });
 
   it('hides admin link for non-admin users', () => {
-    mockUser = { id: '1', is_admin: false };
+    mockUser = { id: '1' };
+    mockIsAdmin = false;
     render(
       <MemoryRouter>
         <Navbar />
@@ -44,7 +52,8 @@ describe('Navbar admin link', () => {
   });
 
   it('shows admin link for admin users', () => {
-    mockUser = { id: '1', is_admin: true };
+    mockUser = { id: '1' };
+    mockIsAdmin = true;
     render(
       <MemoryRouter>
         <Navbar />

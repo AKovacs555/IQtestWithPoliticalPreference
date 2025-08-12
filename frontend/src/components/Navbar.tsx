@@ -14,15 +14,14 @@ import GoogleOAuthButton from './GoogleOAuthButton';
 import OverflowNav from './nav/OverflowNav';
 import MobileDrawer from './nav/MobileDrawer';
 import type { NavItem } from './nav/types';
-import { useAuth } from '../auth/useAuth';
+import { useSession } from '../hooks/useSession';
 
 if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY) {
   console.error('Supabase envs missing. Check Vercel project env and redeploy.');
 }
 
 export default function Navbar() {
-  const { user, loading } = useAuth();
-  const userId = user?.id ?? null;
+  const { user, userId, isAdmin, loading } = useSession();
   const { t } = useTranslation();
   const navigate = useNavigate();
   const theme = useTheme();
@@ -64,8 +63,6 @@ export default function Navbar() {
     links.unshift({ label: t('nav.profile', { defaultValue: 'Profile' }), href: '/profile' });
     links.unshift({ label: t('nav.daily_survey', { defaultValue: 'Daily Survey' }), href: '/daily-survey' });
   }
-
-  const isAdmin = user?.is_admin;
 
   const items: NavItem[] = [
     ...links,
