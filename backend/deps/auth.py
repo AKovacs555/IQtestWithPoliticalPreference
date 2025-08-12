@@ -5,10 +5,9 @@ from typing import Optional
 import jwt
 from fastapi import HTTPException, Header
 from backend.db import get_user
+from backend.deps.supabase_jwt import decode_supabase_jwt
 
 JWT_SECRET = os.getenv("SUPABASE_JWT_SECRET") or os.getenv("JWT_SECRET")
-if not JWT_SECRET:
-    raise RuntimeError("SUPABASE_JWT_SECRET environment variable must be set")
 ALGORITHM = "HS256"
 
 
@@ -22,15 +21,12 @@ class User(dict):
 def create_token(user_id: str, is_admin: bool = False) -> str:
     """Generate a signed JWT containing the user's id and admin flag."""
 
+    if not JWT_SECRET:
+        raise RuntimeError(
+            "SUPABASE_JWT_SECRET or JWT_SECRET environment variable must be set"
+        )
     payload = {"user_id": user_id, "is_admin": is_admin, "iat": int(time.time())}
     return jwt.encode(payload, JWT_SECRET, algorithm=ALGORITHM)
-
-
-def decode_token(token: str) -> dict:
-    try:
-        return jwt.decode(token, JWT_SECRET, algorithms=[ALGORITHM])
-    except Exception:
-        raise HTTPException(status_code=401, detail="Invalid token")
 
 
 def get_current_user(authorization: Optional[str] = Header(None)) -> User:
@@ -39,7 +35,7 @@ def get_current_user(authorization: Optional[str] = Header(None)) -> User:
     if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Unauthorized")
     token = authorization.split(" ", 1)[1]
-    payload = decode_token(token)
+    payload = decode_supabase_jwt(token)
     # Supabase JWTs store the user id in the ``sub`` claim. Older tokens issued
     # by our own backend used ``user_id`` instead, so check both for
     # compatibility.

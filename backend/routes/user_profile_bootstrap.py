@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Header, HTTPException
-from backend.deps.auth import decode_token  # Decode JWT using Supabase secret
+from backend.deps.supabase_jwt import decode_supabase_jwt
 from backend.core.supabase_admin import supabase_admin  # service role client
 
 router = APIRouter()
@@ -17,18 +17,17 @@ def ensure_profile(authorization: str = Header(None)):
 
     # Validate Authorization header and extract token
     if not authorization or not authorization.startswith("Bearer "):
-        raise HTTPException(status_code=401, detail="Unauthorized")
+        raise HTTPException(status_code=401, detail="missing header")
     token = authorization.split(" ", 1)[1]
 
-    # Decode JWT and obtain user id / email
     try:
-        payload = decode_token(token)
+        payload = decode_supabase_jwt(token)
     except Exception:
-        raise HTTPException(status_code=401, detail="Invalid token")
+        raise HTTPException(status_code=401, detail="invalid token")
 
     user_id = payload.get("sub") or payload.get("user_id")
     if not user_id:
-        raise HTTPException(status_code=401, detail="User id missing in token")
+        raise HTTPException(status_code=401, detail="no sub")
 
     data = {"id": str(user_id), "hashed_id": str(user_id)}
     email = payload.get("email")
