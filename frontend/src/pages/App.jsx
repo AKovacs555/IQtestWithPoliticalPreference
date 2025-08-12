@@ -40,7 +40,7 @@ const AdminLayout = lazy(() =>
 );
 const AdminHome = lazy(() => import('./AdminHome'));
 const AdminQuestions = lazy(() => import('./AdminQuestions'));
-const AdminSurvey = lazy(() => import('./AdminSurvey'));
+const AdminSurveys = lazy(() => import('./AdminSurveys'));
 const AdminUsers = lazy(() => import('./AdminUsers'));
 const AdminSets = lazy(() => import('./AdminSets'));
 const AdminSettings = lazy(() => import('./AdminSettings.jsx'));
@@ -404,7 +404,7 @@ export default function App() {
           <Route index element={<AdminHome />} />
           <Route path="questions" element={<AdminQuestions />} />
           <Route path="stats" element={<AdminQuestionStats />} />
-          <Route path="surveys" element={<AdminSurvey />} />
+          <Route path="surveys" element={<AdminSurveys />} />
           <Route path="users" element={<AdminUsers />} />
           <Route path="sets" element={<AdminSets />} />
           <Route path="settings" element={<AdminSettings />} />
