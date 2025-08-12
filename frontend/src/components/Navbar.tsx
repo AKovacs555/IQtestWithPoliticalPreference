@@ -22,7 +22,14 @@ if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KE
 }
 
 export default function Navbar() {
-  const userId = typeof window !== 'undefined' ? localStorage.getItem('user_id') : null;
+  let userId: string | null = null;
+  if (typeof window !== 'undefined') {
+    try {
+      userId = localStorage.getItem('user_id');
+    } catch {
+      userId = null;
+    }
+  }
   const { user } = useAuth();
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -33,8 +40,12 @@ export default function Navbar() {
 
   const logout = () => {
     signOut().catch(() => {});
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('user_id');
+    try {
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('user_id');
+    } catch {
+      /* ignore */
+    }
     navigate('/login');
   };
 
