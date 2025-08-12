@@ -8,6 +8,9 @@ let mockUser = null;
 vi.mock('../auth/useAuth', () => ({
   useAuth: () => ({ user: mockUser, loading: false, loaded: true }),
 }));
+vi.mock('../hooks/useSession', () => ({
+  useSession: () => ({ user: mockUser, session: mockUser ? { user: mockUser } : null, loading: false, refresh: async () => {} }),
+}));
 vi.mock('../lib/auth', () => ({ signOut: vi.fn() }));
 vi.mock('../pages/AuthCallback', () => ({ default: () => <div /> }));
 
@@ -36,21 +39,21 @@ describe('admin routes', () => {
     const App = (await import('../pages/App.jsx')).default;
     mockUser = { id: '1', is_admin: false };
     render(
-      <MemoryRouter initialEntries={['/admin/questions']}>
+      <MemoryRouter initialEntries={['/admin/surveys']}>
         <App />
       </MemoryRouter>
     );
-    expect(screen.queryByText(/Questions/i)).toBeNull();
+    expect(screen.queryByText(/Surveys/i)).toBeNull();
   });
 
   it('allows admin users to access admin pages', async () => {
     const App = (await import('../pages/App.jsx')).default;
     mockUser = { id: '1', is_admin: true };
     render(
-      <MemoryRouter initialEntries={['/admin/questions']}>
+      <MemoryRouter initialEntries={['/admin/surveys']}>
         <App />
       </MemoryRouter>
     );
-    expect(await screen.findByText(/Import Questions/i)).toBeInTheDocument();
+    expect(await screen.findByText(/New Survey/i)).toBeInTheDocument();
   });
 });

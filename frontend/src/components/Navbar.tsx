@@ -9,7 +9,6 @@ import ThemeToggle from './ThemeToggle';
 import PointsBadge from './PointsBadge';
 import LanguageSelector from './LanguageSelector';
 import { useTranslation } from 'react-i18next';
-import { useAuth } from '../auth/useAuth';
 import { useSession } from '../hooks/useSession';
 import { signOut } from '../lib/auth';
 import GoogleOAuthButton from './GoogleOAuthButton';
@@ -23,16 +22,8 @@ if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KE
 }
 
 export default function Navbar() {
-  let userId: string | null = null;
-  if (typeof window !== 'undefined') {
-    try {
-      userId = localStorage.getItem('user_id');
-    } catch {
-      userId = null;
-    }
-  }
-  const { user } = useAuth();
-  const { loaded: sessionLoaded } = useSession();
+  const { user, loading: sessionLoading } = useSession();
+  const userId = user?.id ?? null;
   const { t } = useTranslation();
   const navigate = useNavigate();
   const theme = useTheme();
@@ -40,7 +31,7 @@ export default function Navbar() {
 
   const googleEnabled = import.meta.env.VITE_DISABLE_GOOGLE !== 'true';
 
-  if (!sessionLoaded) {
+  if (sessionLoading) {
     return null;
   }
 
@@ -81,7 +72,7 @@ export default function Navbar() {
     ...links,
     { label: t('nav.take_quiz'), onClick: handleStart },
     ...(isAdmin
-      ? [{ label: t('nav.admin', { defaultValue: 'Admin' }), href: '/admin' }]
+      ? [{ label: t('nav.admin', { defaultValue: 'Admin' }), href: '/admin/surveys' }]
       : []),
   ];
 

@@ -1,17 +1,13 @@
 import React from 'react';
-import { describe, beforeEach, it, expect } from 'vitest';
+import { describe, beforeEach, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import '@testing-library/jest-dom/vitest';
 import '../i18n';
-import { vi } from 'vitest';
 
 let mockUser = null;
-vi.mock('../auth/useAuth', () => ({
-  useAuth: () => ({ user: mockUser, loading: false, loaded: true }),
-}));
 vi.mock('../hooks/useSession', () => ({
-  useSession: () => ({ session: null, loaded: true }),
+  useSession: () => ({ user: mockUser, loading: false, session: mockUser ? { user: mockUser } : null, refresh: async () => {} }),
 }));
 vi.mock('../lib/auth', () => ({ signOut: vi.fn(), signInWithGoogle: vi.fn() }));
 
@@ -56,6 +52,6 @@ describe('Navbar admin link', () => {
     );
     const link = screen.getByRole('link', { name: /Admin/i });
     expect(link).toBeInTheDocument();
-    expect(link).toHaveAttribute('href', '/admin');
+    expect(link).toHaveAttribute('href', '/admin/surveys');
   });
 });
