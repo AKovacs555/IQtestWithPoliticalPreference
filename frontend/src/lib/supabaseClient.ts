@@ -1,3 +1,41 @@
+function createMemoryStorage(): Storage {
+  let store: Record<string, string> = {};
+  return {
+    getItem: (k) => (k in store ? store[k] : null),
+    setItem: (k, v) => {
+      store[k] = v;
+    },
+    removeItem: (k) => {
+      delete store[k];
+    },
+    clear: () => {
+      store = {};
+    },
+    key: (i) => Object.keys(store)[i] ?? null,
+    get length() {
+      return Object.keys(store).length;
+    },
+  } as unknown as Storage;
+}
+
+function getSafeStorage(): Storage {
+  try {
+    const t = '__sb_test__';
+    window.localStorage.setItem(t, '1');
+    window.localStorage.removeItem(t);
+    return window.localStorage;
+  } catch {
+    try {
+      const t = '__sb_test__';
+      window.sessionStorage.setItem(t, '1');
+      window.sessionStorage.removeItem(t);
+      return window.sessionStorage;
+    } catch {
+      return createMemoryStorage();
+    }
+  }
+}
+
 import { createClient } from '@supabase/supabase-js';
 
 export const supabase = createClient(
@@ -6,10 +44,10 @@ export const supabase = createClient(
   {
     auth: {
       flowType: 'pkce',
-      detectSessionInUrl: true,
-      autoRefreshToken: true,
       persistSession: true,
-      storage: window.localStorage,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+      storage: getSafeStorage(),
     },
   }
 );

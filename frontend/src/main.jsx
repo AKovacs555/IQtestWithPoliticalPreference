@@ -16,7 +16,7 @@ if (import.meta.env.PROD && !location.hash && location.pathname !== '/') {
   location.replace(`/#${location.pathname}${location.search}${location.hash}`);
 }
 import App from './pages/App';
-import { SessionProvider } from './hooks/useSession';
+import { SessionProvider, useSession } from './hooks/useSession';
 import './i18n';
 import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
@@ -30,6 +30,7 @@ function Root() {
   const [mode, setMode] = React.useState(
     () => localStorage.getItem('theme') || (prefersDark ? 'dark' : 'light'),
   );
+  const { loading } = useSession();
 
   React.useEffect(() => {
     document.documentElement.setAttribute('data-theme', mode);
@@ -40,7 +41,7 @@ function Root() {
     <ColorModeContext.Provider value={{ mode, setMode }}>
       <ThemeProvider theme={getTheme(mode)}>
         <CssBaseline />
-        <App />
+        {!loading ? <App /> : <div style={{ padding: 24 }}>Loading…</div>}
       </ThemeProvider>
     </ColorModeContext.Provider>
   );

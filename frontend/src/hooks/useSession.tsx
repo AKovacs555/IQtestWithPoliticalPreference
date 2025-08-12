@@ -23,14 +23,19 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const refresh = async () => {
     const { data } = await supabase.auth.getSession();
     setSession(data.session);
-    setLoading(false);
   };
 
   useEffect(() => {
-    refresh();
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, sess) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, sess) => {
       setSession(sess);
+      if (event === 'INITIAL_SESSION') setLoading(false);
     });
+    supabase.auth
+      .getSession()
+      .then(({ data }) => setSession(data.session))
+      .finally(() => setLoading(false));
     return () => {
       subscription.unsubscribe();
     };
@@ -45,4 +50,13 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
 export function useSession() {
   return useContext(SessionContext);
+}
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('error', (e) =>
+    console.error('GlobalError', (e as ErrorEvent).error ?? e)
+  );
+  window.addEventListener('unhandledrejection', (e) =>
+    console.error('UnhandledRejection', (e as PromiseRejectionEvent).reason)
+  );
 }

@@ -1,48 +1,21 @@
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
+import { useNavigate } from 'react-router-dom';
 
 export default function AuthCallback() {
   const navigate = useNavigate();
-  const [error, setError] = useState<string | null>(null);
-
   useEffect(() => {
+    let mounted = true;
     (async () => {
-      const url = new URL(window.location.href);
-      let code = url.searchParams.get('code');
-      if (!code && url.hash.includes('?')) {
-        const hashParams = new URLSearchParams(url.hash.split('?')[1]);
-        code = hashParams.get('code');
-      }
-      if (!code) {
-        navigate('/', { replace: true });
-        return;
-      }
-      const { data } = await supabase.auth.getSession();
-      if (!data.session) {
-        try {
-          const { error } = await supabase.auth.exchangeCodeForSession(window.location.href);
-          if (error) throw error;
-          try {
-            await fetch(`${import.meta.env.VITE_API_BASE!}/user/ensure`, { method: 'POST' });
-          } catch {}
-        } catch (e) {
-          console.error('Auth callback failed', e);
-          setError('Sign-in failed.');
-          return;
-        }
-      }
-      navigate('/', { replace: true });
+      // detectSessionInUrl already exchanged the code.
+      await supabase.auth.getSession();
+      if (mounted) navigate('/', { replace: true });
     })();
+    return () => {
+      mounted = false;
+    };
   }, [navigate]);
 
-  if (error) {
-    return (
-      <div>
-        <p>{error}</p>
-        <button onClick={() => navigate('/')}>Go home</button>
-      </div>
-    );
-  }
-  return <div>Signing you in…</div>;
+  return <div style={{ padding: 24 }}>Signing you in…</div>;
 }
+

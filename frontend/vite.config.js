@@ -11,6 +11,7 @@ export default defineConfig({
       workbox: { clientsClaim: true, skipWaiting: true },
     }),
   ],
+  build: { sourcemap: true },
 });
 
 // build trigger to redeploy updated vercel configuration
