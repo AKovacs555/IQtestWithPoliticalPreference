@@ -6,7 +6,9 @@ import jwt
 from fastapi import HTTPException, Header
 from backend.db import get_user
 
-JWT_SECRET = os.getenv("SUPABASE_JWT_SECRET") or os.getenv("JWT_SECRET", "change-me")
+JWT_SECRET = os.getenv("SUPABASE_JWT_SECRET") or os.getenv("JWT_SECRET")
+if not JWT_SECRET:
+    raise RuntimeError("SUPABASE_JWT_SECRET environment variable must be set")
 ALGORITHM = "HS256"
 
 
