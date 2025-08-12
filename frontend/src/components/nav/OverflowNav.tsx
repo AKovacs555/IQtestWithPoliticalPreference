@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Box, Button, IconButton, Menu, MenuItem } from '@mui/material';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
-import { Link as RouterLink } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 import type { NavItem } from './types';
 
 // Generic overflow group: render inline until space runs out, spill rest into "More"
@@ -53,7 +53,7 @@ export default function OverflowNav({
         }}
       >
         {visible.map((it, i) => {
-          const linkProps = !it.onClick && it.href ? { component: RouterLink, to: it.href } : {};
+          const linkProps = !it.onClick && it.href ? { component: NavLink, to: it.href } : {};
           return (
             <Button
               key={i}
@@ -84,7 +84,7 @@ export default function OverflowNav({
             onClose={() => setAnchorEl(null)}
           >
             {overflow.map((it, i) => {
-              const linkProps = !it.onClick && it.href ? { component: RouterLink, to: it.href } : {};
+              const linkProps = !it.onClick && it.href ? { component: NavLink, to: it.href } : {};
               return (
                 <MenuItem
                   key={i}

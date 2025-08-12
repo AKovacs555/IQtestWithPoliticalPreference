@@ -8,7 +8,7 @@ import { vi } from 'vitest';
 
 let mockUser = null;
 vi.mock('../auth/useAuth', () => ({
-  useAuth: () => ({ user: mockUser, loading: false }),
+  useAuth: () => ({ user: mockUser, loading: false, loaded: true }),
 }));
 vi.mock('../lib/auth', () => ({ signOut: vi.fn(), signInWithGoogle: vi.fn() }));
 
@@ -29,6 +29,8 @@ describe('Navbar admin link', () => {
       observe() {}
       disconnect() {}
     };
+    import.meta.env.VITE_SUPABASE_URL = 'http://localhost';
+    import.meta.env.VITE_SUPABASE_ANON_KEY = 'anon';
     Navbar = (await import('../components/Navbar')).default;
   });
 

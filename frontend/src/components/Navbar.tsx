@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, NavLink, useNavigate } from 'react-router-dom';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
@@ -108,10 +108,10 @@ export default function Navbar() {
       {!user ? (
         <>
           {googleEnabled && <GoogleOAuthButton size="small" sx={{ minHeight: '48px' }} />}
-          <Button href="/login" size="small" sx={{ minHeight: '48px' }}>
+          <Button component={NavLink} to="/login" size="small" sx={{ minHeight: '48px' }}>
             {t('nav.login', { defaultValue: 'Log in' })}
           </Button>
-          <Button href="/signup" size="small" sx={{ minHeight: '48px' }}>
+          <Button component={NavLink} to="/signup" size="small" sx={{ minHeight: '48px' }}>
             {t('nav.signup', { defaultValue: 'Sign up' })}
           </Button>
         </>

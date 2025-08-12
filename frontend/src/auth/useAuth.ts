@@ -5,7 +5,7 @@ import { fetchProfile, fetchWithAuth } from '../lib/api';
 
 export function useAuth() {
   const [user, setUser] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const [loaded, setLoaded] = useState(false);
 
   async function loadProfile(session: Session) {
     localStorage.setItem('authToken', session.access_token);
@@ -41,7 +41,7 @@ export function useAuth() {
           await loadProfile(session);
         }
       } finally {
-        setLoading(false);
+        setLoaded(true);
       }
     })();
 
@@ -60,5 +60,5 @@ export function useAuth() {
     };
   }, []);
 
-  return { user, loading };
+  return { user, loaded, loading: !loaded };
 }

@@ -1,7 +1,7 @@
 import { Drawer, List, ListItemButton, ListItemText, IconButton, ListItem } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import { useState } from 'react';
-import { Link as RouterLink } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 import type { NavItem } from './types';
 
 export default function MobileDrawer({ items }: { items: NavItem[] }) {
@@ -19,7 +19,7 @@ export default function MobileDrawer({ items }: { items: NavItem[] }) {
             ) : (
               <ListItemButton
                 key={i}
-                component={it.href && !it.onClick ? RouterLink : 'button'}
+                component={it.href && !it.onClick ? NavLink : 'button'}
                 to={it.href}
                 onClick={(e) => {
                   it.onClick?.(e as any);
