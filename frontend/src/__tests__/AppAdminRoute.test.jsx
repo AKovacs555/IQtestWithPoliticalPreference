@@ -6,7 +6,7 @@ import '@testing-library/jest-dom/vitest';
 
 let mockUser = null;
 vi.mock('../auth/useAuth', () => ({
-  useAuth: () => ({ user: mockUser, loading: false }),
+  useAuth: () => ({ user: mockUser, loading: false, loaded: true }),
 }));
 vi.mock('../lib/auth', () => ({ signOut: vi.fn() }));
 vi.mock('../pages/AuthCallback', () => ({ default: () => <div /> }));
@@ -27,6 +27,8 @@ describe('admin routes', () => {
       disconnect() {}
     };
     import.meta.env.VITE_API_BASE = '';
+    import.meta.env.VITE_SUPABASE_URL = 'http://localhost';
+    import.meta.env.VITE_SUPABASE_ANON_KEY = 'anon';
     global.fetch = vi.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve([]) });
   });
 
