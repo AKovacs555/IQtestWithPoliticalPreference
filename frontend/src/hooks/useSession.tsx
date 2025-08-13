@@ -26,11 +26,27 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
 
+  async function fetchAndApplyIsAdmin(uid?: string | null) {
+    if (!uid) {
+      setIsAdmin(false);
+      return;
+    }
+    try {
+      const { data, error } = await supabase
+        .from('app_users')
+        .select('is_admin')
+        .eq('id', uid)
+        .single();
+      if (!error && data) setIsAdmin(Boolean(data.is_admin));
+    } catch {}
+  }
+
   const applySession = (sess: Session | null) => {
     setSession(sess);
     const uid = sess?.user?.id ?? null;
     setUserId(uid);
     setIsAdmin(Boolean(sess?.user?.app_metadata?.is_admin));
+    fetchAndApplyIsAdmin(uid);
     try {
       if (sess?.access_token) {
         localStorage.setItem('authToken', sess.access_token);
@@ -59,6 +75,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       const { data } = await supabase.auth.getSession();
       if (mounted) {
         applySession(data.session);
+        fetchAndApplyIsAdmin(data.session?.user?.id);
         setLoading(false);
       }
     })();
@@ -72,9 +89,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         event === 'TOKEN_REFRESHED' ||
         event === 'USER_UPDATED'
       ) {
-        const { data } = await supabase.auth.getSession();
+        const { data: currentSession } = await supabase.auth.getSession();
         if (mounted) {
-          applySession(data.session);
+          applySession(currentSession.session);
+          fetchAndApplyIsAdmin(currentSession.session?.user?.id);
           if (event === 'INITIAL_SESSION') setLoading(false);
         }
       }
