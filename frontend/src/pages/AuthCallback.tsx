@@ -35,14 +35,20 @@ export default function AuthCallback() {
         console.warn('/user/ensure failed', e);
       }
 
-      // get a fresh JWT that includes app_metadata.is_admin from the hook
+      // onAuthStateChange でセッション確定を待つ
+      const { data: sub } = supabase.auth.onAuthStateChange((_ev, sess) => {
+        if (!mounted) return;
+        if (sess) {
+          if (import.meta.env.DEV) console.log('[auth] signed in', sess.user?.id);
+          navigate('/', { replace: true });
+        }
+      });
+      // 念のため即時リフレッシュ
       await supabase.auth.refreshSession();
-      if (import.meta.env.DEV) {
-        const { printSession } = await import('../debug/printSession');
-        printSession();
-      }
-
-      if (mounted) navigate('/', { replace: true });
+      setTimeout(() => {
+        if (mounted) navigate('/', { replace: true });
+      }, 1200);
+      return () => sub.subscription.unsubscribe();
     })();
 
     return () => {
