@@ -42,6 +42,28 @@ Admin access works as follows:
 
 > **Important:** Run the migration `supabase/migrations/20250810_rename_users_to_app_users.sql` on your Supabase project and redeploy the backend so authentication continues to work.
 
+## Database migrations and RLS testing
+
+Run SQL migrations as the `postgres` role. For example with `psql`:
+
+```bash
+psql "$SUPABASE_DB_URL" -U postgres -f supabase/migrations/20251001_app_users_rls.sql
+```
+
+You can also paste the SQL into the Supabase SQL editor while connected as `postgres`.
+
+To manually test the row level security policies, wrap the following block in a transaction so no data is changed:
+
+```sql
+begin;
+  set local role authenticated;
+  set local request.jwt.claims = '{"sub":"<auth.users.id>","role":"authenticated"}';
+  select id, username, is_admin from public.app_users;
+rollback;
+```
+
+Replace `<auth.users.id>` with a valid `auth.users.id` value. The snippet above is also available in `supabase/sql/manual_tests/app_users_rls_test.sql`.
+
 ## Building the frontend locally
 
 To create a production build of the React app, define the Vite variables inline with the build command:
