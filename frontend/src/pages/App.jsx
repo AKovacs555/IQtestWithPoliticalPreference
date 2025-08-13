@@ -27,7 +27,7 @@ import Contact from './Contact.jsx';
 import ErrorChunkReload from '../components/common/ErrorChunkReload';
 import ThemeDemo from './ThemeDemo.jsx';
 import Button from '@mui/material/Button';
-import ProtectedAdminRoute from '../components/ProtectedAdminRoute';
+import RequireAdmin from '../routes/RequireAdmin';
 import { shareResult, buildLineShareUrl, buildFacebookShareUrl } from '../utils/share';
 import Profile from './Profile.jsx';
 const API_BASE = import.meta.env.VITE_API_BASE || "";
@@ -394,11 +394,11 @@ export default function App() {
         <Route
           path="/admin/*"
           element={
-            <Suspense fallback={<div />}>
-              <ProtectedAdminRoute>
+            <RequireAdmin>
+              <Suspense fallback={<div />}>
                 <AdminLayout />
-              </ProtectedAdminRoute>
-            </Suspense>
+              </Suspense>
+            </RequireAdmin>
           }
         >
           <Route index element={<AdminHome />} />
