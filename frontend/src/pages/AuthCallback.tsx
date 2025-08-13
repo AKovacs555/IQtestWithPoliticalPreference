@@ -26,7 +26,7 @@ export default function AuthCallback() {
     let alive = true;
     const goHomeHard = () => {
       if (!alive) return;
-      // HashRouter で確実にトップへ戻す
+      // HashRouterでトップページへリダイレクト
       window.location.replace(`${window.location.origin}/#/`);
     };
 
@@ -57,9 +57,22 @@ export default function AuthCallback() {
             });
           }
         } catch {}
-        // 3) URLをクリーンにしてトップへ
+        // 3) セッション取得できたら管理者か判定し、適切な画面へリダイレクト
+        const { data: sessionData } = await supabase.auth.getSession();
+        const session = sessionData.session;
         stripOAuthParams();
-        goHomeHard();
+        if (session?.user) {
+          const user = session.user;
+          const isAdmin =
+            user.is_admin === true ||
+            user.user_metadata?.is_admin === true ||
+            user.app_metadata?.is_admin === true;
+          const destHash = isAdmin ? '/#/admin' : '/#/';
+          window.location.replace(`${window.location.origin}${destHash}`);
+        } else {
+          // セッションが無い場合はホームへ
+          goHomeHard();
+        }
       } catch (e) {
         console.error('[auth] callback fatal', e);
         goHomeHard();
