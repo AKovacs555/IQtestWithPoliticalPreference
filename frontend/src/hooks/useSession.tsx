@@ -53,17 +53,35 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
+    let mounted = true;
+
+    (async () => {
+      const { data } = await supabase.auth.getSession();
+      if (mounted) {
+        applySession(data.session);
+        setLoading(false);
+      }
+    })();
+
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, sess) => {
-      applySession(sess);
-      if (event === 'INITIAL_SESSION') setLoading(false);
+    } = supabase.auth.onAuthStateChange(async (event) => {
+      if (
+        event === 'INITIAL_SESSION' ||
+        event === 'SIGNED_IN' ||
+        event === 'TOKEN_REFRESHED' ||
+        event === 'USER_UPDATED'
+      ) {
+        const { data } = await supabase.auth.getSession();
+        if (mounted) {
+          applySession(data.session);
+          if (event === 'INITIAL_SESSION') setLoading(false);
+        }
+      }
     });
-    supabase.auth
-      .getSession()
-      .then(({ data }) => applySession(data.session))
-      .finally(() => setLoading(false));
+
     return () => {
+      mounted = false;
       subscription.unsubscribe();
     };
   }, []);
