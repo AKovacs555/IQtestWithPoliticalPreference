@@ -4,7 +4,7 @@ from backend.core.supabase_admin import supabase_admin  # service role client
 
 router = APIRouter()
 
-@router.post("/user/ensure")
+@router.post("/ensure")
 def ensure_profile(authorization: str = Header(None)):
     """Create a user profile if it doesn't exist yet.
 

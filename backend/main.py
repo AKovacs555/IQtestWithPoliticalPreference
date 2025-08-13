@@ -77,7 +77,7 @@ from routes.custom_survey import (
 from routes.leaderboard import router as leaderboard_router
 from routes.nowpayments import router as nowpayments_router
 from routes.points import router as points_router
-from routes import user_profile_bootstrap as user_profile_bootstrap
+from backend.routes import user_profile_bootstrap
 from api import diagnostics
 import json
 from utils.settings import get_setting
@@ -86,14 +86,15 @@ app = FastAPI()
 app.state.sessions = {}
 app.state.otps = {}
 
-# CORS for SPA
-allow_origins = os.getenv("FRONTEND_ORIGINS", "*").split(",")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=allow_origins,
+    allow_origins=[
+        "https://i-qtest-with-political-preference.vercel.app",
+        "http://localhost:5173",
+    ],
     allow_credentials=True,
-    allow_methods=["GET", "POST", "OPTIONS", "PUT", "DELETE"],
-    allow_headers=["Authorization", "Content-Type", "Accept"],
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 app.include_router(exam_router)
@@ -118,7 +119,9 @@ app.include_router(sms_router)
 app.include_router(nowpayments_router)
 app.include_router(referral_router)
 app.include_router(points_router)
-app.include_router(user_profile_bootstrap.router)
+app.include_router(
+    user_profile_bootstrap.router, prefix="/user", tags=["user"]
+)
 app.include_router(custom_survey_router)
 app.include_router(custom_survey_admin_router)
 
