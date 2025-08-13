@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { useNavigate } from 'react-router-dom';
 
@@ -22,12 +22,13 @@ function stripOAuthParams() {
 
 export default function AuthCallback() {
   const navigate = useNavigate();
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   useEffect(() => {
     let alive = true;
-    const goHomeHard = () => {
+    const goHomeSoft = () => {
       if (!alive) return;
-      // HashRouterでトップページへリダイレクト
-      window.location.replace(`${window.location.origin}/#/`);
+      sessionStorage.setItem('skip_version_reload', '1');
+      navigate('/', { replace: true });
     };
 
     (async () => {
@@ -40,42 +41,60 @@ export default function AuthCallback() {
             const { error } = await supabase.auth.exchangeCodeForSession(code);
             if (error) {
               console.error('[auth] exchange error', error);
+              window.alert('Login failed: ' + error.message);
               stripOAuthParams();
-              goHomeHard();
+              setErrorMsg('Login failed: ' + error.message);
               return;
             }
+            const { data: sessionData, error: sessErr } =
+              await supabase.auth.getSession();
+            console.log(
+              '[AuthCallback] Post-exchange session =',
+              sessionData.session,
+              sessErr,
+            );
+            if (!sessionData.session) {
+              stripOAuthParams();
+              setErrorMsg('Login failed: no session');
+              return;
+            }
+          } else {
+            setErrorMsg('Login failed: no code');
+            stripOAuthParams();
+            return;
           }
         }
-        // 2) app_users upsert（失敗しても遷移はブロックしない）
+        // 2) app_users upsert and get admin flag
+        let isAdmin = false;
         try {
           const token = (await supabase.auth.getSession()).data.session?.access_token;
           if (token) {
-            await fetch('/user/ensure', {
+            const res = await fetch('/user/ensure', {
               method: 'POST',
               headers: { Authorization: `Bearer ${token}` },
               credentials: 'include',
             });
+            const json = await res.json().catch(() => ({}));
+            isAdmin = json.is_admin === true;
+            await supabase.auth.refreshSession();
           }
-        } catch {}
+        } catch (e) {
+          console.error('[auth] ensure failed', e);
+        }
         // 3) セッション取得できたら管理者か判定し、適切な画面へリダイレクト
         const { data: sessionData } = await supabase.auth.getSession();
         const session = sessionData.session;
         stripOAuthParams();
         if (session?.user) {
-          const user = session.user;
-          const isAdmin =
-            user.is_admin === true ||
-            user.user_metadata?.is_admin === true ||
-            user.app_metadata?.is_admin === true;
-          const destHash = isAdmin ? '/#/admin' : '/#/';
-          window.location.replace(`${window.location.origin}${destHash}`);
+          sessionStorage.setItem('skip_version_reload', '1');
+          navigate(isAdmin ? '/admin' : '/', { replace: true });
         } else {
-          // セッションが無い場合はホームへ
-          goHomeHard();
+          setErrorMsg('Login failed: session missing');
         }
       } catch (e) {
         console.error('[auth] callback fatal', e);
-        goHomeHard();
+        stripOAuthParams();
+        setErrorMsg('Login failed');
       }
     })();
 
@@ -84,6 +103,17 @@ export default function AuthCallback() {
     };
   }, [navigate]);
 
-  return <div style={{ padding: 24 }}>Signing you in…</div>;
+  return (
+    <div style={{ padding: 24 }}>
+      {errorMsg ? (
+        <>
+          <p>{errorMsg}</p>
+          <button onClick={goHomeSoft}>Home</button>
+        </>
+      ) : (
+        'Signing you in…'
+      )}
+    </div>
+  );
 }
 

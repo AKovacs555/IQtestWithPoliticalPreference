@@ -116,11 +116,17 @@ export default function SurveyEditorDialog({
       is_active: isActive,
     };
     let id: string | undefined = initialValue?.id;
-    if (isEdit) {
-      await updateSurvey(initialValue.id, payload);
-    } else {
-      const res = await createSurvey(payload);
-      id = res.id;
+    try {
+      if (isEdit) {
+        await updateSurvey(initialValue.id, payload);
+      } else {
+        const res = await createSurvey(payload);
+        id = res.id;
+      }
+    } catch (err) {
+      console.error('Survey save failed', err);
+      alert('Failed to save survey: ' + err);
+      return;
     }
     onSaved(id);
   };

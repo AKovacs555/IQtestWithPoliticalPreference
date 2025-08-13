@@ -52,7 +52,12 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     setSession(sess);
     const uid = sess?.user?.id ?? null;
     setUserId(uid);
-    setIsAdmin(Boolean(sess?.user?.app_metadata?.is_admin));
+    setIsAdmin(
+      Boolean(
+        sess?.user?.user_metadata?.is_admin ||
+          sess?.user?.app_metadata?.is_admin,
+      ),
+    );
     fetchAndApplyIsAdmin(uid);
     try {
       if (sess?.access_token) {
@@ -108,6 +113,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
           ) {
             setLoading(false);
           }
+        }
+      } else if (event === 'SIGNED_OUT') {
+        if (mounted) {
+          applySession(null);
+          setLoading(false);
         }
       }
     });
