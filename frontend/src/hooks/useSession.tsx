@@ -88,14 +88,24 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       if (mounted) {
         applySession(data.session);
         fetchAndApplyIsAdmin(data.session?.user?.id);
-        setLoading(false);
+        // 初期は onAuthStateChange(INITIAL_SESSION) を待ってから loading=false にする
       }
     })();
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event) => {
-      // INITIAL_SESSION 以外でも画面遷移の邪魔をしないように loading を適切に解除
+    } = supabase.auth.onAuthStateChange(async (event, s) => {
+      if (import.meta.env.DEV) {
+        // eslint-disable-next-line no-console
+        console.log(
+          '[auth:event]',
+          event,
+          'uid=',
+          s?.user?.id,
+          'admin=',
+          s?.user?.app_metadata?.is_admin
+        );
+      }
       if (
         event === 'INITIAL_SESSION' ||
         event === 'SIGNED_IN' ||
@@ -106,17 +116,13 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         if (mounted) {
           applySession(currentSession.session);
           fetchAndApplyIsAdmin(currentSession.session?.user?.id);
-          if (
-            event === 'INITIAL_SESSION' ||
-            event === 'SIGNED_IN' ||
-            event === 'TOKEN_REFRESHED'
-          ) {
+          if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN')
             setLoading(false);
-          }
         }
       } else if (event === 'SIGNED_OUT') {
         if (mounted) {
           applySession(null);
+          setIsAdmin(false);
           setLoading(false);
         }
       }
