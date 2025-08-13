@@ -26,10 +26,13 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  async function fetchAndApplyIsAdmin(uid?: string | null, attempt = 0) {
+  async function fetchAndApplyIsAdmin(
+    uid?: string | null,
+    attempt = 0,
+  ): Promise<boolean> {
     if (!uid) {
       setIsAdmin(false);
-      return;
+      return false;
     }
     try {
       const { data, error } = await supabase
@@ -37,28 +40,37 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         .select('is_admin')
         .eq('id', uid)
         .single();
-      if (!error && data) setIsAdmin(Boolean(data.is_admin));
-      else if (
+      if (!error && data) {
+        const admin = Boolean(data.is_admin);
+        setIsAdmin(admin);
+        return admin;
+      }
+      if (
         (error?.code === 'PGRST116' || error?.code === 'PGRST204' || error?.code === '406') &&
         attempt < 3
       ) {
         // 404/406/キャッシュ未反映 → 300ms 後に再試行
-        setTimeout(() => fetchAndApplyIsAdmin(uid, attempt + 1), 300);
+        await new Promise((r) => setTimeout(r, 300));
+        return fetchAndApplyIsAdmin(uid, attempt + 1);
       }
     } catch {}
+    setIsAdmin(false);
+    return false;
   }
 
-  const applySession = (sess: Session | null) => {
+  const applySession = async (sess: Session | null) => {
     setSession(sess);
     const uid = sess?.user?.id ?? null;
     setUserId(uid);
-    setIsAdmin(
-      Boolean(
+    if (!uid) {
+      setIsAdmin(false);
+    } else {
+      const adminFromToken = Boolean(
         sess?.user?.user_metadata?.is_admin ||
           sess?.user?.app_metadata?.is_admin,
-      ),
-    );
-    fetchAndApplyIsAdmin(uid);
+      );
+      setIsAdmin((prev) => adminFromToken || prev);
+    }
     try {
       if (sess?.access_token) {
         localStorage.setItem('authToken', sess.access_token);
@@ -73,11 +85,12 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     } catch {
       /* ignore */
     }
+    await fetchAndApplyIsAdmin(uid);
   };
 
   const refresh = async () => {
     const { data } = await supabase.auth.getSession();
-    applySession(data.session);
+    await applySession(data.session);
   };
 
   useEffect(() => {
@@ -86,8 +99,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     (async () => {
       const { data } = await supabase.auth.getSession();
       if (mounted) {
-        applySession(data.session);
-        fetchAndApplyIsAdmin(data.session?.user?.id);
+        await applySession(data.session);
         // 初期は onAuthStateChange(INITIAL_SESSION) を待ってから loading=false にする
       }
     })();
@@ -114,15 +126,13 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       ) {
         const { data: currentSession } = await supabase.auth.getSession();
         if (mounted) {
-          applySession(currentSession.session);
-          fetchAndApplyIsAdmin(currentSession.session?.user?.id);
+          await applySession(currentSession.session);
           if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN')
             setLoading(false);
         }
       } else if (event === 'SIGNED_OUT') {
         if (mounted) {
-          applySession(null);
-          setIsAdmin(false);
+          await applySession(null);
           setLoading(false);
         }
       }

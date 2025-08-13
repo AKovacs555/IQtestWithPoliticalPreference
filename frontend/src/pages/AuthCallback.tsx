@@ -13,10 +13,6 @@ export default function AuthCallback() {
   const navigate = useNavigate();
   useEffect(() => {
     let alive = true;
-    const go = (hash: string) => {
-      if (!alive) return;
-      window.location.replace(`${window.location.origin}${hash}`);
-    };
 
     (async () => {
       try {
@@ -28,7 +24,8 @@ export default function AuthCallback() {
             const { error } = await supabase.auth.exchangeCodeForSession(code);
             if (error) {
               console.error('[auth] exchange error', error);
-              go('/#/'); return;
+              if (alive) navigate('/', { replace: true });
+              return;
             }
           }
         }
@@ -61,10 +58,13 @@ export default function AuthCallback() {
           Boolean((sess as any)?.user?.is_admin);
 
         // 4) 遷移（管理者は /admin、それ以外は /）
-        go(isAdmin ? '/#/admin' : '/#/');
+        if (alive) {
+          if (isAdmin) navigate('/admin', { replace: true });
+          else navigate('/', { replace: true });
+        }
       } catch (e) {
         console.error('[auth] callback fatal', e);
-        go('/#/');
+        if (alive) navigate('/', { replace: true });
       }
     })();
 

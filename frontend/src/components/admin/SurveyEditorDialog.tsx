@@ -104,8 +104,16 @@ export default function SurveyEditorDialog({
   };
 
   const handleSave = async () => {
-    if (!title.trim() || !question.trim()) return;
-    if (items.length < 2 || items.some((i) => !i.label.trim())) return;
+    if (!title.trim() || !question.trim()) {
+      alert('Please enter a Title and Question for the survey.');
+      return;
+    }
+    if (items.length < 2 || items.some((i) => !i.label.trim())) {
+      alert(
+        'Please add at least two survey items, and ensure no item is blank.',
+      );
+      return;
+    }
     const payload: SurveyPayload = {
       title,
       question,
