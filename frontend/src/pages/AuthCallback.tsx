@@ -4,7 +4,10 @@ import { useNavigate } from 'react-router-dom';
 
 function getCodeFromUrl(): string | null {
   const u = new URL(window.location.href);
-  const fromHash = u.hash.includes('?') ? new URLSearchParams(u.hash.split('?')[1]).get('code') : null;
+  // HashRouter の場合でも google は # を返さないため、基本は search で拾える。
+  const fromHash = u.hash.includes('?')
+    ? new URLSearchParams(u.hash.split('?')[1]).get('code')
+    : null;
   return fromHash ?? u.searchParams.get('code');
 }
 
@@ -12,31 +15,49 @@ export default function AuthCallback() {
   const navigate = useNavigate();
   useEffect(() => {
     let alive = true;
-    const goHome = () => alive && navigate('/', { replace: true });
+    const safeGoHome = () => {
+      if (!alive) return;
+      try {
+        // まずは通常のルーター遷移
+        navigate('/', { replace: true });
+      } catch {}
+      // ルーターが反応しない環境（拡張/SW干渉など）への最終フォールバック
+      setTimeout(() => {
+        if (alive) window.location.replace('/#/');
+      }, 200);
+    };
 
     (async () => {
-      try {
-        // 1) まだセッションが無ければ code を交換
-        const { data } = await supabase.auth.getSession();
-        if (!data.session) {
-          const code = getCodeFromUrl();
-          if (code) {
-            const { error } = await supabase.auth.exchangeCodeForSession(code);
-            if (error) console.error('exchange error', error); // セッションはここで保存される
-          }
+      const current = (await supabase.auth.getSession()).data.session;
+      if (!current) {
+        const code = getCodeFromUrl();
+        if (code) {
+          // PKCE コード → セッションへ交換（localStorage に保存され、SIGNED_IN が発火）
+          const { error } = await supabase.auth.exchangeCodeForSession(code);
+          if (error) console.error('[auth] exchange error:', error);
         }
-        // 2) プロフィール upsert（失敗しても遷移はブロックしない）
+      }
+
+      // app_users upsert（失敗は無視）
+      try {
         const token = (await supabase.auth.getSession()).data.session?.access_token;
         if (token) {
-          fetch('/user/ensure', {
+          await fetch('/user/ensure', {
             method: 'POST',
-            headers: { Authorization: `Bearer ${token}` },
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Cache-Control': 'no-store',
+            },
             credentials: 'include',
-          }).catch(() => {});
+          });
         }
-      } finally {
-        goHome(); // イベント待ちは不要。直ちにホームへ
+      } catch (e) {
+        console.warn('[auth] /user/ensure failed', e);
       }
+
+      // 念のためセッションをリフレッシュ（onAuth で拾えない環境の保険）
+      await supabase.auth.refreshSession().catch(() => {});
+      safeGoHome();
     })();
 
     return () => {
