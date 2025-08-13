@@ -21,19 +21,19 @@ function createSafeStorage(): Storage {
   return window.localStorage;
 }
 
-export const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL!,
-  import.meta.env.VITE_SUPABASE_ANON_KEY!,
-  {
-    auth: {
-      flowType: 'pkce',
-      persistSession: true,
-      autoRefreshToken: true,
-      detectSessionInUrl: true,
-      storage: createSafeStorage(),
-    },
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL!;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY!;
+
+// 明示的に PKCE + detectSessionInUrl を有効化。自動更新＋永続化もオン
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    flowType: 'pkce',
+    detectSessionInUrl: true,
+    persistSession: true,
+    autoRefreshToken: true,
+    storage: createSafeStorage(),
   },
-);
+});
 
 supabase.auth.onAuthStateChange((event, session) => {
   if (import.meta.env.DEV) console.info('[auth]', event, !!session);
