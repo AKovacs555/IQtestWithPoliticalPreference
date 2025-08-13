@@ -90,6 +90,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event) => {
+      // INITIAL_SESSION 以外でも画面遷移の邪魔をしないように loading を適切に解除
       if (
         event === 'INITIAL_SESSION' ||
         event === 'SIGNED_IN' ||
@@ -100,7 +101,13 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         if (mounted) {
           applySession(currentSession.session);
           fetchAndApplyIsAdmin(currentSession.session?.user?.id);
-          if (event === 'INITIAL_SESSION') setLoading(false);
+          if (
+            event === 'INITIAL_SESSION' ||
+            event === 'SIGNED_IN' ||
+            event === 'TOKEN_REFRESHED'
+          ) {
+            setLoading(false);
+          }
         }
       }
     });
