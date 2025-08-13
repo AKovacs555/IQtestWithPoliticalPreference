@@ -10,16 +10,30 @@ if ('serviceWorker' in navigator) {
   }
 }
 
-// Bust runtime cache once per deploy（※OAuth 中は絶対にリロードしない）
+// Bust runtime cache once per deploy
+// ※ OAuth コールバック中（URL に code/access_token/error を含む）は絶対にリロード・書き換えしない
 try {
   const hasOAuthParams = /[?#].*(code=|access_token=|error=)/.test(window.location.href);
   const v = import.meta.env?.VITE_COMMIT_SHA || '';
   const prev = localStorage.getItem('app_version') || '';
   if (!hasOAuthParams && v && prev !== v) {
     localStorage.setItem('app_version', v);
+    // ここでは現在の URL をそのまま再読み込み（ハッシュ含む）
     window.location.replace(window.location.href);
   }
 } catch {}
+
+// --- 重要: React 起動前にコールバックURLを正規化（HashRouter でも確実に /auth/callback をマウントさせる）
+(function normalizeOAuthCallbackUrl() {
+  const u = new URL(window.location.href);
+  const hasCode = u.searchParams.has('code') || u.hash.includes('code=');
+  const isOnCallback = /^#\/auth\/callback/.test(u.hash);
+  // 例: "/?code=...#/auth/callback" → "/#/auth/callback?code=..."
+  if (import.meta.env.PROD && hasCode && !isOnCallback) {
+    const query = u.search || '';
+    window.location.replace(`/#/auth/callback${query}`);
+  }
+})();
 
 const Router = import.meta.env.PROD ? HashRouter : BrowserRouter;
 
