@@ -1,7 +1,5 @@
 import { supabase } from './supabaseClient';
-
-// HashRouter を使うのでフラグメント付きコールバックへ返す
-const redirectTo = `${window.location.origin}/#/auth/callback`;
+const redirectTo = `${window.location.origin}/auth/callback`;
 
 export async function signInWithGoogle(captchaToken?: string) {
   const { error } = await supabase.auth.signInWithOAuth({
