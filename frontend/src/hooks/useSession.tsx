@@ -26,7 +26,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  async function fetchAndApplyIsAdmin(uid?: string | null) {
+  async function fetchAndApplyIsAdmin(uid?: string | null, attempt = 0) {
     if (!uid) {
       setIsAdmin(false);
       return;
@@ -38,6 +38,13 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         .eq('id', uid)
         .single();
       if (!error && data) setIsAdmin(Boolean(data.is_admin));
+      else if (
+        (error?.code === 'PGRST116' || error?.code === 'PGRST204' || error?.code === '406') &&
+        attempt < 3
+      ) {
+        // 404/406/キャッシュ未反映 → 300ms 後に再試行
+        setTimeout(() => fetchAndApplyIsAdmin(uid, attempt + 1), 300);
+      }
     } catch {}
   }
 
