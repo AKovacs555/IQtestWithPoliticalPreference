@@ -1,11 +1,11 @@
 import { supabase } from './lib/supabaseClient';
 
-const API_BASE = import.meta.env.VITE_API_BASE || '';
+const API_BASE = import.meta.env.VITE_API_BASE || window.location.origin;
 
 async function authHeaders() {
   try {
     const { data } = await supabase.auth.getSession();
-    const token = data.session?.access_token;
+    const token = data.session?.access_token || localStorage.getItem('authToken');
     return token ? { Authorization: `Bearer ${token}` } : {};
   } catch {
     return {};
@@ -17,24 +17,35 @@ async function apiFetch(path: string, init: RequestInit = {}) {
   const extra = await authHeaders();
   Object.entries(extra).forEach(([k, v]) => headers.set(k, String(v)));
   if (!headers.has('Content-Type') && init.body) headers.set('Content-Type', 'application/json');
-  return fetch(`${API_BASE}${path}`, { ...init, headers, credentials: 'include' });
+  const token = (extra.Authorization || '').replace(/^Bearer\s+/i, '');
+  if (import.meta.env.DEV) {
+    // eslint-disable-next-line no-console
+    console.log('[api] ->', API_BASE + path, 'token=', token ? `${token.slice(0, 10)}...` : 'NONE');
+  }
+  const res = await fetch(`${API_BASE}${path}`, { ...init, headers, credentials: 'include' });
+  if (!res.ok) {
+    const txt = await res.text().catch(() => '');
+    if (import.meta.env.DEV) {
+      // eslint-disable-next-line no-console
+      console.error('[api] !', res.status, txt);
+    }
+    throw new Error(`API ${res.status}: ${txt}`);
+  }
+  return res;
 }
 
 export async function apiGet<T = unknown>(path: string): Promise<T> {
   const res = await apiFetch(path, { method: 'GET' });
-  if (!res.ok) throw new Error(`${res.status} ${await res.text()}`);
   return res.json();
 }
 
 export async function apiPost<T = unknown>(path: string, body: unknown): Promise<T> {
   const res = await apiFetch(path, { method: 'POST', body: JSON.stringify(body) });
-  if (!res.ok) throw new Error(`${res.status} ${await res.text()}`);
   return res.json();
 }
 
 export async function apiDelete<T = unknown>(path: string): Promise<T> {
   const res = await apiFetch(path, { method: 'DELETE' });
-  if (!res.ok) throw new Error(`${res.status} ${await res.text()}`);
   return res.json();
 }
 
