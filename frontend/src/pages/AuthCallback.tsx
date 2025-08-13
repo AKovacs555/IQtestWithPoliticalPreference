@@ -37,6 +37,10 @@ export default function AuthCallback() {
 
       // get a fresh JWT that includes app_metadata.is_admin from the hook
       await supabase.auth.refreshSession();
+      if (import.meta.env.DEV) {
+        const { printSession } = await import('../debug/printSession');
+        printSession();
+      }
 
       if (mounted) navigate('/', { replace: true });
     })();

@@ -1,11 +1,13 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, HashRouter } from 'react-router-dom';
-import { unregisterAllSW } from './sw-unregister';
 // Build trigger comment
 
-if (import.meta.env.PROD) {
-  unregisterAllSW();
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then((rs) => rs.forEach((r) => r.unregister()));
+  if (window.caches?.keys) {
+    caches.keys().then((keys) => keys.forEach((k) => caches.delete(k)));
+  }
 }
 
 const Router = import.meta.env.PROD ? HashRouter : BrowserRouter;
