@@ -1,30 +1,45 @@
 import { useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { useNavigate } from 'react-router-dom';
-import { fetchWithAuth } from '../lib/api';
+
+function extractAuthCodeFromUrl(): string | null {
+  const url = new URL(window.location.href);
+  // HashRouter case: "#/auth/callback?code=..."
+  const hash = url.hash; // e.g. "#/auth/callback?code=123&state=..."
+  const hashQs = hash.includes('?') ? hash.split('?')[1] : '';
+  const fromHash = new URLSearchParams(hashQs).get('code');
+  // BrowserRouter case: "/auth/callback?code=..."
+  const fromSearch = url.searchParams.get('code');
+  return fromHash || fromSearch;
+}
 
 export default function AuthCallback() {
   const navigate = useNavigate();
+
   useEffect(() => {
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if ((event === 'INITIAL_SESSION' || event === 'SIGNED_IN') && session) {
-        try {
-          await fetchWithAuth('/user/ensure', {
-            method: 'POST',
-            body: JSON.stringify({}),
-          });
-        } catch {
-          /* ignore */
-        }
+    let mounted = true;
+    (async () => {
+      try {
+        // 1) If detectSessionInUrl ran, this already exchanged and stored a session.
         const { data } = await supabase.auth.getSession();
-        const isAdmin = Boolean(data.session?.user?.app_metadata?.is_admin);
-        navigate(isAdmin ? '/admin' : '/', { replace: true });
+
+        // 2) Fallback: no session yet -> do manual exchange from URL
+        if (!data.session) {
+          const code = extractAuthCodeFromUrl();
+          if (code) {
+            const { error } = await supabase.auth.exchangeCodeForSession(code);
+            if (error) throw error;
+          }
+        }
+      } catch (e) {
+        console.error('Auth callback error:', e);
+      } finally {
+        if (mounted) navigate('/', { replace: true });
       }
-    });
+    })();
+
     return () => {
-      subscription.unsubscribe();
+      mounted = false;
     };
   }, [navigate]);
 
