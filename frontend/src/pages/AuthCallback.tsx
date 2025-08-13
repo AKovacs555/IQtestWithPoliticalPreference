@@ -3,53 +3,44 @@ import { supabase } from '../lib/supabaseClient';
 import { useNavigate } from 'react-router-dom';
 
 function getCodeFromUrl(): string | null {
-  const url = new URL(window.location.href);
-  const hashQs = url.hash.includes('?') ? url.hash.split('?')[1] : '';
-  return new URLSearchParams(hashQs).get('code') || url.searchParams.get('code');
+  const u = new URL(window.location.href);
+  const fromHash = u.hash.includes('?') ? new URLSearchParams(u.hash.split('?')[1]).get('code') : null;
+  return fromHash ?? u.searchParams.get('code');
 }
 
 export default function AuthCallback() {
   const navigate = useNavigate();
-
   useEffect(() => {
-    let mounted = true;
-    let cleanup: (() => void) | undefined;
+    let alive = true;
+    const goHome = () => alive && navigate('/', { replace: true });
 
     (async () => {
-      const { data } = await supabase.auth.getSession();
-      if (!data.session) {
-        const code = getCodeFromUrl();
-        if (code) {
-          const { error } = await supabase.auth.exchangeCodeForSession(code);
-          if (error) console.error('exchange error', error);
-        }
-      }
-
-      // app_users upsert（認可ヘッダ付き）
       try {
+        // 1) まだセッションが無ければ code を交換
+        const { data } = await supabase.auth.getSession();
+        if (!data.session) {
+          const code = getCodeFromUrl();
+          if (code) {
+            const { error } = await supabase.auth.exchangeCodeForSession(code);
+            if (error) console.error('exchange error', error); // セッションはここで保存される
+          }
+        }
+        // 2) プロフィール upsert（失敗しても遷移はブロックしない）
         const token = (await supabase.auth.getSession()).data.session?.access_token;
-        await fetch('/user/ensure', {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${token ?? ''}` },
-          credentials: 'include',
-        });
-      } catch (e) {
-        console.warn('/user/ensure failed', e);
+        if (token) {
+          fetch('/user/ensure', {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${token}` },
+            credentials: 'include',
+          }).catch(() => {});
+        }
+      } finally {
+        goHome(); // イベント待ちは不要。直ちにホームへ
       }
-
-      // ここで onAuthStateChange を待つ（確実にセッションが載ってから遷移）
-      const { data: sub } = supabase.auth.onAuthStateChange((_ev, sess) => {
-        if (!mounted) return;
-        if (sess) navigate('/', { replace: true });
-      });
-      cleanup = () => sub.subscription.unsubscribe();
-      await supabase.auth.refreshSession(); // 念のため
-      setTimeout(() => mounted && navigate('/', { replace: true }), 1200);
     })();
 
     return () => {
-      mounted = false;
-      cleanup?.();
+      alive = false;
     };
   }, [navigate]);
 
