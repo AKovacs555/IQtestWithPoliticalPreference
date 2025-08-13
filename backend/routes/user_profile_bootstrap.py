@@ -38,4 +38,25 @@ def ensure_profile(authorization: str = Header(None)):
     if getattr(res, "error", None):
         raise HTTPException(status_code=500, detail=str(res.error))
 
-    return {"ok": True}
+    # Fetch is_admin flag for the user
+    res = (
+        supabase_admin.table("app_users")
+        .select("is_admin")
+        .eq("id", str(user_id))
+        .single()
+        .execute()
+    )
+    if getattr(res, "error", None):
+        raise HTTPException(status_code=500, detail=str(res.error))
+    is_admin = bool(res.data.get("is_admin")) if res.data else False
+
+    # Propagate is_admin to auth metadata
+    try:
+        supabase_admin.auth.admin.update_user_by_id(
+            str(user_id), {"app_metadata": {"is_admin": is_admin}}
+        )
+    except Exception as e:  # pragma: no cover - supabase client handles errors
+        if "no changes" not in str(e).lower():
+            raise HTTPException(status_code=500, detail=str(e))
+
+    return {"ok": True, "is_admin": is_admin}
