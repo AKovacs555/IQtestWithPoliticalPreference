@@ -11,22 +11,14 @@ if ('serviceWorker' in navigator) {
 }
 
 // Bust runtime cache once per deploy
-// ※ OAuth コールバック中（URL に code/access_token/error を含む）は絶対にリロード・書き換えしない
 try {
-  const hasOAuthParams = /[?#].*(code=|access_token=|error=)/.test(
-    window.location.href,
-  );
+  const hasOAuthParams = /[?#].*(code=|access_token=|error=)/.test(window.location.href);
   const v = import.meta.env?.VITE_COMMIT_SHA || '';
   const prev = localStorage.getItem('app_version') || '';
-  const skipReload = sessionStorage.getItem('skip_version_reload') === '1';
-  if (v && prev !== v) {
+  // OAuth 処理中は絶対にリロードしない（ここがループの主因になり得る）
+  if (!hasOAuthParams && v && prev !== v) {
     localStorage.setItem('app_version', v);
-    if (!hasOAuthParams && !skipReload) {
-      // ここでは現在の URL をそのまま再読み込み（ハッシュ含む）
-      window.location.replace(window.location.href);
-    } else {
-      sessionStorage.removeItem('skip_version_reload');
-    }
+    window.location.replace(window.location.href);
   }
 } catch {}
 
