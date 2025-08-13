@@ -15,16 +15,12 @@ export default function AuthCallback() {
   const navigate = useNavigate();
   useEffect(() => {
     let alive = true;
-    const safeGoHome = () => {
+    const goHome = () => {
       if (!alive) return;
-      try {
-        // まずは通常のルーター遷移
-        navigate('/', { replace: true });
-      } catch {}
-      // ルーターが反応しない環境（拡張/SW干渉など）への最終フォールバック
-      setTimeout(() => {
-        if (alive) window.location.replace('/#/');
-      }, 200);
+      // React Router が何らかの理由で遷移を握り潰すケースに備えて二段構え
+      navigate('/', { replace: true });
+      // HashRouter では location.replace で確実に脱出できる
+      setTimeout(() => alive && window.location.replace('/#/'), 200);
     };
 
     (async () => {
@@ -57,7 +53,7 @@ export default function AuthCallback() {
 
       // 念のためセッションをリフレッシュ（onAuth で拾えない環境の保険）
       await supabase.auth.refreshSession().catch(() => {});
-      safeGoHome();
+      goHome();
     })();
 
     return () => {
