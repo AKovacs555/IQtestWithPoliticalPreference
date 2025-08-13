@@ -1,39 +1,26 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { useNavigate } from 'react-router-dom';
+import { waitForSession } from '../lib/waitForSession';
 
 function getCodeFromUrl(): string | null {
   const u = new URL(window.location.href);
-  // HashRouter 末尾クエリにも対応（#/auth/callback?code=...）
   const fromHash = u.hash.includes('?') ? new URLSearchParams(u.hash.split('?')[1]).get('code') : null;
   return fromHash ?? u.searchParams.get('code');
 }
 
-function stripOAuthParams() {
-  // code/state/error を URL から取り除く
-  const u = new URL(window.location.href);
-  ['code', 'state', 'error'].forEach((k) => u.searchParams.delete(k));
-  try {
-    window.history.replaceState({}, '', u.toString());
-  } catch {
-    // ignore
-  }
-}
-
 export default function AuthCallback() {
   const navigate = useNavigate();
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   useEffect(() => {
     let alive = true;
-    const goHomeSoft = () => {
+    const go = (hash: string) => {
       if (!alive) return;
-      sessionStorage.setItem('skip_version_reload', '1');
-      navigate('/', { replace: true });
+      window.location.replace(`${window.location.origin}${hash}`);
     };
 
     (async () => {
       try {
-        // 1) 初期セッション確認 → なければ code 交換
+        // 1) セッションが無ければ code 交換
         const first = await supabase.auth.getSession();
         if (!first.data.session) {
           const code = getCodeFromUrl();
@@ -41,60 +28,43 @@ export default function AuthCallback() {
             const { error } = await supabase.auth.exchangeCodeForSession(code);
             if (error) {
               console.error('[auth] exchange error', error);
-              window.alert('Login failed: ' + error.message);
-              stripOAuthParams();
-              setErrorMsg('Login failed: ' + error.message);
-              return;
+              go('/#/'); return;
             }
-            const { data: sessionData, error: sessErr } =
-              await supabase.auth.getSession();
-            console.log(
-              '[AuthCallback] Post-exchange session =',
-              sessionData.session,
-              sessErr,
-            );
-            if (!sessionData.session) {
-              stripOAuthParams();
-              setErrorMsg('Login failed: no session');
-              return;
-            }
-          } else {
-            setErrorMsg('Login failed: no code');
-            stripOAuthParams();
-            return;
           }
         }
-        // 2) app_users upsert and get admin flag
-        let isAdmin = false;
+        // 2) ensure: app_users upsert（返りの is_admin を採用）
+        let ensuredAdmin = false;
         try {
           const token = (await supabase.auth.getSession()).data.session?.access_token;
           if (token) {
-            const res = await fetch('/user/ensure', {
+            const resp = await fetch('/user/ensure', {
               method: 'POST',
               headers: { Authorization: `Bearer ${token}` },
               credentials: 'include',
-            });
-            const json = await res.json().catch(() => ({}));
-            isAdmin = json.is_admin === true;
-            await supabase.auth.refreshSession();
+            }).catch(() => undefined);
+            try {
+              const js = await resp?.json();
+              ensuredAdmin = Boolean(js?.is_admin);
+            } catch {}
           }
-        } catch (e) {
-          console.error('[auth] ensure failed', e);
-        }
-        // 3) セッション取得できたら管理者か判定し、適切な画面へリダイレクト
-        const { data: sessionData } = await supabase.auth.getSession();
-        const session = sessionData.session;
-        stripOAuthParams();
-        if (session?.user) {
-          sessionStorage.setItem('skip_version_reload', '1');
-          navigate(isAdmin ? '/admin' : '/', { replace: true });
-        } else {
-          setErrorMsg('Login failed: session missing');
-        }
+        } catch {}
+        // 3) refresh してから、セッション確定を待つ（モバイルSaf対策）
+        await supabase.auth.refreshSession().catch(() => {});
+        const sess = await waitForSession(7000).catch((e) => {
+          console.warn('[auth] waitForSession timeout', e);
+          return null;
+        });
+        const isAdmin =
+          ensuredAdmin ||
+          Boolean(sess?.user?.app_metadata?.is_admin) ||
+          Boolean((sess as any)?.user?.user_metadata?.is_admin) ||
+          Boolean((sess as any)?.user?.is_admin);
+
+        // 4) 遷移（管理者は /admin、それ以外は /）
+        go(isAdmin ? '/#/admin' : '/#/');
       } catch (e) {
         console.error('[auth] callback fatal', e);
-        stripOAuthParams();
-        setErrorMsg('Login failed');
+        go('/#/');
       }
     })();
 
@@ -103,17 +73,6 @@ export default function AuthCallback() {
     };
   }, [navigate]);
 
-  return (
-    <div style={{ padding: 24 }}>
-      {errorMsg ? (
-        <>
-          <p>{errorMsg}</p>
-          <button onClick={goHomeSoft}>Home</button>
-        </>
-      ) : (
-        'Signing you in…'
-      )}
-    </div>
-  );
+  return <div style={{ padding: 24 }}>Signing you in…</div>;
 }
 
