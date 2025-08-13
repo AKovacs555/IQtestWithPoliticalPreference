@@ -95,52 +95,23 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let mounted = true;
-
+    // 初期ロードで必ず loading を落とす
     (async () => {
       const { data } = await supabase.auth.getSession();
-      if (mounted) {
-        await applySession(data.session);
-        // 初期は onAuthStateChange(INITIAL_SESSION) を待ってから loading=false にする
-      }
+      if (!mounted) return;
+      applySession(data.session);
+      fetchAndApplyIsAdmin(data.session?.user?.id);
+      setLoading(false);
     })();
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, s) => {
-      if (import.meta.env.DEV) {
-        // eslint-disable-next-line no-console
-        console.log(
-          '[auth:event]',
-          event,
-          'uid=',
-          s?.user?.id,
-          'admin=',
-          s?.user?.app_metadata?.is_admin
-        );
-      }
-      if (
-        event === 'INITIAL_SESSION' ||
-        event === 'SIGNED_IN' ||
-        event === 'TOKEN_REFRESHED' ||
-        event === 'USER_UPDATED'
-      ) {
-        const { data: currentSession } = await supabase.auth.getSession();
-        if (mounted) {
-          await applySession(currentSession.session);
-          if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN')
-            setLoading(false);
-        }
-      } else if (event === 'SIGNED_OUT') {
-        if (mounted) {
-          await applySession(null);
-          setLoading(false);
-        }
-      }
+    const { data: sub } = supabase.auth.onAuthStateChange(async () => {
+      if (!mounted) return;
+      const { data } = await supabase.auth.getSession();
+      applySession(data.session);
+      fetchAndApplyIsAdmin(data.session?.user?.id);
     });
-
     return () => {
       mounted = false;
-      subscription.unsubscribe();
+      sub.subscription.unsubscribe();
     };
   }, []);
 
