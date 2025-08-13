@@ -3,10 +3,11 @@ import { supabase } from './supabaseClient';
 export async function fetchWithAuth(path: string, init: RequestInit = {}) {
   const { data } = await supabase.auth.getSession();
   const token = data.session?.access_token;
+  console.log('[API] Fetching', path, 'with token', token ? token.slice(0, 8) : 'NONE');
   const headers = new Headers(init.headers || {});
   if (token) headers.set('Authorization', `Bearer ${token}`);
   if (!headers.has('Content-Type')) headers.set('Content-Type', 'application/json');
-  const base = import.meta.env.VITE_API_BASE!;
+  const base = import.meta.env.VITE_API_BASE || window.location.origin;
   return fetch(`${base}${path}`, { ...init, headers });
 }
 
