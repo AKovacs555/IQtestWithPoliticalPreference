@@ -13,7 +13,20 @@ export default function AuthCallback() {
 
   useEffect(() => {
     let mounted = true;
+
+    // 先に購読を確立（効果のクリーンアップで確実に解除）
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_ev, sess) => {
+      if (!mounted) return;
+      if (sess) {
+        if (import.meta.env.DEV) console.log('[auth] signed in', sess.user?.id);
+        navigate('/', { replace: true });
+      }
+    });
+
     (async () => {
+      // まだセッションが無ければ code を交換
       const { data } = await supabase.auth.getSession();
       if (!data.session) {
         const code = getCodeFromUrl();
@@ -22,37 +35,26 @@ export default function AuthCallback() {
           if (error) console.error('exchange error', error);
         }
       }
-
-      // ensure app_users row exists
+      // app_users upsert（認可ヘッダ付き）
       try {
         const token = (await supabase.auth.getSession()).data.session?.access_token;
-        await fetch('/user/ensure', {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${token ?? ''}` },
-          credentials: 'include',
-        });
+        if (token) {
+          await fetch('/user/ensure', {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${token}` },
+            credentials: 'include',
+          });
+        }
       } catch (e) {
         console.warn('/user/ensure failed', e);
       }
-
-      // onAuthStateChange でセッション確定を待つ
-      const { data: sub } = supabase.auth.onAuthStateChange((_ev, sess) => {
-        if (!mounted) return;
-        if (sess) {
-          if (import.meta.env.DEV) console.log('[auth] signed in', sess.user?.id);
-          navigate('/', { replace: true });
-        }
-      });
-      // 念のため即時リフレッシュ
+      // 念のためリフレッシュ（onAuthStateChange が拾います）
       await supabase.auth.refreshSession();
-      setTimeout(() => {
-        if (mounted) navigate('/', { replace: true });
-      }, 1200);
-      return () => sub.subscription.unsubscribe();
     })();
 
     return () => {
       mounted = false;
+      subscription.unsubscribe();
     };
   }, [navigate]);
 
