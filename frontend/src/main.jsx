@@ -1,6 +1,6 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-import { BrowserRouter, HashRouter } from 'react-router-dom';
+import { HashRouter } from 'react-router-dom';
 // Build trigger comment
 
 if ('serviceWorker' in navigator) {
@@ -35,11 +35,11 @@ try {
   }
 })();
 
-const Router = import.meta.env.PROD ? HashRouter : BrowserRouter;
+const Router = HashRouter;
 
 // In production we use HashRouter; if someone lands on a path like /auth/callback
 // without a hash, redirect to the hash equivalent so routes resolve correctly.
-if (import.meta.env.PROD && !location.hash && location.pathname !== '/') {
+if (!location.hash && location.pathname !== '/') {
   location.replace(`/#${location.pathname}${location.search}${location.hash}`);
 }
 import App from './pages/App';
