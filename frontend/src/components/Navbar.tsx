@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link, NavLink, useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
@@ -9,8 +9,7 @@ import ThemeToggle from './ThemeToggle';
 import PointsBadge from './PointsBadge';
 import LanguageSelector from './LanguageSelector';
 import { useTranslation } from 'react-i18next';
-import { signOut } from '../lib/auth';
-import GoogleOAuthButton from './GoogleOAuthButton';
+import { signInWithGoogle, signOut } from '../lib/auth';
 import OverflowNav from './nav/OverflowNav';
 import MobileDrawer from './nav/MobileDrawer';
 import type { NavItem } from './nav/types';
@@ -28,16 +27,10 @@ export default function Navbar() {
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
   const googleEnabled = import.meta.env.VITE_DISABLE_GOOGLE !== 'true';
+  const isLoggedIn = !!userId;
 
   const logout = () => {
     signOut().catch(() => {});
-    try {
-      localStorage.removeItem('authToken');
-      localStorage.removeItem('user_id');
-    } catch {
-      /* ignore */
-    }
-    navigate('/login');
   };
 
   const handleStart = () => {
@@ -73,15 +66,19 @@ export default function Navbar() {
   ];
 
   const drawerItems: NavItem[] = [...items];
-  if (!user) {
+  if (!isLoggedIn) {
     drawerItems.push(
-      { label: t('nav.login', { defaultValue: 'Log in' }), href: '/login' },
-      { label: t('nav.signup', { defaultValue: 'Sign up' }), href: '/signup' },
+      { label: t('nav.login', { defaultValue: 'Log in' }), onClick: () => navigate('/login') },
+      { label: t('nav.signup', { defaultValue: 'Sign up' }), onClick: () => navigate('/signup') },
       ...(googleEnabled
         ? [
             {
               label: 'google',
-              element: <GoogleOAuthButton size="small" fullWidth />,
+              element: (
+                <Button variant="contained" fullWidth size="small" onClick={() => signInWithGoogle()}>
+                  Continue with Google
+                </Button>
+              ),
             },
           ]
         : []),
@@ -109,15 +106,24 @@ export default function Navbar() {
       <ThemeToggle />
       <LanguageSelector />
       <PointsBadge userId={userId} />
-      {!user ? (
+      {loading ? null : !isLoggedIn ? (
         <>
-          {googleEnabled && <GoogleOAuthButton size="small" sx={{ minHeight: '48px' }} />}
-          <Button component={NavLink} to="/login" size="small" sx={{ minHeight: '48px' }}>
+          <Button onClick={() => navigate('/login')} size="small" sx={{ minHeight: '48px' }}>
             {t('nav.login', { defaultValue: 'Log in' })}
           </Button>
-          <Button component={NavLink} to="/signup" size="small" sx={{ minHeight: '48px' }}>
+          <Button onClick={() => navigate('/signup')} size="small" sx={{ minHeight: '48px' }}>
             {t('nav.signup', { defaultValue: 'Sign up' })}
           </Button>
+          {googleEnabled && (
+            <Button
+              variant="contained"
+              onClick={() => signInWithGoogle()}
+              size="small"
+              sx={{ minHeight: '48px' }}
+            >
+              Continue with Google
+            </Button>
+          )}
         </>
       ) : (
         <Button onClick={logout} size="small" sx={{ minHeight: '48px' }}>
