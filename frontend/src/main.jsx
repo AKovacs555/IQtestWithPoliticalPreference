@@ -10,10 +10,12 @@ if ('serviceWorker' in navigator) {
   }
 }
 
-// Bust runtime cache once per deploy
-// ※ OAuth コールバック中（URL に code/access_token/error を含む）は絶対にリロードしない
+// Bust runtime cache once per deploy.
+// ※ OAuth コールバック中（URL に code / access_token / error を含む）は絶対にリロードしない。
 try {
   const hasOAuthParams = /[?#].*(code=|access_token=|error=)/.test(window.location.href);
+  // Google の Redirect URI は /auth/callback（非ハッシュ）。表示中に SPA を再マウントしないこと。
+  // HashRouter にはアプリ内で自前でリダイレクトする。
   const v = import.meta.env?.VITE_COMMIT_SHA || '';
   const prev = localStorage.getItem('app_version') || '';
   if (!hasOAuthParams && v && prev !== v) {
