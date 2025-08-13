@@ -10,6 +10,17 @@ if ('serviceWorker' in navigator) {
   }
 }
 
+// Bust runtime cache once per deploy
+try {
+  const v = import.meta.env?.VITE_COMMIT_SHA || Date.now().toString();
+  const prev = localStorage.getItem('app_version');
+  if (prev !== v) {
+    localStorage.setItem('app_version', v);
+    // Force reload to purge any stale hashed assets in iOS caches
+    if (typeof window !== 'undefined') window.location.replace(`/#${location.pathname}${location.search}`);
+  }
+} catch {}
+
 const Router = import.meta.env.PROD ? HashRouter : BrowserRouter;
 
 // In production we use HashRouter; if someone lands on a path like /auth/callback
