@@ -13,20 +13,9 @@ export default function AuthCallback() {
 
   useEffect(() => {
     let mounted = true;
-
-    // 先に購読を確立（効果のクリーンアップで確実に解除）
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_ev, sess) => {
-      if (!mounted) return;
-      if (sess) {
-        if (import.meta.env.DEV) console.log('[auth] signed in', sess.user?.id);
-        navigate('/', { replace: true });
-      }
-    });
+    let cleanup: (() => void) | undefined;
 
     (async () => {
-      // まだセッションが無ければ code を交換
       const { data } = await supabase.auth.getSession();
       if (!data.session) {
         const code = getCodeFromUrl();
@@ -35,26 +24,32 @@ export default function AuthCallback() {
           if (error) console.error('exchange error', error);
         }
       }
+
       // app_users upsert（認可ヘッダ付き）
       try {
         const token = (await supabase.auth.getSession()).data.session?.access_token;
-        if (token) {
-          await fetch('/user/ensure', {
-            method: 'POST',
-            headers: { Authorization: `Bearer ${token}` },
-            credentials: 'include',
-          });
-        }
+        await fetch('/user/ensure', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token ?? ''}` },
+          credentials: 'include',
+        });
       } catch (e) {
         console.warn('/user/ensure failed', e);
       }
-      // 念のためリフレッシュ（onAuthStateChange が拾います）
-      await supabase.auth.refreshSession();
+
+      // ここで onAuthStateChange を待つ（確実にセッションが載ってから遷移）
+      const { data: sub } = supabase.auth.onAuthStateChange((_ev, sess) => {
+        if (!mounted) return;
+        if (sess) navigate('/', { replace: true });
+      });
+      cleanup = () => sub.subscription.unsubscribe();
+      await supabase.auth.refreshSession(); // 念のため
+      setTimeout(() => mounted && navigate('/', { replace: true }), 1200);
     })();
 
     return () => {
       mounted = false;
-      subscription.unsubscribe();
+      cleanup?.();
     };
   }, [navigate]);
 
