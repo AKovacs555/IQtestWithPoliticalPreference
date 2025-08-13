@@ -11,13 +11,15 @@ if ('serviceWorker' in navigator) {
 }
 
 // Bust runtime cache once per deploy
+// OAuth コールバック中（URL に code/access_token/error を含む）は絶対に書き換えない
 try {
-  const v = import.meta.env?.VITE_COMMIT_SHA || Date.now().toString();
-  const prev = localStorage.getItem('app_version');
-  if (prev !== v) {
+  const hasOAuthParams = /[?#].*(code=|access_token=|error=)/.test(window.location.href);
+  const v = import.meta.env?.VITE_COMMIT_SHA || '';
+  const prev = localStorage.getItem('app_version') || '';
+  if (!hasOAuthParams && v && prev !== v) {
     localStorage.setItem('app_version', v);
-    // Force reload to purge any stale hashed assets in iOS caches
-    if (typeof window !== 'undefined') window.location.replace(`/#${location.pathname}${location.search}`);
+    // ハッシュを含む現在の URL をそのまま再読み込み（パスを組み立て直さない）
+    window.location.replace(window.location.href);
   }
 } catch {}
 
