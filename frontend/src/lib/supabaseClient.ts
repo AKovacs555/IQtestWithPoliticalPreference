@@ -21,10 +21,6 @@ function createSafeStorage(): Storage {
   return window.localStorage;
 }
 
-// enable auto-detection only on the callback URL
-const isCallback = typeof window !== 'undefined'
-  && /\/auth\/callback/.test(window.location.href);
-
 export const supabase = createClient(
   import.meta.env.VITE_SUPABASE_URL!,
   import.meta.env.VITE_SUPABASE_ANON_KEY!,
@@ -32,9 +28,9 @@ export const supabase = createClient(
     auth: {
       flowType: 'pkce',
       persistSession: true,
-      detectSessionInUrl: isCallback,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
       storage: createSafeStorage(),
-      // keep autoRefreshToken default (true)
     },
   },
 );
