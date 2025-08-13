@@ -1,5 +1,6 @@
 import { supabase } from './supabaseClient';
 
+// Google 側の Redirect URI はフラグメント(#)不可。非ハッシュの /auth/callback を使う
 const redirectTo = `${window.location.origin}/auth/callback`;
 
 export async function signInWithGoogle(captchaToken?: string) {
@@ -7,7 +8,7 @@ export async function signInWithGoogle(captchaToken?: string) {
     provider: 'google',
     options: {
       redirectTo,
-      queryParams: { prompt: 'select_account' },
+      queryParams: { prompt: 'select_account' }, // 必要に応じて access_type=offline も追加可
       ...(captchaToken ? { captchaToken } : {}),
     },
   });
