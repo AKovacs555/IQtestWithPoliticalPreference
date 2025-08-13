@@ -1,8 +1,15 @@
 import { createClient } from "@supabase/supabase-js";
 
-const supabase = createClient(
+export const supabase = createClient(
   import.meta.env.VITE_SUPABASE_URL,
-  import.meta.env.VITE_SUPABASE_ANON_KEY
+  import.meta.env.VITE_SUPABASE_ANON_KEY,
+  {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      flowType: "pkce", // ブラウザでも PKCE を明示
+    },
+  }
 );
 
 export interface Question {
