@@ -1,14 +1,15 @@
 import { supabase } from './supabaseClient';
 
-// Google 側の Redirect URI はフラグメント(#)不可。非ハッシュの /auth/callback を使う
-const redirectTo = `${window.location.origin}/auth/callback`;
+// HashRouter を使うのでフラグメント付きコールバックへ返す
+const redirectTo = `${window.location.origin}/#/auth/callback`;
 
 export async function signInWithGoogle(captchaToken?: string) {
   const { error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
       redirectTo,
-      queryParams: { prompt: 'select_account' }, // 必要に応じて access_type=offline も追加可
+      // アカウント選択だけ促す（refresh token が不要なら offline/consent は外す）
+      queryParams: { prompt: 'select_account' },
       ...(captchaToken ? { captchaToken } : {}),
     },
   });
