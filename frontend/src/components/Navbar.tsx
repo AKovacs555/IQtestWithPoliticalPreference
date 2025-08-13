@@ -29,10 +29,6 @@ export default function Navbar() {
 
   const googleEnabled = import.meta.env.VITE_DISABLE_GOOGLE !== 'true';
 
-  if (loading) {
-    return null;
-  }
-
   const logout = () => {
     signOut().catch(() => {});
     try {
@@ -64,12 +60,16 @@ export default function Navbar() {
     links.unshift({ label: t('nav.daily_survey', { defaultValue: 'Daily Survey' }), href: '/daily-survey' });
   }
 
+  // 読み込み中はメニューを確定しない（ちらつき防止）
+  const adminItems: NavItem[] =
+    !loading && isAdmin
+      ? [{ label: t('nav.admin', { defaultValue: 'Admin' }), href: '/admin' }]
+      : [];
+
   const items: NavItem[] = [
     ...links,
     { label: t('nav.take_quiz'), onClick: handleStart },
-    ...(isAdmin
-      ? [{ label: t('nav.admin', { defaultValue: 'Admin' }), href: '/admin' }]
-      : []),
+    ...adminItems,
   ];
 
   const drawerItems: NavItem[] = [...items];
