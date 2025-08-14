@@ -100,7 +100,7 @@ export default function AdminQuestions() {
 
   useEffect(() => {
     fetchQuestions(selectedLang);
-  }, [selectedLang]);
+  }, [selectedLang, session]);
   useEffect(() => {
     setDisplayedQuestions(
       filterByLanguageAndApproval(allQuestions, selectedLang, approvalFilter),
