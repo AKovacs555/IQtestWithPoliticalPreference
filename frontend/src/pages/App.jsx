@@ -19,7 +19,6 @@ import DemographicsForm from './DemographicsForm.jsx';
 import History from './History.jsx';
 import { getQuizStart, submitQuiz } from '../api';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import SignupPage from './SignupPage.jsx';
 import LoginPage from './LoginPage.jsx';
 import TestPage from './TestPage.jsx';
 import Contact from './Contact.jsx';
@@ -385,7 +384,6 @@ export default function App() {
         <Route path="/profile" element={<RequireAuth><Profile /></RequireAuth>} />
         <Route path="/history/:userId" element={<RequireAuth><History /></RequireAuth>} />
         <Route path="/select-nationality" element={<RequireAuth><SelectNationality /></RequireAuth>} />
-        <Route path="/signup" element={<SignupPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
         {import.meta.env.DEV && (
