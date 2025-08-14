@@ -1,68 +1,118 @@
-import random
-import uuid
-from datetime import date, datetime
-from typing import List
+"""Public survey endpoints for the new poll schema."""
 
-from fastapi import APIRouter, Depends, HTTPException
+from __future__ import annotations
+
+from typing import Dict, List
+from uuid import uuid4
+
+from fastapi import APIRouter, Depends, HTTPException, Response
+from pydantic import BaseModel, Field
 
 from backend.deps.auth import get_current_user
 from backend import db
 
+
 router = APIRouter(prefix="/surveys", tags=["surveys"])
 
 
-@router.get("/daily3")
-async def get_daily_three(lang: str = "ja", user: dict = Depends(get_current_user)):
-    supabase = db.get_supabase()
-    today = date.today().isoformat()
-    answered_today = db.count_daily_survey_responses(user["hashed_id"], today)
-    if answered_today >= 3:
-        raise HTTPException(status_code=409, detail={"error": "daily_quota_exceeded"})
+class SubmitPayload(BaseModel):
+    option_ids: List[str]
+    other_texts: Dict[str, str] = Field(default_factory=dict)
 
-    items_resp = (
-        supabase.table("survey_items")
+
+@router.get("/available")
+def available(lang: str, country: str, user: dict = Depends(get_current_user)):
+    """Return surveys matching the user's language and country."""
+
+    supabase = db.get_supabase()
+    surveys = supabase.table("surveys").select("*").execute().data or []
+    out = []
+    for s in surveys:
+        if s.get("language") != lang:
+            continue
+        if s.get("status") != "approved":
+            continue
+        allowed = s.get("allowed_countries") or []
+        if allowed and country not in allowed:
+            continue
+        # Exclude already answered surveys for this user
+        existing = (
+            supabase.table("survey_responses")
+            .select("survey_id")
+            .eq("survey_id", s["id"])
+            .eq("user_id", user["hashed_id"])
+            .execute()
+            .data
+            or []
+        )
+        if existing:
+            continue
+        opts = (
+            supabase.table("survey_options")
+            .select("*")
+            .eq("survey_id", s["id"])
+            .execute()
+            .data
+            or []
+        )
+        opts = sorted(opts, key=lambda o: o.get("order", 0))
+        out.append(
+            {
+                "survey_id": s["id"],
+                "survey_group_id": s.get("survey_group_id"),
+                "question_text": s.get("question_text"),
+                "selection_type": s.get("selection_type"),
+                "options": [
+                    {
+                        "option_id": o["id"],
+                        "text": o["option_text"],
+                        "is_exclusive": o.get("is_exclusive", False),
+                        "requires_text": o.get("requires_text", False),
+                        "order": o.get("order"),
+                    }
+                    for o in opts
+                ],
+            }
+        )
+    return out
+
+
+@router.post("/{survey_id}/respond", status_code=201)
+def respond(
+    survey_id: str, payload: SubmitPayload, user: dict = Depends(get_current_user)
+):
+    """Record responses for the given survey."""
+
+    if not payload.option_ids:
+        raise HTTPException(400, "option_ids required")
+    supabase = db.get_supabase()
+    response_group_id = str(uuid4())
+    rows = [
+        {
+            "response_group_id": response_group_id,
+            "survey_id": survey_id,
+            "user_id": user["hashed_id"],
+            "option_id": oid,
+            "other_text": payload.other_texts.get(oid),
+        }
+        for oid in payload.option_ids
+    ]
+    supabase.table("survey_responses").insert(rows).execute()
+    return Response(status_code=201)
+
+
+@router.get("/{survey_id}/stats")
+def stats(survey_id: str):
+    """Expose average IQ per option."""
+
+    supabase = db.get_supabase()
+    rows = (
+        supabase.table("survey_option_iq_stats")
         .select("*")
-        .eq("lang", lang)
-        .eq("is_active", True)
+        .eq("survey_id", survey_id)
         .execute()
+        .data
+        or []
     )
-    items: List[dict] = items_resp.data or []
+    return rows
 
-    answered_resp = (
-        supabase.table("survey_responses")
-        .select("item_id")
-        .eq("user_id", user["hashed_id"])
-        .execute()
-    )
-    answered_ids = {r["item_id"] for r in (answered_resp.data or [])}
-    remaining = [i for i in items if i["id"] not in answered_ids]
-    random.shuffle(remaining)
-    return {"items": remaining[: max(0, 3 - answered_today)]}
-
-
-@router.post("/answer")
-async def answer_item(payload: dict, user: dict = Depends(get_current_user)):
-    supabase = db.get_supabase()
-    item_id = payload.get("item_id")
-    answer_index = payload.get("answer_index")
-    today = date.today().isoformat()
-    now = datetime.utcnow().isoformat()
-
-    answered_today = db.count_daily_survey_responses(user["hashed_id"], today)
-    if answered_today >= 3:
-        raise HTTPException(status_code=409, detail={"error": "daily_quota_exceeded"})
-
-    existing = db.get_daily_survey_response(user["hashed_id"], item_id, today)
-    if existing:
-        raise HTTPException(status_code=409, detail={"error": "already_answered"})
-
-    data = {
-        "id": str(uuid.uuid4()),
-        "user_id": user["hashed_id"],
-        "item_id": item_id,
-        "answer_index": answer_index,
-        "created_at": now,
-        "answered_on": today,
-    }
-    supabase.table("survey_responses").insert(data).execute()
-    return {"status": "ok"}

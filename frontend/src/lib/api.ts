@@ -17,20 +17,22 @@ export async function fetchProfile() {
   return res.json() as Promise<{ id: string; email?: string; username?: string; is_admin: boolean }>;
 }
 
-export interface SurveyItemInput {
-  label: string;
+export interface SurveyOptionInput {
+  text: string;
   is_exclusive?: boolean;
+  requires_text?: boolean;
+  order: number;
 }
 
 export interface SurveyPayload {
   title: string;
-  question: string;
-  lang: string;
-  choice_type: 'sa' | 'ma';
-  country_codes: string[];
-  items: SurveyItemInput[];
-  is_active?: boolean;
-  language?: string;
+  question_text: string;
+  language: string;
+  allowed_countries: string[];
+  selection_type: 'single' | 'multiple';
+  status?: 'pending' | 'approved';
+  options: SurveyOptionInput[];
+  auto_translate?: boolean;
 }
 
 export async function getSurveys() {
@@ -45,7 +47,7 @@ export async function createSurvey(payload: SurveyPayload) {
     body: JSON.stringify(payload),
   });
   if (!res.ok) throw new Error(String(res.status));
-  return res.json() as Promise<{ id: string }>;
+  return res.json();
 }
 
 export async function updateSurvey(id: string, payload: SurveyPayload) {
@@ -54,11 +56,38 @@ export async function updateSurvey(id: string, payload: SurveyPayload) {
     body: JSON.stringify(payload),
   });
   if (!res.ok) throw new Error(String(res.status));
-  return res.json() as Promise<{ updated: boolean }>;
+  return res.json();
 }
 
 export async function deleteSurvey(id: string) {
   const res = await fetchWithAuth(`/admin/surveys/${id}`, { method: 'DELETE' });
   if (!res.ok) throw new Error(String(res.status));
-  return res.json() as Promise<{ deleted: boolean }>;
+  return res.json();
+}
+
+export async function getAvailableSurveys(lang: string, country: string) {
+  const res = await fetchWithAuth(
+    `/surveys/available?lang=${encodeURIComponent(lang)}&country=${encodeURIComponent(country)}`
+  );
+  if (!res.ok) throw new Error(String(res.status));
+  return res.json();
+}
+
+export async function respondSurvey(
+  surveyId: string,
+  optionIds: string[],
+  otherTexts: Record<string, string>
+) {
+  const res = await fetchWithAuth(`/surveys/${surveyId}/respond`, {
+    method: 'POST',
+    body: JSON.stringify({ option_ids: optionIds, other_texts: otherTexts }),
+  });
+  if (!res.ok) throw new Error(String(res.status));
+  return res.text();
+}
+
+export async function getSurveyStats(surveyId: string) {
+  const res = await fetchWithAuth(`/surveys/${surveyId}/stats`);
+  if (!res.ok) throw new Error(String(res.status));
+  return res.json();
 }

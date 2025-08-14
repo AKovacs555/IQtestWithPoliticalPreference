@@ -62,6 +62,8 @@ interface SurveyEditorDialogProps {
 interface ItemState {
   label: string;
   is_exclusive: boolean;
+  requires_text: boolean;
+  order: number;
 }
 
 export default function SurveyEditorDialog({
@@ -74,7 +76,7 @@ export default function SurveyEditorDialog({
   const [title, setTitle] = useState('');
   const [question, setQuestion] = useState('');
   const [language, setLanguage] = useState('en');
-  const [choiceType, setChoiceType] = useState<'sa' | 'ma'>('sa');
+  const [choiceType, setChoiceType] = useState<'single' | 'multiple'>('single');
   const [countryCodes, setCountryCodes] = useState<string[]>([]);
   const [items, setItems] = useState<ItemState[]>([]);
   const [isActive, setIsActive] = useState(true);
@@ -86,30 +88,32 @@ export default function SurveyEditorDialog({
       setTitle(initialValue.title || '');
       setQuestion(initialValue.question || '');
       setLanguage(initialValue.language || initialValue.lang || 'en');
-      setChoiceType(initialValue.choice_type || 'sa');
-      setCountryCodes(initialValue.country_codes || []);
+      setChoiceType(initialValue.selection_type || 'single');
+      setCountryCodes(initialValue.allowed_countries || []);
       setItems(
-        (initialValue.items || []).map((it: any) => ({
-          label: it.label ?? it.body ?? '',
+        (initialValue.options || []).map((it: any) => ({
+          label: it.option_text ?? it.text ?? '',
           is_exclusive: Boolean(it.is_exclusive),
+          requires_text: Boolean(it.requires_text),
+          order: it.order,
         }))
       );
-      setIsActive(initialValue.is_active ?? true);
+      setIsActive(initialValue.status === 'approved');
     } else {
       setTitle('');
       setQuestion('');
       setLanguage('en');
-      setChoiceType('sa');
+      setChoiceType('single');
       setCountryCodes([]);
       setItems([]);
-      setIsActive(true);
+      setIsActive(false);
     }
   }, [initialValue, open]);
 
   const allCountries = useMemo(() => getCountryList('en'), []);
 
   const addItem = () =>
-    setItems((it) => [...it, { label: '', is_exclusive: false }]);
+    setItems((it) => [...it, { label: '', is_exclusive: false, requires_text: false, order: it.length + 1 }]);
 
   const updateItem = (idx: number, field: keyof ItemState, value: any) => {
     setItems((it) =>
@@ -118,14 +122,18 @@ export default function SurveyEditorDialog({
   };
 
   const removeItem = (idx: number) =>
-    setItems((it) => it.filter((_, i) => i !== idx));
+    setItems((it) =>
+      it
+        .filter((_, i) => i !== idx)
+        .map((item, i2) => ({ ...item, order: i2 + 1 }))
+    );
 
   const moveItem = (from: number, to: number) => {
     setItems((it) => {
       const copy = [...it];
       const [moved] = copy.splice(from, 1);
       copy.splice(to, 0, moved);
-      return copy;
+      return copy.map((item, i) => ({ ...item, order: i + 1 }));
     });
   };
 
@@ -142,13 +150,17 @@ export default function SurveyEditorDialog({
     }
     const payload: SurveyPayload = {
       title,
-      question,
-      lang: language,
+      question_text: question,
       language,
-      choice_type: choiceType,
-      country_codes: countryCodes,
-      items,
-      is_active: isActive,
+      allowed_countries: countryCodes,
+      selection_type: choiceType,
+      status: isActive ? 'approved' : 'pending',
+      options: items.map((it, idx) => ({
+        text: it.label,
+        is_exclusive: it.is_exclusive,
+        requires_text: it.requires_text,
+        order: idx + 1,
+      })),
     };
     let id: string | undefined = initialValue?.id;
     try {
@@ -265,6 +277,17 @@ export default function SurveyEditorDialog({
                       />
                     }
                     label="Exclusive"
+                  />
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={it.requires_text}
+                        onChange={(e) =>
+                          updateItem(idx, 'requires_text', e.target.checked)
+                        }
+                      />
+                    }
+                    label="Requires text"
                   />
                   <IconButton
                     size="small"
