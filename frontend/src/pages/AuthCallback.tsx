@@ -20,11 +20,18 @@ export default function AuthCallback() {
         if (mounted) navigate('/', { replace: true });
         return;
       }
-      // 1) コードがあれば交換
+      // 1) コードとコードベリファイアが揃っていれば交換
       const code = getCodeFromUrl();
-      if (code) {
-        const { error } = await supabase.auth.exchangeCodeForSession(code);
+      const verifierKey = `${supabase.auth.storageKey}-code-verifier`;
+      const codeVerifier = window.localStorage.getItem(verifierKey);
+      if (code && codeVerifier) {
+        const { error } = await (supabase.auth as any).exchangeCodeForSession({
+          authCode: code,
+          codeVerifier,
+        });
         if (error) console.error('[AuthCallback] exchangeCodeForSession error', error);
+      } else {
+        console.error('[AuthCallback] missing auth code or code verifier');
       }
       // 2) プロフィール upsert（非同期で fire-and-forget）
       const token = (await supabase.auth.getSession()).data.session?.access_token;
