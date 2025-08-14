@@ -24,23 +24,25 @@ export async function waitForSession(timeoutMs = 7000): Promise<Session> {
       const now = Date.now();
       if (now - started > timeoutMs) {
         done = true;
-        clearAll(subscription.data.subscription, timer);
+        clearAll(subscription, timer);
         return reject(new Error('waitForSession: timeout'));
       }
       const { data } = await supabase.auth.getSession();
       if (data.session) {
         done = true;
-        clearAll(subscription.data.subscription, timer);
+        clearAll(subscription, timer);
         resolve(data.session);
       }
     };
 
-    const { data: subscription } = supabase.auth.onAuthStateChange((event, session) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
       if (done) return;
       if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
         if (session) {
           done = true;
-          clearAll(subscription.subscription, timer);
+          clearAll(subscription, timer);
           resolve(session);
         }
       }
