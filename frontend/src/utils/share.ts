@@ -5,9 +5,10 @@ export interface ShareParams {
   hashtags?: string[];
 }
 
-const DEFAULT_HASHTAGS = (import.meta.env.VITE_SOCIAL_HASHTAGS || 'IQArena,IQTest')
+const DEFAULT_HASHTAGS = (import.meta.env.VITE_SOCIAL_HASHTAGS || 'IQArena,IQアリーナ')
   .split(',')
-  .map((h) => h.replace(/^#/, ''));
+  .map((h) => h.trim().replace(/^#/, ''))
+  .filter(Boolean);
 
 export async function shareResult({ title, text, url, hashtags }: ShareParams) {
   const tags = hashtags && hashtags.length ? hashtags : DEFAULT_HASHTAGS;
