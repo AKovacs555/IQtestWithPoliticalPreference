@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 // Layout is provided by AdminLayout, so no need to import it here.
 import { useTranslation } from "react-i18next";
+import { useSession } from "../hooks/useSession";
 const languageOptions = [
   "ja",
   "en",
@@ -57,6 +58,7 @@ export default function AdminQuestions() {
     "all" | "approved" | "unapproved"
   >("all");
   const { t } = useTranslation();
+  const { session } = useSession();
 
   const apiBase = import.meta.env.VITE_API_BASE || "";
   if (!apiBase) {
@@ -77,7 +79,7 @@ export default function AdminQuestions() {
 
   const fetchQuestions = async (lang: string): Promise<QuestionVariant[]> => {
     setStatus("loading");
-    const authToken = localStorage.getItem("authToken");
+    const authToken = session?.access_token;
     const headers = authToken ? { Authorization: `Bearer ${authToken}` } : {};
     const res = await fetch(`${apiBase}/admin/questions/?lang=${lang}`, {
       headers,
@@ -138,7 +140,7 @@ export default function AdminQuestions() {
   const saveEdit = async () => {
     if (!editingQuestion) return;
     setStatus("saving");
-    const authToken = localStorage.getItem("authToken");
+    const authToken = session?.access_token;
     const headers = authToken
       ? {
           "Content-Type": "application/json",
@@ -161,7 +163,7 @@ export default function AdminQuestions() {
 
   const remove = async (id: number) => {
     if (!confirm("Delete this question?")) return;
-    const authToken = localStorage.getItem("authToken");
+    const authToken = session?.access_token;
     const headers = authToken ? { Authorization: `Bearer ${authToken}` } : {};
     const res = await fetch(`${apiBase}/admin/questions/${id}`, {
       method: "DELETE",
@@ -175,7 +177,7 @@ export default function AdminQuestions() {
     if (!ids.length) return;
     if (!confirm("Delete selected questions?")) return;
     setStatus("deleting");
-    const authToken = localStorage.getItem("authToken");
+    const authToken = session?.access_token;
     const headers = authToken
       ? {
           "Content-Type": "application/json",
@@ -196,7 +198,7 @@ export default function AdminQuestions() {
     if (selected.size === 0) return;
     const ids = Array.from(selected);
     setStatus("updating");
-    const authToken = localStorage.getItem("authToken");
+    const authToken = session?.access_token;
     const headers = authToken
       ? {
           "Content-Type": "application/json",
@@ -225,7 +227,7 @@ export default function AdminQuestions() {
     if (status === "updating") return;
     setStatus("updating");
     try {
-      const authToken = localStorage.getItem("authToken");
+      const authToken = session?.access_token;
       const headers: Record<string, string> = { "Content-Type": "application/json" };
       if (authToken) headers.Authorization = `Bearer ${authToken}`;
       const res = await fetch(`${apiBase}/admin/questions/approve_all`, {
@@ -252,7 +254,7 @@ export default function AdminQuestions() {
   };
 
   const toggleApprove = async (groupId: string) => {
-    const authToken = localStorage.getItem("authToken");
+    const authToken = session?.access_token;
     const headers = authToken ? { Authorization: `Bearer ${authToken}` } : {};
     const res = await fetch(
       `${apiBase}/admin/questions/${groupId}/toggle_approved`,
@@ -279,7 +281,7 @@ export default function AdminQuestions() {
       window.confirm("Are you absolutely sure?")
     ) {
       setStatus("deleting");
-      const authToken = localStorage.getItem("authToken");
+      const authToken = session?.access_token;
       const headers = authToken ? { Authorization: `Bearer ${authToken}` } : {};
       const res = await fetch(`${apiBase}/admin/questions/delete_all`, {
         method: "POST",
@@ -312,7 +314,7 @@ export default function AdminQuestions() {
         formData.append("images", file);
       });
     }
-    const authToken = localStorage.getItem("authToken");
+    const authToken = session?.access_token;
     const headers = authToken ? { Authorization: `Bearer ${authToken}` } : {};
     const res = await fetch(`${apiBase}/admin/import_questions_with_images`, {
       method: "POST",

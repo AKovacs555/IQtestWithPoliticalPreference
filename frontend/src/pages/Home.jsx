@@ -4,14 +4,13 @@ import AppShell from '../components/AppShell';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
-import { useAuth } from '../auth/useAuth';
+import { useSession } from '../hooks/useSession';
 
 const API_BASE = import.meta.env.VITE_API_BASE || "";
 
 export default function Home() {
   const { t } = useTranslation();
-  const userId = localStorage.getItem('user_id') || '';
-  const { user, loading } = useAuth();
+  const { user, loading, userId } = useSession();
   const navigate = useNavigate();
   const [proPrice, setProPrice] = useState(0);
   const handleStart = () => {

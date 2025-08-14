@@ -5,7 +5,7 @@ const API_BASE = import.meta.env.VITE_API_BASE || window.location.origin;
 async function authHeaders() {
   try {
     const { data } = await supabase.auth.getSession();
-    const token = data.session?.access_token || localStorage.getItem('authToken');
+    const token = data.session?.access_token;
     return token ? { Authorization: `Bearer ${token}` } : {};
   } catch {
     return {};

@@ -4,13 +4,14 @@ import getCountryList from '../lib/countryList';
 import LanguageSelector from '../components/LanguageSelector';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
+import { useSession } from '../hooks/useSession';
 
 export default function SelectNationality() {
   const [country, setCountry] = useState('');
   const [search, setSearch] = useState('');
   const [list, setList] = useState([]);
   const apiBase = import.meta.env.VITE_API_BASE;
-  const userId = localStorage.getItem('user_id') || 'demo';
+  const { userId } = useSession();
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
 

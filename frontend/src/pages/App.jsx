@@ -28,6 +28,7 @@ import ErrorChunkReload from '../components/common/ErrorChunkReload';
 import ThemeDemo from './ThemeDemo.jsx';
 import Button from '@mui/material/Button';
 import RequireAdmin from '../routes/RequireAdmin';
+import RequireAuth from '../routes/RequireAuth';
 import { shareResult, buildLineShareUrl, buildFacebookShareUrl } from '../utils/share';
 import Profile from './Profile.jsx';
 const API_BASE = import.meta.env.VITE_API_BASE || "";
@@ -370,21 +371,21 @@ export default function App() {
     <AnimatePresence mode="wait">
       <Routes location={location} key={location.pathname}>
         <Route path="/" element={<Home />} />
-        <Route path="/select-set" element={<SelectSet />} />
-        <Route path="/demographics" element={<DemographicsForm />} />
-        <Route path="/quiz" element={<TestPage />} />
-        <Route path="/test" element={<TestPage />} />
-        <Route path="/survey" element={<SurveyPage />} />
-        <Route path="/daily-survey" element={<DailySurvey />} />
+        <Route path="/select-set" element={<RequireAuth><SelectSet /></RequireAuth>} />
+        <Route path="/demographics" element={<RequireAuth><DemographicsForm /></RequireAuth>} />
+        <Route path="/quiz" element={<RequireAuth><TestPage /></RequireAuth>} />
+        <Route path="/test" element={<RequireAuth><TestPage /></RequireAuth>} />
+        <Route path="/survey" element={<RequireAuth><SurveyPage /></RequireAuth>} />
+        <Route path="/daily-survey" element={<RequireAuth><DailySurvey /></RequireAuth>} />
         <Route path="/pricing" element={<Pricing />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/result" element={<Result />} />
         <Route path="/leaderboard" element={<Leaderboard />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/settings/:userId" element={<Settings />} />
-        <Route path="/profile" element={<Profile />} />
-        <Route path="/history/:userId" element={<History />} />
-        <Route path="/select-nationality" element={<SelectNationality />} />
+        <Route path="/dashboard" element={<RequireAuth><Dashboard /></RequireAuth>} />
+        <Route path="/settings/:userId" element={<RequireAuth><Settings /></RequireAuth>} />
+        <Route path="/profile" element={<RequireAuth><Profile /></RequireAuth>} />
+        <Route path="/history/:userId" element={<RequireAuth><History /></RequireAuth>} />
+        <Route path="/select-nationality" element={<RequireAuth><SelectNationality /></RequireAuth>} />
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/auth/callback" element={<AuthCallback />} />

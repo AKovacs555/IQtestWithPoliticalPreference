@@ -1,17 +1,19 @@
 import React, { useEffect, useState } from 'react';
+import { useSession } from '../hooks/useSession';
 // Layout is provided by AdminLayout.
 
 export default function AdminUsers() {
   const [users, setUsers] = useState<any[]>([]);
   const [msg, setMsg] = useState('');
   const apiBase = import.meta.env.VITE_API_BASE || '';
+  const { session } = useSession();
   if (!apiBase) {
     console.warn('VITE_API_BASE is not set');
   }
 
   const load = async () => {
-    const authToken = localStorage.getItem('authToken');
-    const headers = authToken ? { Authorization: `Bearer ${authToken}` } : {};
+    const token = session?.access_token;
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
     const res = await fetch(`${apiBase}/admin/users`, { headers });
     if (res.ok) {
       const data = await res.json();
@@ -23,16 +25,16 @@ export default function AdminUsers() {
 
   useEffect(() => {
     load();
-  }, []);
+  }, [session]);
 
   const update = async (id: string) => {
     const u = users.find(us => us.hashed_id === id);
     if (!u) return;
     setMsg('');
     try {
-      const authToken = localStorage.getItem('authToken');
-      const headers = authToken
-        ? { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` }
+      const token = session?.access_token;
+      const headers = token
+        ? { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
         : { 'Content-Type': 'application/json' };
       const res = await fetch(`${apiBase}/admin/user/free_attempts`, {
         method: 'POST',

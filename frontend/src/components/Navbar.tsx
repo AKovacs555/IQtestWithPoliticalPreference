@@ -75,7 +75,18 @@ export default function Navbar() {
             {
               label: 'google',
               element: (
-                <Button variant="contained" fullWidth size="small" onClick={() => signInWithGoogle()}>
+                <Button
+                  variant="contained"
+                  fullWidth
+                  size="small"
+                  onClick={() =>
+                    signInWithGoogle().catch((err) => {
+                      console.error(err);
+                      // eslint-disable-next-line no-alert
+                      alert(err.message || 'Sign-in failed');
+                    })
+                  }
+                >
                   Continue with Google
                 </Button>
               ),
@@ -117,7 +128,13 @@ export default function Navbar() {
           {googleEnabled && (
             <Button
               variant="contained"
-              onClick={() => signInWithGoogle()}
+              onClick={() =>
+                signInWithGoogle().catch((err) => {
+                  console.error(err);
+                  // eslint-disable-next-line no-alert
+                  alert(err.message || 'Sign-in failed');
+                })
+              }
               size="small"
               sx={{ minHeight: '48px' }}
             >

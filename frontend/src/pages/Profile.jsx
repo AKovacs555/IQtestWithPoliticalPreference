@@ -4,7 +4,7 @@ import { useAuth } from '../auth/useAuth';
 import { getProfile, updateProfile } from '../api';
 
 export default function Profile() {
-  const { user, loading } = useAuth();
+  const { user } = useAuth();
   const [username, setUsername] = useState('');
   const [status, setStatus] = useState('');
 
@@ -22,9 +22,6 @@ export default function Profile() {
       setStatus(err.message || 'Error');
     }
   };
-
-  if (loading) return <AppShell><div className="p-4">Loading...</div></AppShell>;
-  if (!user) return <AppShell><div className="p-4">Please log in.</div></AppShell>;
 
   return (
     <AppShell>
