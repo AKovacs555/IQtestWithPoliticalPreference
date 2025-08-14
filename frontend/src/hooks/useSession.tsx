@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabaseClient';
+import { waitForSession } from '../lib/waitForSession';
 
 interface SessionContextValue {
   session: Session | null;
@@ -95,13 +96,15 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let mounted = true;
-    // 初期ロードで必ず loading を落とす
     (async () => {
-      const { data } = await supabase.auth.getSession();
-      if (!mounted) return;
-      applySession(data.session);
-      fetchAndApplyIsAdmin(data.session?.user?.id);
-      setLoading(false);
+      try {
+        const sess = await waitForSession().catch(() => null);
+        if (!mounted) return;
+        await applySession(sess);
+        fetchAndApplyIsAdmin(sess?.user?.id);
+      } finally {
+        if (mounted) setLoading(false);
+      }
     })();
     const { data: sub } = supabase.auth.onAuthStateChange(async () => {
       if (!mounted) return;
