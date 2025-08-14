@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
+import { useSession } from '../hooks/useSession';
 // Layout is provided by AdminLayout.
 
 export default function AdminQuestionStats() {
   const apiBase = import.meta.env.VITE_API_BASE || '';
   const numQuestions = Number(import.meta.env.VITE_NUM_QUESTIONS || 20);
+  const { session } = useSession();
   const required = {
     easy: Math.ceil(numQuestions * 0.3),
     medium: Math.ceil(numQuestions * 0.4),
@@ -13,8 +15,8 @@ export default function AdminQuestionStats() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const authToken = localStorage.getItem('authToken');
-    const headers = authToken ? { Authorization: `Bearer ${authToken}` } : {};
+    const token = session?.access_token;
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
     fetch(`${apiBase}/admin/questions/stats`, { headers })
       .then((res) => {
         if (!res.ok) throw new Error('Failed to fetch');
@@ -22,7 +24,7 @@ export default function AdminQuestionStats() {
       })
       .then((data) => setStats(data))
       .catch((err) => setError(err.message));
-  }, [apiBase]);
+  }, [apiBase, session]);
 
   const languages = Object.keys(stats).sort();
 

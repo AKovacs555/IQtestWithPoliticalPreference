@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import AppShell from '../components/AppShell';
-import { useAuth } from '../auth/useAuth';
+import { useSession } from '../hooks/useSession';
 
 const API_BASE = import.meta.env.VITE_API_BASE || "";
 
@@ -14,10 +14,10 @@ export default function DemographicsForm() {
   const [gender, setGender] = useState('other');
   const [income, setIncome] = useState('0-3m');
   const [occupation, setOccupation] = useState('student');
-  const { user, loading } = useAuth();
+  const { userId } = useSession();
 
   const save = () => {
-    const uid = localStorage.getItem('user_id') || 'testuser';
+    const uid = userId || 'testuser';
     fetch(`${API_BASE}/user/demographics`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -34,13 +34,6 @@ export default function DemographicsForm() {
       navigate(path);
     });
   };
-
-  React.useEffect(() => {
-    if (loading) return;
-    if (!user) navigate('/login');
-  }, [user, loading, navigate]);
-
-  if (loading || !user) return null;
 
   return (
     <AppShell>

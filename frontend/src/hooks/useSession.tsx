@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { useNavigate } from 'react-router-dom';
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabaseClient';
 import { waitForSession } from '../lib/waitForSession';
@@ -26,6 +27,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [userId, setUserId] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   async function fetchAndApplyIsAdmin(
     uid?: string | null,
@@ -72,20 +74,6 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       );
       setIsAdmin((prev) => adminFromToken || prev);
     }
-    try {
-      if (sess?.access_token) {
-        localStorage.setItem('authToken', sess.access_token);
-      } else {
-        localStorage.removeItem('authToken');
-      }
-      if (uid) {
-        localStorage.setItem('user_id', uid);
-      } else {
-        localStorage.removeItem('user_id');
-      }
-    } catch {
-      /* ignore */
-    }
     await fetchAndApplyIsAdmin(uid);
   };
 
@@ -97,26 +85,29 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let mounted = true;
     (async () => {
-      try {
-        const sess = await waitForSession().catch(() => null);
-        if (!mounted) return;
-        await applySession(sess);
-        fetchAndApplyIsAdmin(sess?.user?.id);
-      } finally {
-        if (mounted) setLoading(false);
-      }
-    })();
-    const { data: sub } = supabase.auth.onAuthStateChange(async () => {
-      if (!mounted) return;
       const { data } = await supabase.auth.getSession();
-      applySession(data.session);
-      fetchAndApplyIsAdmin(data.session?.user?.id);
+      let sess = data.session;
+      const hasCode = /[?&]code=/.test(window.location.href);
+      if (!sess && hasCode) {
+        sess = await waitForSession().catch(() => null);
+      }
+      if (!mounted) return;
+      await applySession(sess);
+      fetchAndApplyIsAdmin(sess?.user?.id);
+      setLoading(false);
+    })();
+    const { data: sub } = supabase.auth.onAuthStateChange((event, sess) => {
+      if (!mounted) return;
+      applySession(sess);
+      fetchAndApplyIsAdmin(sess?.user?.id);
+      if (event === 'SIGNED_IN') navigate('/');
+      if (event === 'SIGNED_OUT') navigate('/login');
     });
     return () => {
       mounted = false;
       sub.subscription.unsubscribe();
     };
-  }, []);
+  }, [navigate]);
 
   return (
     <SessionContext.Provider

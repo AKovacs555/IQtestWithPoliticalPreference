@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import SurveyCard from '../components/survey/SurveyCard';
+import { useSession } from '../hooks/useSession';
 
 // minimal toast shim
 const toast = {
@@ -20,8 +21,8 @@ export default function DailySurvey() {
   const [error, setError] = useState<string | null>(null);
   const [pendingIdx, setPendingIdx] = useState<number | null>(null);
   const apiBase = import.meta.env.VITE_API_BASE || '';
-  const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
-  const headers = token ? { Authorization: `Bearer ${token}` } : {};
+  const { session } = useSession();
+  const headers = session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {};
 
   const load = async () => {
     try {
@@ -44,8 +45,8 @@ export default function DailySurvey() {
   };
 
   useEffect(() => {
-    load();
-  }, []);
+    if (session) load();
+  }, [session]);
 
   const handleAnswer = async (idx: number) => {
     const item = items[current];

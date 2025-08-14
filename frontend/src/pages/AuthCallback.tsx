@@ -42,8 +42,8 @@ export default function AuthCallback() {
           credentials: 'include',
         }).catch(() => {});
       }
-      // 3) 最終遷移（保険で少し待つ）
-      setTimeout(() => mounted && navigate('/', { replace: true }), 150);
+      // 3) 最終遷移
+      if (mounted) navigate('/', { replace: true });
     })();
     return () => {
       mounted = false;

@@ -4,7 +4,7 @@ import LanguageSelector from '../components/LanguageSelector';
 import { getSurvey, submitSurvey, completeSurvey } from '../api';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../auth/useAuth';
+import { useSession } from '../hooks/useSession';
 
 export default function SurveyPage() {
   const [items, setItems] = useState([]);
@@ -13,15 +13,10 @@ export default function SurveyPage() {
   const [error, setError] = useState(null);
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
-  const { user, loading: authLoading } = useAuth();
+  const { userId } = useSession();
 
   useEffect(() => {
-    // 認証状態の確認中は処理を行わない
-    if (authLoading) return;
-    if (!user) {
-      navigate('/login');
-      return;
-    }
+    // 前提条件チェック
     const nat = localStorage.getItem('nationality');
     if (!nat) {
       navigate('/select-nationality');
@@ -36,7 +31,7 @@ export default function SurveyPage() {
       navigate('/quiz');
       return;
     }
-    const uid = localStorage.getItem('user_id');
+    const uid = userId;
     getSurvey(i18n.language, uid, nat)
       .then(d => {
         const list = d.items || [];
@@ -55,7 +50,7 @@ export default function SurveyPage() {
         setError(e.message);
       })
       .finally(() => setLoading(false));
-  }, [user, authLoading, i18n.language, navigate]);
+  }, [userId, i18n.language, navigate]);
 
   const handleChange = (item, optionIdx) => {
     setAnswers(a => {
@@ -87,7 +82,7 @@ export default function SurveyPage() {
       selections: sel.map(Number),
     }));
     try {
-      const uid = localStorage.getItem('user_id');
+      const uid = userId;
       await submitSurvey(formatted, uid);
       if (uid) {
         await completeSurvey(uid);

@@ -7,7 +7,11 @@ export default function GoogleOAuthButton({ fullWidth = true, size = 'medium', s
   if (disabled) return null;
 
   const handleClick = () => {
-    signInWithGoogle().catch(err => console.error(err));
+    signInWithGoogle().catch(err => {
+      console.error(err);
+      // eslint-disable-next-line no-alert
+      alert(err.message || 'Sign-in failed');
+    });
   };
 
   return (

@@ -6,7 +6,6 @@ import LinearProgress from '@mui/material/LinearProgress';
 import { AnimatePresence, motion, MotionConfig } from 'framer-motion';
 import QuestionCard from '../components/QuestionCard';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../auth/useAuth';
 
 export default function TestPage() {
   const [session, setSession] = React.useState(null);
@@ -22,17 +21,11 @@ export default function TestPage() {
   const [submitting, setSubmitting] = React.useState(false);
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
-  const { user, loading: authLoading } = useAuth();
   const isMobile = /Mobi|Android/i.test(navigator.userAgent);
   const watermark = React.useMemo(() => `${session?.slice(0,6) || ''}-${Date.now()}`,[session]);
 
   React.useEffect(() => {
-    // 認証状態の取得中は何もしない
-    if (authLoading) return;
-    if (!user) {
-      navigate('/login');
-      return;
-    }
+    // 事前条件の確認
     const status = sessionStorage.getItem('quiz_status');
     const exp = sessionStorage.getItem('quiz_expires');
     if (status && status !== 'started') {
@@ -88,7 +81,7 @@ export default function TestPage() {
       }
     }
     load();
-  }, [i18n.language, navigate, user, authLoading]);
+  }, [i18n.language, navigate]);
 
   React.useEffect(() => {
     if (

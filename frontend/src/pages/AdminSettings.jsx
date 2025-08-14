@@ -1,15 +1,17 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import { useSession } from '../hooks/useSession';
 // Layout is provided by AdminLayout.
 
 export default function AdminSettings() {
   const apiBase = import.meta.env.VITE_API_BASE || '';
   const [maxFreeAttempts, setMaxFreeAttempts] = useState('');
   const [msg, setMsg] = useState('');
+  const { session } = useSession();
 
   const fetchSetting = useCallback(async () => {
     try {
-      const authToken = localStorage.getItem('authToken');
-      const headers = authToken ? { Authorization: `Bearer ${authToken}` } : {};
+      const token = session?.access_token;
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
       const res = await fetch(`${apiBase}/settings/max_free_attempts`, {
         headers,
       });
@@ -20,15 +22,15 @@ export default function AdminSettings() {
     } catch (e) {
       console.error(e);
     }
-  }, [apiBase]);
+  }, [apiBase, session]);
 
   useEffect(() => { fetchSetting(); }, [fetchSetting]);
 
   const save = async () => {
     setMsg('');
-    const authToken = localStorage.getItem('authToken');
-    const headers = authToken
-      ? { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` }
+    const token = session?.access_token;
+    const headers = token
+      ? { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
       : { 'Content-Type': 'application/json' };
     const res = await fetch(`${apiBase}/settings/update`, {
       method: 'POST',

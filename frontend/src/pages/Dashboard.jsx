@@ -2,12 +2,13 @@ import React, { useEffect, useRef, useState } from 'react';
 import AppShell from '../components/AppShell';
 import { Chart } from 'chart.js/auto';
 import { useTranslation } from 'react-i18next';
+import { useSession } from '../hooks/useSession';
 
 const API_BASE = import.meta.env.VITE_API_BASE || '';
 
 export default function Dashboard() {
   const { t, i18n } = useTranslation();
-  const userId = localStorage.getItem('user_id') || 'demo';
+  const { userId, session } = useSession();
   const histRef = useRef();
   const barRef = useRef();
   const [hist, setHist] = useState({ histogram: [], bucket_edges: [], user_score: null, user_percentile: null });
@@ -19,7 +20,7 @@ export default function Dashboard() {
   const [tab, setTab] = useState('stats');
 
   useEffect(() => {
-    fetch(`${API_BASE}/stats/iq_histogram?user_id=${userId}`)
+    fetch(`${API_BASE}/stats/iq_histogram?user_id=${userId || 'demo'}`)
       .then(r => r.json())
       .then(setHist);
 
@@ -31,7 +32,7 @@ export default function Dashboard() {
       .then(r => r.json())
       .then(d => setSelectedSurvey(d.group_id || ''));
 
-    const token = localStorage.getItem('authToken');
+    const token = session?.access_token;
     if (token) {
       fetch(`${API_BASE}/referral/code`, { headers: { Authorization: `Bearer ${token}` } })
         .then(r => r.json())
@@ -40,7 +41,7 @@ export default function Dashboard() {
         .then(r => r.json())
         .then(d => setHistory(d.attempts || []));
     }
-  }, [i18n.language, userId]);
+  }, [i18n.language, userId, session]);
 
   useEffect(() => {
     if (!hist.histogram.length) return;
