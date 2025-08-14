@@ -2,7 +2,6 @@ import React, { useEffect, useState, lazy, Suspense } from 'react';
 import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import useShareMeta from '../hooks/useShareMeta';
-import { useAuth } from '../auth/useAuth';
 import AppShell from '../components/AppShell';
 import ProgressBar from '../components/ProgressBar';
 import Home from './Home';
