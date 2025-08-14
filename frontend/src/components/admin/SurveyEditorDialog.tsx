@@ -33,6 +33,25 @@ import {
 } from '../../lib/api';
 import { SUPPORTED_LANGUAGES } from '../../i18n/languages';
 
+const SUPPORTED_LANGS = [
+  'en',
+  'ja',
+  'ko',
+  'zh',
+  'es',
+  'de',
+  'fr',
+  'pt',
+  'ru',
+  'ar',
+  'id',
+  'tr',
+  'it',
+  'pl',
+  'nl',
+  'vi',
+];
+
 interface SurveyEditorDialogProps {
   open: boolean;
   onClose: () => void;
@@ -59,13 +78,8 @@ export default function SurveyEditorDialog({
   const [countryCodes, setCountryCodes] = useState<string[]>([]);
   const [items, setItems] = useState<ItemState[]>([]);
   const [isActive, setIsActive] = useState(true);
-  const { i18n } = useTranslation();
-  const supported = useMemo(
-    () =>
-      (i18n?.options?.supportedLngs || Object.keys(SUPPORTED_LANGUAGES))
-        .filter((l: string) => l && l !== 'cimode'),
-    [i18n]
-  );
+  useTranslation();
+  const supported = SUPPORTED_LANGS;
 
   useEffect(() => {
     if (initialValue) {

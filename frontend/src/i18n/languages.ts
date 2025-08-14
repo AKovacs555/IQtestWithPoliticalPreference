@@ -8,5 +8,11 @@ export const SUPPORTED_LANGUAGES = {
   es: 'Español',
   pt: 'Português',
   ru: 'Русский',
-  ar: 'العربية'
+  ar: 'العربية',
+  id: 'Bahasa Indonesia',
+  tr: 'Türkçe',
+  it: 'Italiano',
+  pl: 'Polski',
+  nl: 'Nederlands',
+  vi: 'Tiếng Việt'
 } as const;

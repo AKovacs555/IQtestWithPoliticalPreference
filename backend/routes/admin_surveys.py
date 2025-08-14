@@ -15,6 +15,7 @@ revisited with a SQL function for true atomicity in the future.
 
 from datetime import datetime
 from typing import Literal
+import json
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -60,6 +61,62 @@ def grant_free_attempts(countries: list[str]) -> None:
         insert_attempt_ledger(r.get("hashed_id"), 1, "ad")
 
 
+SUPPORTED_LANGS = [
+    "en",
+    "ja",
+    "ko",
+    "zh",
+    "es",
+    "de",
+    "fr",
+    "pt",
+    "ru",
+    "ar",
+    "id",
+    "tr",
+    "it",
+    "pl",
+    "nl",
+    "vi",
+]
+
+
+def _normalize_lang(lang: str | None) -> str:
+    """Return a supported lowercase language code or ``en``."""
+
+    if not lang:
+        return "en"
+    lang = lang.lower()
+    return lang if lang in SUPPORTED_LANGS else "en"
+
+
+def _build_item_rows(survey_id: str, items: list[SurveyItemIn], lang: str):
+    """Create fully-populated survey item rows for bulk insert."""
+
+    rows: list[dict] = []
+    pos = 1
+    for it in items:
+        text = (it.body or it.label or "").strip()
+        if not text:
+            continue
+        rows.append(
+            {
+                "survey_id": survey_id,
+                "position": pos,
+                "body": text,
+                "label": text,
+                "choices": json.dumps([]),
+                "is_exclusive": bool(it.is_exclusive),
+                "is_active": True,
+                "page": 1,
+                "language": lang,
+                "translation_language": lang,
+            }
+        )
+        pos += 1
+    return rows
+
+
 class SurveyItemIn(BaseModel):
     """Input model for a survey item.
 
@@ -96,33 +153,22 @@ async def create_survey(payload: SurveyIn):
     """Create a new survey along with its items."""
 
     supabase_admin = _admin_client()
+    survey_lang = _normalize_lang(payload.language or payload.lang)
     payload_dict = payload.dict()
     survey_data = {
         "title": payload_dict.get("title"),
         "question": payload_dict.get("question"),
-        "lang": payload_dict.get("lang"),
+        "lang": survey_lang,
         "choice_type": payload_dict.get("choice_type"),
         "country_codes": payload_dict.get("country_codes"),
-        "language": payload_dict.get("language") or "en",
+        "language": survey_lang,
     }
     res = supabase_admin.table("surveys").insert(survey_data, returning="representation").execute()
     if not res.data:
         raise HTTPException(status_code=500, detail="failed to insert survey")
     survey_id = res.data[0]["id"]
 
-    item_rows = []
-    for idx, it in enumerate(payload_dict.get("items") or []):
-        text = (it.get("body") or it.get("label") or "").strip()
-        if not text:
-            continue
-        item_rows.append(
-            {
-                "survey_id": survey_id,
-                "position": idx + 1,
-                "body": text,
-                "is_exclusive": bool(it.get("is_exclusive")),
-            }
-        )
+    item_rows = _build_item_rows(survey_id, payload.items, survey_lang)
     if item_rows:
         supabase_admin.table("survey_items").insert(item_rows, returning="minimal").execute()
 
@@ -179,13 +225,15 @@ async def update_survey(survey_id: str, payload: SurveyUpdate):
     """Update survey fields and replace its items."""
 
     supabase = _admin_client()
+    survey_lang = _normalize_lang(payload.language or payload.lang)
     data = {
         "title": payload.title,
         "question": payload.question,
-        "lang": payload.lang,
+        "lang": survey_lang,
         "choice_type": payload.choice_type,
         "country_codes": payload.country_codes,
         "is_active": payload.is_active,
+        "language": survey_lang,
     }
     res_update = supabase.table("surveys").update(data).eq("id", survey_id).execute()
     if getattr(res_update, "error", None):
@@ -194,19 +242,7 @@ async def update_survey(survey_id: str, payload: SurveyUpdate):
     res_delete = supabase.table("survey_items").delete().eq("survey_id", survey_id).execute()
     if getattr(res_delete, "error", None):
         raise HTTPException(status_code=500, detail=str(res_delete.error))
-    item_rows = []
-    for idx, item in enumerate(payload.items, start=1):
-        text = (item.body or item.label or "").strip()
-        if not text:
-            continue
-        item_rows.append(
-            {
-                "survey_id": survey_id,
-                "body": text,
-                "is_exclusive": item.is_exclusive,
-                "position": idx,
-            }
-        )
+    item_rows = _build_item_rows(survey_id, payload.items, survey_lang)
     if item_rows:
         res_items = supabase.table("survey_items").insert(item_rows).execute()
         if getattr(res_items, "error", None):
