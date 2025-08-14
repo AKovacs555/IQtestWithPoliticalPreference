@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Dialog,
   DialogTitle,
@@ -58,6 +59,13 @@ export default function SurveyEditorDialog({
   const [countryCodes, setCountryCodes] = useState<string[]>([]);
   const [items, setItems] = useState<ItemState[]>([]);
   const [isActive, setIsActive] = useState(true);
+  const { i18n } = useTranslation();
+  const supported = useMemo(
+    () =>
+      (i18n?.options?.supportedLngs || Object.keys(SUPPORTED_LANGUAGES))
+        .filter((l: string) => l && l !== 'cimode'),
+    [i18n]
+  );
 
   useEffect(() => {
     if (initialValue) {
@@ -68,7 +76,7 @@ export default function SurveyEditorDialog({
       setCountryCodes(initialValue.country_codes || []);
       setItems(
         (initialValue.items || []).map((it: any) => ({
-          label: it.label,
+          label: it.label ?? it.body ?? '',
           is_exclusive: Boolean(it.is_exclusive),
         }))
       );
@@ -208,9 +216,9 @@ export default function SurveyEditorDialog({
               value={language}
               onChange={(e) => setLanguage(e.target.value)}
             >
-              {Object.entries(SUPPORTED_LANGUAGES).map(([code, label]) => (
-                <MenuItem key={code} value={code}>
-                  {label}
+              {supported.map((lng) => (
+                <MenuItem key={lng} value={lng}>
+                  {SUPPORTED_LANGUAGES[lng as keyof typeof SUPPORTED_LANGUAGES] || lng}
                 </MenuItem>
               ))}
             </Select>

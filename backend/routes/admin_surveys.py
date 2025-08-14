@@ -61,9 +61,15 @@ def grant_free_attempts(countries: list[str]) -> None:
 
 
 class SurveyItemIn(BaseModel):
-    """Input model for a survey item."""
+    """Input model for a survey item.
 
-    label: str
+    Historically the admin UI used ``label`` for the text of a choice.
+    The database, however, expects the field to be named ``body``.  Both
+    fields are therefore accepted with ``body`` taking precedence.
+    """
+
+    label: str | None = None
+    body: str | None = None
     is_exclusive: bool = False
 
 
@@ -104,16 +110,19 @@ async def create_survey(payload: SurveyIn):
         raise HTTPException(status_code=500, detail="failed to insert survey")
     survey_id = res.data[0]["id"]
 
-    item_rows = [
-        {
-            "survey_id": survey_id,
-            "position": idx + 1,
-            "label": (it.get("label") or "").strip(),
-            "is_exclusive": bool(it.get("is_exclusive")),
-        }
-        for idx, it in enumerate(payload_dict.get("items") or [])
-        if (it.get("label") or "").strip()
-    ]
+    item_rows = []
+    for idx, it in enumerate(payload_dict.get("items") or []):
+        text = (it.get("body") or it.get("label") or "").strip()
+        if not text:
+            continue
+        item_rows.append(
+            {
+                "survey_id": survey_id,
+                "position": idx + 1,
+                "body": text,
+                "is_exclusive": bool(it.get("is_exclusive")),
+            }
+        )
     if item_rows:
         supabase_admin.table("survey_items").insert(item_rows, returning="minimal").execute()
 
@@ -159,6 +168,12 @@ async def list_surveys():
     return {"surveys": surveys}
 
 
+@router.get("", include_in_schema=False)
+async def list_surveys_alias():
+    """Alias to allow getting without trailing slash."""
+    return await list_surveys()
+
+
 @router.put("/{survey_id}")
 async def update_survey(survey_id: str, payload: SurveyUpdate):
     """Update survey fields and replace its items."""
@@ -179,15 +194,19 @@ async def update_survey(survey_id: str, payload: SurveyUpdate):
     res_delete = supabase.table("survey_items").delete().eq("survey_id", survey_id).execute()
     if getattr(res_delete, "error", None):
         raise HTTPException(status_code=500, detail=str(res_delete.error))
-    item_rows = [
-        {
-            "survey_id": survey_id,
-            "label": item.label,
-            "is_exclusive": item.is_exclusive,
-            "position": idx,
-        }
-        for idx, item in enumerate(payload.items, start=1)
-    ]
+    item_rows = []
+    for idx, item in enumerate(payload.items, start=1):
+        text = (item.body or item.label or "").strip()
+        if not text:
+            continue
+        item_rows.append(
+            {
+                "survey_id": survey_id,
+                "body": text,
+                "is_exclusive": item.is_exclusive,
+                "position": idx,
+            }
+        )
     if item_rows:
         res_items = supabase.table("survey_items").insert(item_rows).execute()
         if getattr(res_items, "error", None):
