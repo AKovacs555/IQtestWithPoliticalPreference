@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import AppShell from '../components/AppShell';
-import { useAuth } from '../auth/useAuth';
+import { useSession } from '../hooks/useSession';
 import { getProfile, updateProfile } from '../api';
 
 export default function Profile() {
-  const { user } = useAuth();
+  const { user } = useSession();
   const [username, setUsername] = useState('');
   const [status, setStatus] = useState('');
 
