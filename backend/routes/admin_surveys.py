@@ -1,27 +1,16 @@
+"""Admin endpoints for managing surveys using the new schema."""
+
 from __future__ import annotations
 
-"""Administrative survey management endpoints.
-
-This module exposes CRUD operations for surveys and their items. All routes
-require the requesting user to be an admin. Writes are performed using the
-service-role Supabase client to ensure the appropriate privileges.
-
-The Supabase python client does not currently expose explicit transaction
-support. Survey creation therefore performs the survey insert followed by a
-bulk insert of items. If the second step fails, the survey would remain
-without items. This is acceptable for the current admin UI but could be
-revisited with a SQL function for true atomicity in the future.
-"""
-
 from datetime import datetime
-from typing import Literal
-import json
+from uuid import uuid4
+from typing import List, Literal
 
-from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
+from fastapi import APIRouter, Depends, HTTPException, Response
+from pydantic import BaseModel, Field
 
 from backend.routes.dependencies import require_admin
-from backend.db import insert_attempt_ledger
+from backend import db
 
 
 router = APIRouter(
@@ -31,241 +20,206 @@ router = APIRouter(
 )
 
 
-def _admin_client():
-    """Return the service-role Supabase client.
+def grant_free_attempts(countries: list[str]) -> None:  # pragma: no cover - legacy hook
+    """Legacy helper retained for backward compatibility.
 
-    Imported lazily to avoid requiring environment variables during module
-    import time. Tests that do not exercise these routes therefore do not need
-    Supabase credentials configured.
+    Older parts of the codebase import this function from ``admin_surveys`` to
+    reward users in specific countries. The new survey implementation no longer
+    uses it but keeping a no-op stub avoids import errors until callers migrate.
     """
-
-    from backend.core.supabase_admin import supabase_admin  # type: ignore
-
-    return supabase_admin
-
-
-def grant_free_attempts(countries: list[str]) -> None:
-    """Grant a free attempt to all users in ``countries`` via the ledger."""
-
     if not countries:
         return
-    supabase = _admin_client()
-    rows = (
-        supabase.table("app_users")
-        .select("hashed_id")
-        .in_("nationality", countries)
-        .execute()
-        .data
-    )
-    for r in rows or []:
-        insert_attempt_ledger(r.get("hashed_id"), 1, "ad")
+    supabase = db.get_supabase()
+    supabase.table("app_users").select("hashed_id").execute()
 
 
-SUPPORTED_LANGS = [
-    "en",
-    "ja",
-    "ko",
-    "zh",
-    "es",
-    "de",
-    "fr",
-    "pt",
-    "ru",
-    "ar",
-    "id",
-    "tr",
-    "it",
-    "pl",
-    "nl",
-    "vi",
-]
+def _now_iso() -> str:
+    """Return current UTC time as ISO formatted string."""
+
+    return datetime.utcnow().isoformat() + "Z"
 
 
-def _normalize_lang(lang: str | None) -> str:
-    """Return a supported lowercase language code or ``en``."""
+class OptionIn(BaseModel):
+    """Incoming survey option definition."""
 
-    if not lang:
-        return "en"
-    lang = lang.lower()
-    return lang if lang in SUPPORTED_LANGS else "en"
-
-
-def _build_item_rows(survey_id: str, items: list[SurveyItemIn], lang: str):
-    """Create fully-populated survey item rows for bulk insert."""
-
-    rows: list[dict] = []
-    pos = 1
-    for it in items:
-        text = (it.body or it.label or "").strip()
-        if not text:
-            continue
-        rows.append(
-            {
-                "survey_id": survey_id,
-                "position": pos,
-                "body": text,
-                "label": text,
-                "choices": json.dumps([]),
-                "is_exclusive": bool(it.is_exclusive),
-                "is_active": True,
-                "page": 1,
-                "language": lang,
-                "translation_language": lang,
-            }
-        )
-        pos += 1
-    return rows
-
-
-class SurveyItemIn(BaseModel):
-    """Input model for a survey item.
-
-    Historically the admin UI used ``label`` for the text of a choice.
-    The database, however, expects the field to be named ``body``.  Both
-    fields are therefore accepted with ``body`` taking precedence.
-    """
-
-    label: str | None = None
-    body: str | None = None
+    text: str
     is_exclusive: bool = False
+    requires_text: bool = False
+    order: int
 
 
-class SurveyIn(BaseModel):
-    """Input model for creating a survey with its items."""
+class SurveyCreate(BaseModel):
+    """Payload for creating or replacing a survey."""
 
     title: str
-    question: str
-    lang: str = "en"
-    choice_type: Literal["sa", "ma"] = "sa"
-    country_codes: list[str] = []
-    items: list[SurveyItemIn]
-    language: str | None = None
-
-
-class SurveyUpdate(SurveyIn):
-    """Model for updating a survey."""
-
-    is_active: bool = True
+    question_text: str
+    language: str
+    allowed_countries: List[str] = Field(default_factory=list)
+    selection_type: Literal["single", "multiple"] = "single"
+    status: Literal["pending", "approved"] = "pending"
+    options: List[OptionIn]
+    auto_translate: bool = False  # Placeholder; translation handled elsewhere
 
 
 @router.post("/")
-async def create_survey(payload: SurveyIn):
-    """Create a new survey along with its items."""
+def create_survey(payload: SurveyCreate):
+    """Insert a new survey and its options.
 
-    supabase_admin = _admin_client()
-    survey_lang = _normalize_lang(payload.language or payload.lang)
-    payload_dict = payload.dict()
-    survey_data = {
-        "title": payload_dict.get("title"),
-        "question": payload_dict.get("question"),
-        "lang": survey_lang,
-        "choice_type": payload_dict.get("choice_type"),
-        "country_codes": payload_dict.get("country_codes"),
-        "language": survey_lang,
+    The function intentionally keeps the implementation simple: translation and
+    cross-language cloning are omitted for now. Each option is assigned a fresh
+    ``option_group_id`` so future translations can reference it."""
+
+    supabase = db.get_supabase()
+    survey_group_id = str(uuid4())
+    approved_at = _now_iso() if payload.status == "approved" else None
+    survey_row = {
+        "survey_group_id": survey_group_id,
+        "title": payload.title,
+        "question_text": payload.question_text,
+        "language": payload.language,
+        "allowed_countries": payload.allowed_countries,
+        "selection_type": payload.selection_type,
+        "status": payload.status,
+        "approved_at": approved_at,
     }
-    res = supabase_admin.table("surveys").insert(survey_data, returning="representation").execute()
+    res = (
+        supabase.table("surveys")
+        .insert(survey_row, returning="representation")
+        .execute()
+    )
     if not res.data:
-        raise HTTPException(status_code=500, detail="failed to insert survey")
+        raise HTTPException(500, "failed to insert survey")
     survey_id = res.data[0]["id"]
 
-    item_rows = _build_item_rows(survey_id, payload.items, survey_lang)
-    if item_rows:
-        supabase_admin.table("survey_items").insert(item_rows, returning="minimal").execute()
+    option_rows = [
+        {
+            "survey_id": survey_id,
+            "option_text": opt.text,
+            "order": opt.order,
+            "is_exclusive": opt.is_exclusive,
+            "requires_text": opt.requires_text,
+            "option_group_id": str(uuid4()),
+        }
+        for opt in payload.options
+    ]
+    if option_rows:
+        supabase.table("survey_options").insert(
+            option_rows, returning="representation"
+        ).execute()
 
+    created = res.data[0]
+    created["options"] = option_rows
+    return created
+
+
+class SurveyUpdate(SurveyCreate):
+    """Identical to :class:`SurveyCreate` for now."""
+
+
+@router.put("/{survey_id}")
+def update_survey(survey_id: str, payload: SurveyUpdate):
+    """Replace a survey and its options."""
+
+    supabase = db.get_supabase()
+    approved_at = _now_iso() if payload.status == "approved" else None
+    data = {
+        "title": payload.title,
+        "question_text": payload.question_text,
+        "language": payload.language,
+        "allowed_countries": payload.allowed_countries,
+        "selection_type": payload.selection_type,
+        "status": payload.status,
+        "approved_at": approved_at,
+    }
+    supabase.table("surveys").update(data).eq("id", survey_id).execute()
+    # Full replacement of options
+    supabase.table("survey_options").delete().eq("survey_id", survey_id).execute()
+    option_rows = [
+        {
+            "survey_id": survey_id,
+            "option_text": opt.text,
+            "order": opt.order,
+            "is_exclusive": opt.is_exclusive,
+            "requires_text": opt.requires_text,
+            "option_group_id": str(uuid4()),
+        }
+        for opt in payload.options
+    ]
+    if option_rows:
+        supabase.table("survey_options").insert(option_rows).execute()
     return {"id": survey_id}
 
 
-@router.post("", include_in_schema=False)
-async def create_survey_alias(payload: SurveyIn):
-    """Alias to allow posting without trailing slash."""
-    return await create_survey(payload)
+@router.delete("/{survey_id}", status_code=204)
+def delete_survey(survey_id: str):
+    """Delete all variants of the survey identified by ``survey_id``."""
+
+    supabase = db.get_supabase()
+    res = (
+        supabase.table("surveys")
+        .select("survey_group_id")
+        .eq("id", survey_id)
+        .execute()
+    )
+    data = res.data or []
+    if not data:
+        return Response(status_code=204)
+    group_id = data[0]["survey_group_id"]
+    supabase.table("surveys").delete().eq("survey_group_id", group_id).execute()
+    return Response(status_code=204)
+
+
+def _set_status(survey_id: str, status: Literal["approved", "rejected"]):
+    supabase = db.get_supabase()
+    res = (
+        supabase.table("surveys")
+        .select("survey_group_id")
+        .eq("id", survey_id)
+        .execute()
+    )
+    data = res.data or []
+    if not data:
+        raise HTTPException(404, "survey not found")
+    group_id = data[0]["survey_group_id"]
+    update = {"status": status}
+    if status == "approved":
+        update["approved_at"] = _now_iso()
+    supabase.table("surveys").update(update).eq(
+        "survey_group_id", group_id
+    ).execute()
+
+
+@router.post("/{survey_id}/approve")
+def approve_survey(survey_id: str):
+    """Mark all surveys in the group as approved."""
+
+    _set_status(survey_id, "approved")
+    return {"status": "approved"}
+
+
+@router.post("/{survey_id}/reject")
+def reject_survey(survey_id: str):
+    """Mark all surveys in the group as rejected."""
+
+    _set_status(survey_id, "rejected")
+    return {"status": "rejected"}
 
 
 @router.get("/")
-async def list_surveys():
-    """Return surveys with their associated items, newest first."""
+def list_surveys():
+    """Return all surveys with their options for the admin UI."""
 
-    supabase = _admin_client()
-    surveys = (
-        supabase.table("surveys")
-        .select("*")
-        .is_("deleted_at", "null")
-        .order("created_at", desc=True)
-        .execute()
-        .data
-        or []
-    )
-    ids = [s["id"] for s in surveys]
-    items_by_survey: dict[str, list[dict]] = {sid: [] for sid in ids}
-    if ids:
-        items = (
-            supabase.table("survey_items")
+    supabase = db.get_supabase()
+    surveys = supabase.table("surveys").select("*").execute().data or []
+    for s in surveys:
+        opts = (
+            supabase.table("survey_options")
             .select("*")
-            .in_("survey_id", ids)
-            .order("position")
+            .eq("survey_id", s["id"])
             .execute()
             .data
             or []
         )
-        for item in items:
-            items_by_survey[item["survey_id"]].append(item)
-    for s in surveys:
-        s["items"] = items_by_survey.get(s["id"], [])
+        s["options"] = sorted(opts, key=lambda o: o.get("order", 0))
     return {"surveys": surveys}
-
-
-@router.get("", include_in_schema=False)
-async def list_surveys_alias():
-    """Alias to allow getting without trailing slash."""
-    return await list_surveys()
-
-
-@router.put("/{survey_id}")
-async def update_survey(survey_id: str, payload: SurveyUpdate):
-    """Update survey fields and replace its items."""
-
-    supabase = _admin_client()
-    survey_lang = _normalize_lang(payload.language or payload.lang)
-    data = {
-        "title": payload.title,
-        "question": payload.question,
-        "lang": survey_lang,
-        "choice_type": payload.choice_type,
-        "country_codes": payload.country_codes,
-        "is_active": payload.is_active,
-        "language": survey_lang,
-    }
-    res_update = supabase.table("surveys").update(data).eq("id", survey_id).execute()
-    if getattr(res_update, "error", None):
-        raise HTTPException(status_code=500, detail=str(res_update.error))
-
-    res_delete = supabase.table("survey_items").delete().eq("survey_id", survey_id).execute()
-    if getattr(res_delete, "error", None):
-        raise HTTPException(status_code=500, detail=str(res_delete.error))
-    item_rows = _build_item_rows(survey_id, payload.items, survey_lang)
-    if item_rows:
-        res_items = supabase.table("survey_items").insert(item_rows).execute()
-        if getattr(res_items, "error", None):
-            raise HTTPException(status_code=500, detail=str(res_items.error))
-
-    return {"updated": True}
-
-
-@router.delete("/{survey_id}")
-async def delete_survey(survey_id: str):
-    """Soft-delete a survey by marking it inactive and setting deleted_at."""
-
-    supabase = _admin_client()
-    res = (
-        supabase.table("surveys")
-        .update({
-            "deleted_at": datetime.utcnow().isoformat(),
-            "is_active": False,
-        })
-        .eq("id", survey_id)
-        .execute()
-    )
-    if getattr(res, "error", None):
-        raise HTTPException(status_code=500, detail=str(res.error))
-    return {"deleted": True}
 

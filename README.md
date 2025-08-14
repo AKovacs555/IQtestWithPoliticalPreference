@@ -360,14 +360,15 @@ The Daily Survey feature presents up to three short questions per day. Users rec
 New tables are created via Supabase migrations:
 
 - `surveys` – survey metadata such as title and language.
-- `survey_items` – question text and answer choices linked to a survey.
+- `survey_options` – answer choices linked to a survey.
 - `survey_responses` – user answers with an `answered_on` date to enforce one response per day.
 
 ### API
 
 Public endpoints under `/surveys`:
 
-- `GET /surveys/daily3?lang=ja` – return up to three random items the current user has not answered today.
+- `GET /surveys/available?lang=en&country=JP` – list surveys matching the
+  specified language and country that the user has not answered.
 - `POST /surveys/answer` – body `{ "item_id": uuid, "answer_index": int }` records an answer.
 
 Admin endpoints (require `is_admin=true`):

@@ -78,24 +78,44 @@ export async function abandonQuiz(sessionId: string) {
   }
 }
 
+export async function getAvailableSurveys(lang: string, country: string) {
+  const params = new URLSearchParams({ lang, country });
+  return apiGet(`/surveys/available?${params.toString()}`);
+}
+
+export async function respondSurvey(
+  surveyId: string,
+  optionIds: string[],
+  otherTexts: Record<string, string>
+) {
+  return apiPost(`/surveys/${surveyId}/respond`, {
+    option_ids: optionIds,
+    other_texts: otherTexts,
+  });
+}
+
+export async function getSurveyStats(surveyId: string) {
+  return apiGet(`/surveys/${surveyId}/stats`);
+}
+
+// Legacy wrappers ---------------------------------------------------------
+// The old survey interface exposed start/submit/complete endpoints. They are
+// kept here as thin shims so older components compile while the UI migrates to
+// the new poll workflow.
+
 export async function getSurvey(lang?: string | null, userId?: string | null, nationality?: string | null) {
-  let url = '/survey/start';
-  const params = new URLSearchParams();
-  if (lang) params.set('lang', lang);
-  if (userId) params.set('user_id', userId);
-  if (nationality) params.set('nationality', nationality);
-  if (Array.from(params).length) url += `?${params.toString()}`;
-  return apiGet(url);
+  const list = await getAvailableSurveys(lang || 'en', nationality || '');
+  return { items: list } as any;
 }
 
 export async function submitSurvey(answers: unknown, userId?: string | null) {
-  const payload: any = { answers };
-  if (userId) payload.user_id = userId;
-  return apiPost('/survey/submit', payload);
+  // The legacy caller bundled all answers in one request. The new API submits
+  // per-survey responses, so this is a no-op placeholder.
+  return {} as any;
 }
 
 export async function completeSurvey(userId?: string | null) {
-  return apiPost('/survey/complete', { user_id: userId });
+  return {} as any;
 }
 
 export async function setNationality(userId: string, nationality: string) {
