@@ -7,21 +7,38 @@ module.exports = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        sans: ['var(--font-sans)'],
+        mono: ['var(--font-mono)'],
       },
       colors: {
-        primary: 'var(--color-primary)',
-        accent: 'var(--color-accent)',
-        surface: 'var(--color-surface)',
-        text: 'var(--color-text)',
-      },
-      dropShadow: {
-        glow: [
-          '0 0 8px rgba(58, 150, 250, 0.6)',
-          '0 0 20px rgba(58, 150, 250, 0.4)',
-        ],
+        brand: {
+          cyan: 'var(--brand-cyan)',
+          emerald: 'var(--brand-emerald)',
+        },
+        text: 'var(--text)',
       },
     },
   },
-  plugins: [],
+  plugins: [
+    require('tailwindcss/plugin')(function ({ addUtilities }) {
+      addUtilities({
+        '.glass-card': {
+          background: 'var(--glass)',
+          backdropFilter: 'blur(8px)',
+          border: '1px solid var(--border)',
+          borderRadius: 'var(--radius-lg)',
+          boxShadow: 'var(--shadow-card)',
+        },
+        '.gradient-primary': {
+          backgroundImage: 'linear-gradient(90deg, var(--brand-cyan), var(--brand-emerald))',
+        },
+        '.ring-brand': {
+          boxShadow: 'var(--ring)',
+        },
+        '.glow': {
+          boxShadow: 'var(--shadow-glow)',
+        },
+      });
+    }),
+  ],
 };

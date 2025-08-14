@@ -1,8 +1,0 @@
-html { font-size: 100%; }
-:root { --tap-min: 48px; }
-* { -webkit-tap-highlight-color: transparent; }
-button, a, [role="button"] { min-height: var(--tap-min); }
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { animation: none !important; transition: none !important; }
-}
-:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
