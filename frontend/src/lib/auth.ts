@@ -1,5 +1,5 @@
 import { supabase } from './supabaseClient';
-const redirectTo = `${window.location.origin}/auth/callback`;
+const redirectTo = `${window.location.origin}/auth/callback`; // BrowserRouter前提（ハッシュなし）
 
 export async function signInWithGoogle() {
   try {
