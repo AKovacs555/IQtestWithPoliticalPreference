@@ -106,7 +106,7 @@ export default function Navbar() {
         color="text.primary"
         sx={{ textDecoration: 'none', mr: 1 }}
       >
-        IQ Test
+        IQ Arena
       </Typography>
       <Box sx={{ display: { xs: 'none', md: 'block' } }}>
         <OverflowNav items={items} />

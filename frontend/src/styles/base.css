@@ -1,0 +1,35 @@
+@import './tokens.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    font-size: 100%;
+  }
+  body {
+    min-height: 100dvh;
+    font-family: var(--font-sans);
+    color: var(--text);
+    background: linear-gradient(135deg, var(--bg-950), var(--bg-900), rgba(8,145,178,.20));
+    -webkit-font-smoothing: antialiased;
+  }
+  * {
+    -webkit-tap-highlight-color: transparent;
+    transition: all var(--dur) var(--ease);
+  }
+  button, a, [role="button"] {
+    min-height: 44px;
+  }
+  :focus-visible {
+    outline: none;
+    box-shadow: var(--ring);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      transition: none !important;
+      animation: none !important;
+    }
+  }
+}
