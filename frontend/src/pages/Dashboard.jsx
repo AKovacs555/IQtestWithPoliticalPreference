@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import AppShell from '../components/AppShell';
+import AchievementModal from '../components/AchievementModal';
 import { Chart } from 'chart.js/auto';
 import { useTranslation } from 'react-i18next';
 import { useSession } from '../hooks/useSession';
@@ -18,6 +19,7 @@ export default function Dashboard() {
   const [inviteCode, setInviteCode] = useState('');
   const [history, setHistory] = useState([]);
   const [tab, setTab] = useState('stats');
+  const [achievementsOpen, setAchievementsOpen] = useState(false);
 
   useEffect(() => {
     fetch(`${API_BASE}/stats/iq_histogram?user_id=${userId || 'demo'}`)
@@ -83,6 +85,9 @@ export default function Dashboard() {
     <AppShell>
       <div className="max-w-2xl mx-auto space-y-4 py-4">
         <h2 className="text-2xl font-bold text-center">{t('dashboard.title')}</h2>
+        <div className="text-center">
+          <button className="btn btn-secondary btn-sm" onClick={() => setAchievementsOpen(true)}>Achievements</button>
+        </div>
         <div className="tabs justify-center">
           <a
             className={`tab tab-bordered ${tab==='stats'?'tab-active':''}`}
@@ -161,6 +166,7 @@ export default function Dashboard() {
             )}
           </div>
         )}
+        <AchievementModal isOpen={achievementsOpen} onClose={() => setAchievementsOpen(false)} />
       </div>
     </AppShell>
   );
