@@ -1,6 +1,6 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-import { HashRouter } from 'react-router-dom';
+import { BrowserRouter } from 'react-router-dom';
 // Build trigger comment
 
 if ('serviceWorker' in navigator) {
@@ -11,36 +11,21 @@ if ('serviceWorker' in navigator) {
 }
 
 // Bust runtime cache once per deploy
+// ※ OAuthコールバック中（?code= / access_token / error）や /auth/callback では絶対にリロードしない
 try {
   const hasOAuthParams = /[?#].*(code=|access_token=|error=)/.test(window.location.href);
+  const isCallbackRoute = window.location.pathname === '/auth/callback';
   const v = import.meta.env?.VITE_COMMIT_SHA || '';
   const prev = localStorage.getItem('app_version') || '';
-  // OAuth 処理中は絶対にリロードしない（ここがループの主因になり得る）
-  if (!hasOAuthParams && v && prev !== v) {
+  if (!(hasOAuthParams || isCallbackRoute) && v && prev !== v) {
     localStorage.setItem('app_version', v);
     window.location.replace(window.location.href);
   }
 } catch {}
 
-// --- 重要: React 起動前にコールバックURLを正規化（HashRouter でも確実に /auth/callback をマウントさせる）
-(function normalizeOAuthCallbackUrl() {
-  const u = new URL(window.location.href);
-  const hasCode = u.searchParams.has('code') || u.hash.includes('code=');
-  const isOnCallback = /^#\/auth\/callback/.test(u.hash);
-  // 例: "/?code=...#/auth/callback" → "/#/auth/callback?code=..."
-  if (import.meta.env.PROD && hasCode && !isOnCallback) {
-    const query = u.search || '';
-    window.location.replace(`/#/auth/callback${query}`);
-  }
-})();
+const Router = BrowserRouter;
 
-const Router = HashRouter;
-
-// In production we use HashRouter; if someone lands on a path like /auth/callback
-// without a hash, redirect to the hash equivalent so routes resolve correctly.
-if (!location.hash && location.pathname !== '/') {
-  location.replace(`/#${location.pathname}${location.search}${location.hash}`);
-}
+// ※ HashRouter 前提の正規化はすべて撤去（BrowserRouter化）
 import App from './pages/App';
 import { SessionProvider, useSession } from './hooks/useSession';
 import './i18n';

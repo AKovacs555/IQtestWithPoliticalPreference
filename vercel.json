@@ -6,7 +6,15 @@
       "config": { "distDir": "dist" }
     }
   ],
-  "rewrites": [{ "source": "/(.*)", "destination": "/" }],
+  "rewrites": [
+    { "source": "/user/(.*)", "destination": "https://iqandpoliticalpreference.onrender.com/user/$1" },
+    { "source": "/points/(.*)", "destination": "https://iqandpoliticalpreference.onrender.com/points/$1" },
+    { "source": "/pricing/(.*)", "destination": "https://iqandpoliticalpreference.onrender.com/pricing/$1" },
+    { "source": "/auth/(.*)", "destination": "https://iqandpoliticalpreference.onrender.com/auth/$1" },
+    { "source": "/ping", "destination": "https://iqandpoliticalpreference.onrender.com/ping" },
+    { "source": "/admin/surveys(.*)", "destination": "https://iqandpoliticalpreference.onrender.com/admin/surveys$1" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ],
   "headers": [
     { "source": "/", "headers": [{ "key": "Cache-Control", "value": "no-store" }] },
     { "source": "/index.html", "headers": [{ "key": "Cache-Control", "value": "no-store" }] }

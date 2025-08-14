@@ -357,14 +357,6 @@ export default function App() {
   // Admin routes are always registered for troubleshooting purposes.
   // Proper authentication is temporarily disabled.
   const location = useLocation();
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    const u = new URL(window.location.href);
-    if (u.pathname === '/' && u.searchParams.get('code')) {
-      navigate('/auth/callback' + u.search, { replace: true });
-    }
-  }, [navigate]);
   return (
     <AnimatePresence mode="wait">
       <Routes location={location} key={location.pathname}>
