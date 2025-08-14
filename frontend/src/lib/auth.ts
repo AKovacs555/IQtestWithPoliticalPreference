@@ -7,8 +7,8 @@ export async function signInWithGoogle() {
       provider: 'google',
       options: {
         redirectTo,
-        // refresh token を得るために offline + consent を付与
-        queryParams: { access_type: 'offline', prompt: 'consent' },
+        // UX重視：アカウント選択のみ促す（SupabaseのRTで永続化されるためoffline/consentは不要）
+        queryParams: { prompt: 'select_account' },
       },
     });
     if (error) throw error;
