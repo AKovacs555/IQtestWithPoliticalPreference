@@ -102,24 +102,3 @@ export async function setNationality(userId: string, nationality: string) {
   return apiPost('/user/nationality', { user_id: userId, nationality });
 }
 
-export async function registerAccount({ username, email, password, ref }: { username: string; email: string; password: string; ref?: string; }) {
-  const payload = { username, email, password };
-  const res = await fetch(`${API_BASE}/auth/register`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  });
-  if (!res.ok) throw new Error(`${res.status} ${await res.text()}`);
-  const data = await res.json();
-  if (ref && data.token) {
-    try {
-      await fetch(`${API_BASE}/referral/claim?r=${ref}`, {
-        headers: { Authorization: `Bearer ${data.token}` },
-      });
-    } catch {
-      // ignore referral errors
-    }
-  }
-  return data;
-}
-

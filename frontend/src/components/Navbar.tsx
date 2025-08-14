@@ -69,7 +69,6 @@ export default function Navbar() {
   if (!isLoggedIn) {
     drawerItems.push(
       { label: t('nav.login', { defaultValue: 'Log in' }), onClick: () => navigate('/login') },
-      { label: t('nav.signup', { defaultValue: 'Sign up' }), onClick: () => navigate('/signup') },
       ...(googleEnabled
         ? [
             {
@@ -121,9 +120,6 @@ export default function Navbar() {
         <>
           <Button onClick={() => navigate('/login')} size="small" sx={{ minHeight: '48px' }}>
             {t('nav.login', { defaultValue: 'Log in' })}
-          </Button>
-          <Button onClick={() => navigate('/signup')} size="small" sx={{ minHeight: '48px' }}>
-            {t('nav.signup', { defaultValue: 'Sign up' })}
           </Button>
           {googleEnabled && (
             <Button
