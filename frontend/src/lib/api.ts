@@ -30,6 +30,7 @@ export interface SurveyPayload {
   country_codes: string[];
   items: SurveyItemInput[];
   is_active?: boolean;
+  language?: string;
 }
 
 export async function getSurveys() {
