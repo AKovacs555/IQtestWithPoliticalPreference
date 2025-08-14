@@ -16,7 +16,7 @@ revisited with a SQL function for true atomicity in the future.
 from datetime import datetime
 from typing import Literal
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from backend.routes.dependencies import require_admin
@@ -96,7 +96,11 @@ async def create_survey(payload: SurveyIn):
         "choice_type": payload.choice_type,
         "country_codes": payload.country_codes,
     }
-    res = supabase.table("surveys").insert(survey_data).select("id").execute()
+    res = supabase.table("surveys").insert(survey_data).execute()
+    if getattr(res, "error", None):
+        raise HTTPException(status_code=500, detail=str(res.error))
+    if not res.data:
+        raise HTTPException(status_code=500, detail="insert into surveys returned no rows")
     survey_id = res.data[0]["id"]
 
     item_rows = [
@@ -109,9 +113,17 @@ async def create_survey(payload: SurveyIn):
         for idx, item in enumerate(payload.items, start=1)
     ]
     if item_rows:
-        supabase.table("survey_items").insert(item_rows).execute()
+        res_items = supabase.table("survey_items").insert(item_rows).execute()
+        if getattr(res_items, "error", None):
+            raise HTTPException(status_code=500, detail=str(res_items.error))
 
     return {"id": survey_id}
+
+
+@router.post("", include_in_schema=False)
+async def create_survey_alias(payload: SurveyIn):
+    """Alias to allow posting without trailing slash."""
+    return await create_survey(payload)
 
 
 @router.get("/")
@@ -160,9 +172,13 @@ async def update_survey(survey_id: str, payload: SurveyUpdate):
         "country_codes": payload.country_codes,
         "is_active": payload.is_active,
     }
-    supabase.table("surveys").update(data).eq("id", survey_id).execute()
+    res_update = supabase.table("surveys").update(data).eq("id", survey_id).execute()
+    if getattr(res_update, "error", None):
+        raise HTTPException(status_code=500, detail=str(res_update.error))
 
-    supabase.table("survey_items").delete().eq("survey_id", survey_id).execute()
+    res_delete = supabase.table("survey_items").delete().eq("survey_id", survey_id).execute()
+    if getattr(res_delete, "error", None):
+        raise HTTPException(status_code=500, detail=str(res_delete.error))
     item_rows = [
         {
             "survey_id": survey_id,
@@ -173,7 +189,9 @@ async def update_survey(survey_id: str, payload: SurveyUpdate):
         for idx, item in enumerate(payload.items, start=1)
     ]
     if item_rows:
-        supabase.table("survey_items").insert(item_rows).execute()
+        res_items = supabase.table("survey_items").insert(item_rows).execute()
+        if getattr(res_items, "error", None):
+            raise HTTPException(status_code=500, detail=str(res_items.error))
 
     return {"updated": True}
 
@@ -183,11 +201,16 @@ async def delete_survey(survey_id: str):
     """Soft-delete a survey by marking it inactive and setting deleted_at."""
 
     supabase = _admin_client()
-    supabase.table("surveys").update(
-        {
+    res = (
+        supabase.table("surveys")
+        .update({
             "deleted_at": datetime.utcnow().isoformat(),
             "is_active": False,
-        }
-    ).eq("id", survey_id).execute()
+        })
+        .eq("id", survey_id)
+        .execute()
+    )
+    if getattr(res, "error", None):
+        raise HTTPException(status_code=500, detail=str(res.error))
     return {"deleted": True}
 
