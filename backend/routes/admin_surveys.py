@@ -76,6 +76,7 @@ class SurveyIn(BaseModel):
     choice_type: Literal["sa", "ma"] = "sa"
     country_codes: list[str] = []
     items: list[SurveyItemIn]
+    language: str | None = None
 
 
 class SurveyUpdate(SurveyIn):
@@ -88,34 +89,33 @@ class SurveyUpdate(SurveyIn):
 async def create_survey(payload: SurveyIn):
     """Create a new survey along with its items."""
 
-    supabase = _admin_client()
+    supabase_admin = _admin_client()
+    payload_dict = payload.dict()
     survey_data = {
-        "title": payload.title,
-        "question": payload.question,
-        "lang": payload.lang,
-        "choice_type": payload.choice_type,
-        "country_codes": payload.country_codes,
+        "title": payload_dict.get("title"),
+        "question": payload_dict.get("question"),
+        "lang": payload_dict.get("lang"),
+        "choice_type": payload_dict.get("choice_type"),
+        "country_codes": payload_dict.get("country_codes"),
+        "language": payload_dict.get("language") or "en",
     }
-    res = supabase.table("surveys").insert(survey_data).execute()
-    if getattr(res, "error", None):
-        raise HTTPException(status_code=500, detail=str(res.error))
+    res = supabase_admin.table("surveys").insert(survey_data, returning="representation").execute()
     if not res.data:
-        raise HTTPException(status_code=500, detail="insert into surveys returned no rows")
+        raise HTTPException(status_code=500, detail="failed to insert survey")
     survey_id = res.data[0]["id"]
 
     item_rows = [
         {
             "survey_id": survey_id,
-            "label": item.label,
-            "is_exclusive": item.is_exclusive,
-            "position": idx,
+            "position": idx + 1,
+            "label": (it.get("label") or "").strip(),
+            "is_exclusive": bool(it.get("is_exclusive")),
         }
-        for idx, item in enumerate(payload.items, start=1)
+        for idx, it in enumerate(payload_dict.get("items") or [])
+        if (it.get("label") or "").strip()
     ]
     if item_rows:
-        res_items = supabase.table("survey_items").insert(item_rows).execute()
-        if getattr(res_items, "error", None):
-            raise HTTPException(status_code=500, detail=str(res_items.error))
+        supabase_admin.table("survey_items").insert(item_rows, returning="minimal").execute()
 
     return {"id": survey_id}
 

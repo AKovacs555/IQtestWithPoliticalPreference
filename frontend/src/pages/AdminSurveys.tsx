@@ -12,10 +12,12 @@ import DeleteIcon from '@mui/icons-material/Delete';
 
 import SurveyEditorDialog from '../components/admin/SurveyEditorDialog';
 import { deleteSurvey, getSurveys } from '../lib/api';
+import { useTranslation } from 'react-i18next';
 
 export default function AdminSurveys() {
   const [surveys, setSurveys] = useState<any[]>([]);
   const [editing, setEditing] = useState<any | null>(null);
+  const { i18n } = useTranslation();
 
   const load = async () => {
     try {
@@ -40,7 +42,10 @@ export default function AdminSurveys() {
   return (
     <Box className="space-y-4 max-w-2xl mx-auto">
       <Typography variant="h5">Surveys</Typography>
-      <Button variant="contained" onClick={() => setEditing({})}>
+      <Button
+        variant="contained"
+        onClick={() => setEditing({ language: i18n.language || 'en' })}
+      >
         New Survey
       </Button>
       <Stack spacing={2} mt={2}>

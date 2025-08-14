@@ -16,6 +16,9 @@ import {
   Checkbox,
   IconButton,
   Stack,
+  Select,
+  MenuItem,
+  InputLabel,
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
@@ -27,6 +30,7 @@ import {
   createSurvey,
   updateSurvey,
 } from '../../lib/api';
+import { SUPPORTED_LANGUAGES } from '../../i18n/languages';
 
 interface SurveyEditorDialogProps {
   open: boolean;
@@ -49,7 +53,7 @@ export default function SurveyEditorDialog({
   const isEdit = Boolean(initialValue?.id);
   const [title, setTitle] = useState('');
   const [question, setQuestion] = useState('');
-  const [lang, setLang] = useState('en');
+  const [language, setLanguage] = useState('en');
   const [choiceType, setChoiceType] = useState<'sa' | 'ma'>('sa');
   const [countryCodes, setCountryCodes] = useState<string[]>([]);
   const [items, setItems] = useState<ItemState[]>([]);
@@ -59,7 +63,7 @@ export default function SurveyEditorDialog({
     if (initialValue) {
       setTitle(initialValue.title || '');
       setQuestion(initialValue.question || '');
-      setLang(initialValue.lang || 'en');
+      setLanguage(initialValue.language || initialValue.lang || 'en');
       setChoiceType(initialValue.choice_type || 'sa');
       setCountryCodes(initialValue.country_codes || []);
       setItems(
@@ -72,7 +76,7 @@ export default function SurveyEditorDialog({
     } else {
       setTitle('');
       setQuestion('');
-      setLang('en');
+      setLanguage('en');
       setChoiceType('sa');
       setCountryCodes([]);
       setItems([]);
@@ -117,7 +121,8 @@ export default function SurveyEditorDialog({
     const payload: SurveyPayload = {
       title,
       question,
-      lang,
+      lang: language,
+      language,
       choice_type: choiceType,
       country_codes: countryCodes,
       items,
@@ -156,11 +161,6 @@ export default function SurveyEditorDialog({
             onChange={(e) => setQuestion(e.target.value)}
             required
             multiline
-          />
-          <TextField
-            label="Language"
-            value={lang}
-            onChange={(e) => setLang(e.target.value)}
           />
           <FormControl>
             <FormLabel>Type</FormLabel>
@@ -201,6 +201,20 @@ export default function SurveyEditorDialog({
               </Button>
             </Stack>
           </div>
+          <FormControl fullWidth margin="dense">
+            <InputLabel>Language</InputLabel>
+            <Select
+              label="Language"
+              value={language}
+              onChange={(e) => setLanguage(e.target.value)}
+            >
+              {Object.entries(SUPPORTED_LANGUAGES).map(([code, label]) => (
+                <MenuItem key={code} value={code}>
+                  {label}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
           <div>
             <Button variant="outlined" size="small" onClick={addItem}>
               Add Item
