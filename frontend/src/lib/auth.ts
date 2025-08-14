@@ -1,7 +1,7 @@
 import { supabase } from './supabaseClient';
 const redirectTo = `${window.location.origin}/auth/callback`;
 
-export async function signInWithGoogle(_captchaToken?: string) {
+export async function signInWithGoogle() {
   const { error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
@@ -17,12 +17,14 @@ export async function signUpWithEmail(email: string, password: string) {
   const { error } = await supabase.auth.signUp({
     email,
     password,
-    options: { emailRedirectTo: redirectTo }
+    // Email sign‑up does not require captcha tokens
+    options: { emailRedirectTo: redirectTo },
   });
   if (error) throw error;
 }
 
 export async function signInWithEmail(email: string, password: string) {
+  // Email sign‑in is performed without captcha verification
   const { error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) throw error;
 }
