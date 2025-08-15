@@ -21,7 +21,7 @@ module.exports = {
     },
   },
   plugins: [
-    require('tailwindcss/plugin')(function ({ addUtilities, addComponents }) {
+    require('tailwindcss/plugin')(function ({ addUtilities }) {
       addUtilities({
         '.glass-card': {
           background: 'var(--glass)',
@@ -84,10 +84,6 @@ module.exports = {
           backgroundImage: 'linear-gradient(90deg,#22d3ee,#10b981)',
           transition: 'width 250ms var(--ease)',
         },
-      });
-
-      addComponents({
-        '.gold-card': { '@apply': 'glass-card gold-ring gold-sheen' },
       });
     }),
   ],

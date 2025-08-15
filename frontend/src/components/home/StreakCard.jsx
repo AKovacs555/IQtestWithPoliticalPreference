@@ -1,17 +1,22 @@
 import React from 'react';
 import { Zap } from 'lucide-react';
-import Card from '../ui/Card';
-import Badge from '../ui/Badge';
 
 export default function StreakCard({ days }) {
   return (
-    <Card className="text-center space-y-2">
+    <div
+      data-b-spec="card-streak"
+      className="gold-card p-5 text-center space-y-2"
+    >
       <div className="flex items-center justify-center gap-2">
-        <Zap className="w-5 h-5 text-yellow-400" />
-        <span className="font-semibold">連続日数</span>
+        <Zap className="w-5 h-5" style={{ color: '#FFD23F' }} />
+        <span className="font-semibold">連続達成</span>
       </div>
-      <div className="text-3xl font-bold">{days}日</div>
-      <Badge variant="primary">ストリーク継続中！</Badge>
-    </Card>
+      <div className="text-3xl md:text-4xl font-extrabold tracking-tight">{days}日</div>
+      {days > 0 && (
+        <span className="inline-block rounded-full text-xs px-2 py-1 gradient-primary text-white">
+          ストリーク継続中！
+        </span>
+      )}
+    </div>
   );
 }
