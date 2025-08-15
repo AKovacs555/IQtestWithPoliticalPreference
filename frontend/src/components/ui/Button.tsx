@@ -2,7 +2,7 @@ import React from 'react';
 import clsx from 'clsx';
 
 const base =
-  'inline-flex items-center justify-center gap-2 font-medium rounded-md min-h-[44px] px-4 transition-transform duration-150 hover:-translate-y-px hover:scale-[1.01] active:translate-y-0 active:scale-95';
+  'inline-flex items-center justify-center gap-2 font-medium rounded-md min-h-[44px] px-4 transition-transform duration-150 hover:-translate-y-px hover:scale-[1.01] active:translate-y-0 active:scale-95 focus-visible:ring-brand focus-visible:outline-none disabled:opacity-50 disabled:cursor-not-allowed';
 const variants = {
   primary: 'gradient-primary text-white shadow-md hover:glow',
   outline: 'glass-card text-[var(--brand-cyan)]',

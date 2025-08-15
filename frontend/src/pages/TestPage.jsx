@@ -239,7 +239,7 @@ export default function TestPage() {
       >
         {session && `${session.slice(0,6)} ${new Date().toLocaleString()}`}
       </div>
-      <div data-b-spec="quiz-v1" className="space-y-6 max-w-xl mx-auto quiz-container">
+      <div data-b-spec="quiz-v1" className="space-y-6 max-w-xl mx-auto quiz-container mt-4">
         {loading && <p>Loading...</p>}
         {error && <p className="text-red-600">{error}</p>}
         {!loading && !error && (

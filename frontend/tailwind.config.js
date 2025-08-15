@@ -13,10 +13,13 @@ module.exports = {
       },
       colors: {
         brand: {
-          cyan: 'var(--brand-cyan)',
-          emerald: 'var(--brand-emerald)',
+          cyan: "var(--brand-cyan)",
+          emerald: "var(--brand-emerald)",
+          cyan600: "var(--brand-cyan-600)",
+          emerald600: "var(--brand-emerald-600)",
         },
-        text: 'var(--text)',
+        text: "var(--text)",
+        'text-muted': 'var(--text-muted)',
       },
     },
   },

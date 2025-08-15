@@ -270,11 +270,11 @@ const Result = () => {
   return (
     <PageTransition>
       <AppShell>
-        <section data-b-spec="result-v1" className="max-w-md mx-auto space-y-6 text-center">
+        <section data-b-spec="result-v1" className="max-w-md mx-auto space-y-8 text-center">
           <Card className="space-y-4">
             <div>
               <div className="text-5xl font-bold">{Number.isFinite(score) ? score.toFixed(1) : 'N/A'}</div>
-              <p className="text-sm text[var(--text-muted)]">IQ score</p>
+              <p className="text-sm text-[var(--text-muted)]">IQ score</p>
             </div>
             <div className="space-y-1">
               <p className="text-sm">Percentile: {Number.isFinite(percentile) ? percentile.toFixed(1) : 'N/A'}%</p>
