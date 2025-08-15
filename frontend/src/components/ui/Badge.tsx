@@ -12,7 +12,7 @@ export type BadgeProps = React.HTMLAttributes<HTMLSpanElement> & {
 
 const Badge = ({ variant = 'outline', className, ...props }: BadgeProps) => (
   <span
-    className={clsx('inline-block px-2 py-1 rounded-full text-xs', variants[variant], className)}
+    className={clsx('inline-block px-2 py-1 rounded-full text-xs font-medium', variants[variant], className)}
     {...props}
   />
 );

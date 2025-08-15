@@ -11,8 +11,8 @@ const Progress = ({ value, className, ...props }: ProgressProps) => (
     {...props}
   >
     <div
-      className="h-full gradient-primary rounded-full transition-all duration-250"
-      style={{ width: `${value}%` }}
+      className="h-full gradient-primary rounded-full transition-all"
+      style={{ width: `${value}%`, transitionDuration: 'var(--dur)', transitionTimingFunction: 'var(--ease)' }}
     />
   </div>
 );

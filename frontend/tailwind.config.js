@@ -1,3 +1,4 @@
+// tailwind theme for b-spec ui
 module.exports = {
   content: [
     './index.html',

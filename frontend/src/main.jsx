@@ -32,7 +32,7 @@ import './i18n';
 import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import '@fontsource-variable/inter';
-import './styles/base.css';
+import './styles/base.css'; // global UI base
 import { getTheme, ColorModeContext } from './theme';
 
 function Root() {

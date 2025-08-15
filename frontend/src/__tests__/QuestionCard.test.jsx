@@ -18,7 +18,7 @@ describe('QuestionCard', () => {
     const { getAllByRole } = render(<QuestionCard question={q} onSelect={() => {}} />);
     const buttons = getAllByRole('button');
     expect(buttons).toHaveLength(4);
-    expect(buttons[0]).toHaveTextContent('1');
-    expect(buttons[3]).toHaveTextContent('4');
+    expect(buttons[0]).toHaveTextContent('A');
+    expect(buttons[3]).toHaveTextContent('D');
   });
 });

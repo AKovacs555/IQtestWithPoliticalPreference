@@ -2,16 +2,12 @@ import React from 'react';
 import clsx from 'clsx';
 
 const base =
-  'inline-flex items-center justify-center gap-2 font-medium rounded-md h-11 px-4 transition-transform duration-150';
+  'inline-flex items-center justify-center gap-2 font-medium rounded-md min-h-[44px] px-4 transition-transform duration-150 hover:-translate-y-px hover:scale-[1.01] active:translate-y-0 active:scale-95';
 const variants = {
-  primary:
-    'gradient-primary text-white shadow-md hover:glow hover:-translate-y-px hover:scale-[1.01] active:translate-y-0 active:scale-95',
-  outline:
-    'border border-[var(--border)] text-[var(--brand-cyan)] hover:bg-[rgba(6,182,212,.08)]',
-  ghost:
-    'text-[var(--text-muted)] hover:bg-[rgba(6,182,212,.08)]',
-  destructive:
-    'bg-[var(--danger)] text-white hover:bg-red-600',
+  primary: 'gradient-primary text-white shadow-md hover:glow',
+  outline: 'glass-card text-[var(--brand-cyan)]',
+  ghost: 'text-[var(--text-muted)] hover:bg-[rgba(6,182,212,.08)]',
+  destructive: 'bg-[var(--danger)] text-white hover:bg-red-600',
 };
 
 export type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {

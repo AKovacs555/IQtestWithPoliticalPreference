@@ -6,6 +6,7 @@ export default function Header() {
   return (
     <Box
       component="header"
+      data-b-spec="v1"
       className="sticky top-0 z-50 backdrop-blur-md bg-[var(--glass)] border-b border-[var(--border)]"
       sx={{ px: { xs: 1, md: 2 }, py: 1.5 }}
     >
