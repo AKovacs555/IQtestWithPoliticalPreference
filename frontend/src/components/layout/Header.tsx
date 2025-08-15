@@ -35,7 +35,7 @@ export default function Header() {
           className="absolute right-4 md:right-6 flex items-center gap-2"
           data-b-spec="controls-v1"
         >
-          <div className={pillCls}>Bronze</div>
+          <div className={pillCls}>{/* User Level badge */}Bronze</div>
           <PointsBadge userId={userId} className={pillCls} />
           <LanguageSelector className={pillCls} />
           {isAdmin && (
