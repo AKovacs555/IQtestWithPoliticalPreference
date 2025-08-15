@@ -12,17 +12,65 @@ import UpgradeTeaser from '../components/home/UpgradeTeaser';
 import HeroTop from '../components/layout/HeroTop';
 
 export default function Home() {
-  useTranslation();
-  const { user, loading } = useSession();
+  const { i18n } = useTranslation();
+  const { user, loading, session } = useSession();
   const navigate = useNavigate();
+  const apiBase = import.meta.env.VITE_API_BASE || '';
 
-  const handleStart = () => {
+  const authHeaders = session?.access_token
+    ? { Authorization: `Bearer ${session.access_token}` }
+    : {};
+
+  const handleAnswerNext = async () => {
     if (loading) return;
-    if (!user) navigate('/login');
-    else if (!localStorage.getItem('nationality')) navigate('/select-nationality');
-    else if (localStorage.getItem('demographic_completed') !== 'true') navigate('/demographics');
-    else if (localStorage.getItem('survey_completed') !== 'true') navigate('/survey');
-    else navigate('/quiz');
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+    try {
+      const res = await fetch(
+        `${apiBase}/survey/start?lang=${i18n.language}`,
+        { headers: authHeaders, credentials: 'include' },
+      );
+      if (res.ok) {
+        const payload = await res.json();
+        navigate(`/survey?sid=${payload.survey_id}`);
+      }
+    } catch {}
+  };
+
+  const handleStartQuiz = async () => {
+    if (loading) return;
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+    try {
+      const res = await fetch(
+        `${apiBase}/quiz/start?lang=${i18n.language}`,
+        { headers: authHeaders, credentials: 'include' },
+      );
+      if (res.ok) {
+        const payload = await res.json();
+        navigate(`/quiz/play?attempt_id=${payload.attempt_id}`);
+      } else {
+        const err = await res.json().catch(() => ({}));
+        if (
+          err?.detail?.error === 'survey_required' ||
+          err?.error === 'survey_required'
+        ) {
+          const s = await fetch(
+            `${apiBase}/survey/start?lang=${i18n.language}`,
+            { headers: authHeaders, credentials: 'include' },
+          );
+          if (s.ok) {
+            const p = await s.json();
+            navigate(`/survey?sid=${p.survey_id}`);
+            return;
+          }
+        }
+      }
+    } catch {}
   };
 
   const streakDays = 7;
@@ -40,11 +88,11 @@ export default function Home() {
 
         <Daily3Banner
           progress={dailyProgressPct}
-          onNext={handleStart}
+          onNext={handleAnswerNext}
           onWatchAd={handleWatchAd}
           resetText={dailyResetText}
         />
-        <TestStartBanner onStart={handleStart} />
+        <TestStartBanner onStart={handleStartQuiz} />
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <StreakCard days={streakDays} />
           <CurrentIQCard score={currentIQ} />
