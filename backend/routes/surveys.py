@@ -30,9 +30,9 @@ def available(lang: str, country: str, user: dict = Depends(get_current_user)):
     for s in surveys:
         if s.get("lang") != lang:
             continue
-        if s.get("status") != "approved" or not s.get("is_active"):
+        if s.get("status") != "approved":
             continue
-        allowed = s.get("allowed_countries") or []
+        allowed = s.get("nationalities") or []
         if allowed and country not in allowed:
             continue
         existing = (
@@ -55,20 +55,31 @@ def available(lang: str, country: str, user: dict = Depends(get_current_user)):
             or []
         )
         items = sorted(items, key=lambda o: o.get("position", 0))
+        choices = []
+        for o in items:
+            txt = (
+                o.get("body")
+                or o.get("label")
+                or o.get("text")
+                or o.get("statement")
+                or ""
+            )
+            choices.append(
+                {
+                    "option_id": o["id"],
+                    "text": txt,
+                    "label": txt,
+                    "is_exclusive": o.get("is_exclusive", False),
+                    "order": o.get("position"),
+                }
+            )
         out.append(
             {
                 "survey_id": s["id"],
-                "question_text": s.get("question_text"),
-                "selection": "sa" if s.get("is_single_choice") else "ma",
-                "choices": [
-                    {
-                        "option_id": o["id"],
-                        "text": o.get("statement"),
-                        "is_exclusive": o.get("is_exclusive", False),
-                        "order": o.get("position"),
-                    }
-                    for o in items
-                ],
+                "question_text": s.get("question_text") or s.get("question"),
+                "selection": s.get("type")
+                or ("sa" if s.get("is_single_choice") else "ma"),
+                "choices": choices,
             }
         )
     return out

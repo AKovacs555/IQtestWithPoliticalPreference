@@ -622,22 +622,35 @@ async def survey_start(
         for s in surveys
         if str(s.get("id")) not in answered_ids
         and (
-            not s.get("allowed_countries")
-            or user_nationality in s.get("allowed_countries")
+            not s.get("nationalities")
+            or user_nationality in s.get("nationalities")
         )
         and s.get("status") == "approved"
-        and s.get("is_active")
     ]
     if not candidates:
         return {"items": [], "parties": []}
     survey = candidates[0]
     choices = survey.get("survey_items", [])
+    options: list[str] = []
+    exclusive: list[int] = []
+    for idx, c in enumerate(choices):
+        txt = (
+            c.get("body")
+            or c.get("label")
+            or c.get("text")
+            or c.get("statement")
+            or ""
+        )
+        options.append(txt)
+        if c.get("is_exclusive"):
+            exclusive.append(idx)
     item = SurveyItem(
         id=str(survey["id"]),
-        statement=survey.get("question_text", ""),
-        options=[c.get("statement") for c in choices],
-        type="sa" if survey.get("is_single_choice") else "ma",
-        exclusive_options=[idx for idx, c in enumerate(choices) if c.get("is_exclusive")],
+        statement=survey.get("question_text") or survey.get("question") or "",
+        options=options,
+        type=survey.get("type")
+        or ("sa" if survey.get("is_single_choice") else "ma"),
+        exclusive_options=exclusive,
     )
     if user_id:
         try:
