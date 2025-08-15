@@ -59,11 +59,9 @@ interface SurveyEditorDialogProps {
   initialValue?: any;
 }
 
-interface ItemState {
-  label: string;
+interface ChoiceState {
+  text: string;
   is_exclusive: boolean;
-  requires_text: boolean;
-  order: number;
 }
 
 export default function SurveyEditorDialog({
@@ -76,64 +74,51 @@ export default function SurveyEditorDialog({
   const [title, setTitle] = useState('');
   const [question, setQuestion] = useState('');
   const [language, setLanguage] = useState('en');
-  const [choiceType, setChoiceType] = useState<'single' | 'multiple'>('single');
+  const [choiceType, setChoiceType] = useState<'sa' | 'ma'>('sa');
   const [countryCodes, setCountryCodes] = useState<string[]>([]);
-  const [items, setItems] = useState<ItemState[]>([]);
-  const [isActive, setIsActive] = useState(true);
+  const [items, setItems] = useState<ChoiceState[]>([]);
   useTranslation();
   const supported = SUPPORTED_LANGS;
 
   useEffect(() => {
     if (initialValue) {
       setTitle(initialValue.title || '');
-      setQuestion(initialValue.question || '');
-      setLanguage(initialValue.language || initialValue.lang || 'en');
-      setChoiceType(initialValue.selection_type || 'single');
+      setQuestion(initialValue.question_text || initialValue.question || '');
+      setLanguage(initialValue.lang || initialValue.language || 'en');
+      setChoiceType(initialValue.is_single_choice ? 'sa' : 'ma');
       setCountryCodes(initialValue.allowed_countries || []);
       setItems(
-        (initialValue.options || []).map((it: any) => ({
-          label: it.option_text ?? it.text ?? '',
+        (initialValue.items || []).map((it: any) => ({
+          text: it.statement ?? it.text ?? '',
           is_exclusive: Boolean(it.is_exclusive),
-          requires_text: Boolean(it.requires_text),
-          order: it.order,
         }))
       );
-      setIsActive(initialValue.status === 'approved');
     } else {
       setTitle('');
       setQuestion('');
       setLanguage('en');
-      setChoiceType('single');
+      setChoiceType('sa');
       setCountryCodes([]);
       setItems([]);
-      setIsActive(false);
     }
   }, [initialValue, open]);
 
   const allCountries = useMemo(() => getCountryList('en'), []);
 
-  const addItem = () =>
-    setItems((it) => [...it, { label: '', is_exclusive: false, requires_text: false, order: it.length + 1 }]);
+  const addItem = () => setItems((it) => [...it, { text: '', is_exclusive: false }]);
 
-  const updateItem = (idx: number, field: keyof ItemState, value: any) => {
-    setItems((it) =>
-      it.map((item, i) => (i === idx ? { ...item, [field]: value } : item))
-    );
+  const updateItem = (idx: number, field: keyof ChoiceState, value: any) => {
+    setItems((it) => it.map((item, i) => (i === idx ? { ...item, [field]: value } : item)));
   };
 
-  const removeItem = (idx: number) =>
-    setItems((it) =>
-      it
-        .filter((_, i) => i !== idx)
-        .map((item, i2) => ({ ...item, order: i2 + 1 }))
-    );
+  const removeItem = (idx: number) => setItems((it) => it.filter((_, i) => i !== idx));
 
   const moveItem = (from: number, to: number) => {
     setItems((it) => {
       const copy = [...it];
       const [moved] = copy.splice(from, 1);
       copy.splice(to, 0, moved);
-      return copy.map((item, i) => ({ ...item, order: i + 1 }));
+      return copy;
     });
   };
 
@@ -142,25 +127,21 @@ export default function SurveyEditorDialog({
       alert('Please enter a Title and Question for the survey.');
       return;
     }
-    if (items.length < 2 || items.some((i) => !i.label.trim())) {
-      alert(
-        'Please add at least two survey items, and ensure no item is blank.',
-      );
+    if (items.length < 2 || items.some((i) => !i.text.trim())) {
+      alert('Please add at least two choices and ensure none are blank.');
       return;
     }
     const payload: SurveyPayload = {
       title,
       question_text: question,
-      language,
+      lang: language,
       allowed_countries: countryCodes,
-      selection_type: choiceType,
-      status: isActive ? 'approved' : 'pending',
-      options: items.map((it, idx) => ({
-        text: it.label,
-        is_exclusive: it.is_exclusive,
-        requires_text: it.requires_text,
-        order: idx + 1,
-      })),
+      selection: choiceType,
+      exclusive_indexes: items.reduce<number[]>((arr, it, idx) => {
+        if (it.is_exclusive) arr.push(idx);
+        return arr;
+      }, []),
+      choices: items.map((it) => it.text),
     };
     let id: string | undefined = initialValue?.id;
     try {
@@ -197,14 +178,14 @@ export default function SurveyEditorDialog({
             multiline
           />
           <FormControl>
-            <FormLabel>Type</FormLabel>
+            <FormLabel>Selection</FormLabel>
             <RadioGroup
               row
               value={choiceType}
-              onChange={(e) => setChoiceType(e.target.value as 'single' | 'multiple')}
+              onChange={(e) => setChoiceType(e.target.value as 'sa' | 'ma')}
             >
-              <FormControlLabel value="single" control={<Radio />} label="Single" />
-              <FormControlLabel value="multiple" control={<Radio />} label="Multiple" />
+              <FormControlLabel value="sa" control={<Radio />} label="Single choice" />
+              <FormControlLabel value="ma" control={<Radio />} label="Multiple choice" />
             </RadioGroup>
           </FormControl>
           <div>
@@ -251,7 +232,7 @@ export default function SurveyEditorDialog({
           </FormControl>
           <div>
             <Button variant="outlined" size="small" onClick={addItem}>
-              Add Item
+              Add Choice
             </Button>
             <Stack spacing={1} mt={1}>
               {items.map((it, idx) => (
@@ -262,9 +243,9 @@ export default function SurveyEditorDialog({
                   alignItems="center"
                 >
                   <TextField
-                    label={`Item ${idx + 1}`}
-                    value={it.label}
-                    onChange={(e) => updateItem(idx, 'label', e.target.value)}
+                    label={`Choice ${idx + 1}`}
+                    value={it.text}
+                    onChange={(e) => updateItem(idx, 'text', e.target.value)}
                     fullWidth
                   />
                   <FormControlLabel
@@ -277,17 +258,6 @@ export default function SurveyEditorDialog({
                       />
                     }
                     label="Exclusive"
-                  />
-                  <FormControlLabel
-                    control={
-                      <Checkbox
-                        checked={it.requires_text}
-                        onChange={(e) =>
-                          updateItem(idx, 'requires_text', e.target.checked)
-                        }
-                      />
-                    }
-                    label="Requires text"
                   />
                   <IconButton
                     size="small"

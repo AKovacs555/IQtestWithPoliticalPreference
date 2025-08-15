@@ -616,35 +616,35 @@ async def survey_start(
         )
     answered_ids: set[str] = set()
     if user_id:
-        answered_ids = {str(gid) for gid in get_answered_survey_ids(user_id)}
-    items_raw = [
-        q
-        for q in surveys
-        if (
-            str(q.get("group_id")) not in answered_ids
-            and (
-                not q.get("target_countries")
-                or not user_nationality
-                or user_nationality in q.get("target_countries")
-            )
+        answered_ids = set(get_answered_survey_ids(user_id))
+    candidates = [
+        s
+        for s in surveys
+        if str(s.get("id")) not in answered_ids
+        and (
+            not s.get("allowed_countries")
+            or user_nationality in s.get("allowed_countries")
         )
+        and s.get("status") == "approved"
+        and s.get("is_active")
     ]
-    items = [
-        SurveyItem(
-            id=str(i["id"]),
-            statement=i["statement"],
-            options=i.get("options", []),
-            type=i.get("type", "sa"),
-            exclusive_options=i.get("exclusive_options", []),
-        )
-        for i in items_raw
-    ]
+    if not candidates:
+        return {"items": [], "parties": []}
+    survey = candidates[0]
+    choices = survey.get("survey_items", [])
+    item = SurveyItem(
+        id=str(survey["id"]),
+        statement=survey.get("question_text", ""),
+        options=[c.get("statement") for c in choices],
+        type="sa" if survey.get("is_single_choice") else "ma",
+        exclusive_options=[idx for idx, c in enumerate(choices) if c.get("is_exclusive")],
+    )
     if user_id:
         try:
             log_event(user_id, "survey_start", {"lang": lang, "nationality": user_nationality})
         except Exception:  # pragma: no cover - logging only
             pass
-    return {"items": items, "parties": []}
+    return {"items": [item], "parties": []}
 
 
 @app.get("/surveys")

@@ -16,40 +16,36 @@ def _create_user(supa, uid: str):
     supa.tables.setdefault("app_users", []).append({"hashed_id": uid})
 
 
-def _seed_survey(supa, *, language="en", status="pending", selection_type="single"):
+def _seed_survey(supa, *, lang="en", is_single=True, status="approved"):
     survey = {
         "id": "s1",
-        "survey_group_id": "g1",
         "title": "t",
         "question_text": "q1",
-        "language": language,
+        "lang": lang,
         "allowed_countries": ["JP"],
-        "selection_type": selection_type,
+        "is_single_choice": is_single,
         "status": status,
+        "is_active": True,
     }
     supa.tables.setdefault("surveys", []).append(survey)
-    options = [
+    items = [
         {
             "id": "o1",
             "survey_id": "s1",
-            "option_text": "A",
-            "order": 1,
+            "statement": "A",
+            "position": 1,
             "is_exclusive": False,
-            "requires_text": False,
-            "option_group_id": "og1",
         },
         {
             "id": "o2",
             "survey_id": "s1",
-            "option_text": "Other",
-            "order": 2,
+            "statement": "Other",
+            "position": 2,
             "is_exclusive": False,
-            "requires_text": True,
-            "option_group_id": "og2",
         },
     ]
-    supa.tables.setdefault("survey_options", []).extend(options)
-    return survey, options
+    supa.tables.setdefault("survey_items", []).extend(items)
+    return survey, items
 
 
 def test_admin_crud_and_user_flow(fake_supabase):
@@ -59,14 +55,11 @@ def test_admin_crud_and_user_flow(fake_supabase):
     payload = {
         "title": "Title",
         "question_text": "What?",
-        "language": "en",
+        "lang": "en",
         "allowed_countries": ["JP"],
-        "selection_type": "single",
-        "status": "pending",
-        "options": [
-            {"text": "Yes", "is_exclusive": False, "requires_text": False, "order": 1},
-            {"text": "No", "is_exclusive": False, "requires_text": False, "order": 2},
-        ],
+        "selection": "sa",
+        "exclusive_indexes": [],
+        "choices": ["Yes", "No"],
     }
     r = client.post("/admin/surveys", json=payload)
     assert r.status_code == 200
@@ -74,11 +67,8 @@ def test_admin_crud_and_user_flow(fake_supabase):
 
     upd = dict(payload)
     upd["question_text"] = "Updated?"
-    upd["options"][0]["text"] = "Sure"
+    upd["choices"][0] = "Sure"
     client.put(f"/admin/surveys/{survey_id}", json=upd)
-
-    client.post(f"/admin/surveys/{survey_id}/approve")
-    assert fake_supabase.tables["surveys"][0]["status"] == "approved"
 
     token = create_token("u1")
     _create_user(fake_supabase, "u1")
@@ -89,7 +79,7 @@ def test_admin_crud_and_user_flow(fake_supabase):
     assert r.status_code == 200
     data = r.json()
     assert len(data) == 1
-    opt_id = data[0]["options"][0]["option_id"]
+    opt_id = data[0]["choices"][0]["option_id"]
 
     client.post(
         f"/surveys/{survey_id}/respond",
@@ -126,7 +116,7 @@ def test_multiple_choice_submission(fake_supabase):
     app.dependency_overrides[require_admin] = lambda: True
     client = TestClient(app)
     # seed survey with multiple selection
-    survey, options = _seed_survey(fake_supabase, selection_type="multiple", status="approved")
+    survey, options = _seed_survey(fake_supabase, is_single=False, status="approved")
     token = create_token("u2")
     _create_user(fake_supabase, "u2")
     r = client.get(

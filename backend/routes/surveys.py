@@ -28,17 +28,16 @@ def available(lang: str, country: str, user: dict = Depends(get_current_user)):
     surveys = supabase.table("surveys").select("*").execute().data or []
     out = []
     for s in surveys:
-        if s.get("language") != lang:
+        if s.get("lang") != lang:
             continue
-        if s.get("status") != "approved":
+        if s.get("status") != "approved" or not s.get("is_active"):
             continue
         allowed = s.get("allowed_countries") or []
         if allowed and country not in allowed:
             continue
-        # Exclude already answered surveys for this user
         existing = (
             supabase.table("survey_responses")
-            .select("survey_id")
+            .select("id")
             .eq("survey_id", s["id"])
             .eq("user_id", user["hashed_id"])
             .execute()
@@ -47,30 +46,28 @@ def available(lang: str, country: str, user: dict = Depends(get_current_user)):
         )
         if existing:
             continue
-        opts = (
-            supabase.table("survey_options")
+        items = (
+            supabase.table("survey_items")
             .select("*")
             .eq("survey_id", s["id"])
             .execute()
             .data
             or []
         )
-        opts = sorted(opts, key=lambda o: o.get("order", 0))
+        items = sorted(items, key=lambda o: o.get("position", 0))
         out.append(
             {
                 "survey_id": s["id"],
-                "survey_group_id": s.get("survey_group_id"),
                 "question_text": s.get("question_text"),
-                "selection_type": s.get("selection_type"),
-                "options": [
+                "selection": "sa" if s.get("is_single_choice") else "ma",
+                "choices": [
                     {
                         "option_id": o["id"],
-                        "text": o["option_text"],
+                        "text": o.get("statement"),
                         "is_exclusive": o.get("is_exclusive", False),
-                        "requires_text": o.get("requires_text", False),
-                        "order": o.get("order"),
+                        "order": o.get("position"),
                     }
-                    for o in opts
+                    for o in items
                 ],
             }
         )
