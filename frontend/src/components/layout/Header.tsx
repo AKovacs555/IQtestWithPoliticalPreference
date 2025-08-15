@@ -38,6 +38,11 @@ export default function Header() {
           <div className={pillCls}>Bronze</div>
           <PointsBadge userId={userId} className={pillCls} />
           <LanguageSelector className={pillCls} />
+          {isAdmin && (
+            <Link to="/admin" className={pillCls}>
+              {t('nav.admin', { defaultValue: 'Admin' })}
+            </Link>
+          )}
           {userId ? (
             <Link to="/profile" className={pillCls}>
               {t('nav.profile', { defaultValue: 'Profile' })}

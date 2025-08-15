@@ -8,6 +8,7 @@ import StreakCard from '../components/home/StreakCard';
 import CurrentIQCard from '../components/home/CurrentIQCard';
 import GlobalRankCard from '../components/home/GlobalRankCard';
 import UpgradeTeaser from '../components/home/UpgradeTeaser';
+import MenuBlocks from '../components/home/MenuBlocks';
 
 const API_BASE = import.meta.env.VITE_API_BASE || '';
 
@@ -52,7 +53,7 @@ export default function Home() {
     <AppShell>
       <div
         data-b-spec="home-v2"
-        className="max-w-6xl mx-auto px-4 md:px-6 py-6 md:py-10 space-y-6"
+        className="max-w-6xl mx-auto px-4 md:px-8 py-8 md:py-12 space-y-6"
       >
         <DailyCard
           count={dailyCount}
@@ -61,6 +62,7 @@ export default function Home() {
           onStart={handleStart}
           resetAt={resetAt}
         />
+        {extrasEnabled && <MenuBlocks onStart={handleStart} />}
 
         <div className="grid gap-4 md:grid-cols-3">
           <StreakCard days={streakDays} />
