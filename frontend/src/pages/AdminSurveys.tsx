@@ -59,9 +59,9 @@ export default function AdminSurveys() {
             <div>
               <Typography variant="subtitle1">{s.title}</Typography>
               <Stack direction="row" spacing={1} mt={0.5}>
-                <Chip label={s.lang} size="small" />
-                <Chip label={s.choice_type} size="small" />
-                {(s.country_codes || []).map((c: string) => (
+                <Chip label={s.language} size="small" />
+                <Chip label={s.selection_type} size="small" />
+                {(s.allowed_countries || []).map((c: string) => (
                   <Chip key={c} label={c} size="small" />
                 ))}
               </Stack>

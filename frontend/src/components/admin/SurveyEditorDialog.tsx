@@ -201,10 +201,10 @@ export default function SurveyEditorDialog({
             <RadioGroup
               row
               value={choiceType}
-              onChange={(e) => setChoiceType(e.target.value as 'sa' | 'ma')}
+              onChange={(e) => setChoiceType(e.target.value as 'single' | 'multiple')}
             >
-              <FormControlLabel value="sa" control={<Radio />} label="Single" />
-              <FormControlLabel value="ma" control={<Radio />} label="Multiple" />
+              <FormControlLabel value="single" control={<Radio />} label="Single" />
+              <FormControlLabel value="multiple" control={<Radio />} label="Multiple" />
             </RadioGroup>
           </FormControl>
           <div>

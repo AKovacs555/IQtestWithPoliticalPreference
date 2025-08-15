@@ -5,6 +5,8 @@ from __future__ import annotations
 from datetime import datetime
 from uuid import uuid4
 from typing import List, Literal
+import os
+
 
 from fastapi import APIRouter, Depends, HTTPException, Response
 from pydantic import BaseModel, Field
@@ -48,6 +50,28 @@ class OptionIn(BaseModel):
     order: int
 
 
+SUPPORTED_LANGS = ["en", "ja"]
+
+
+def _translate(text: str, src: str, dst: str) -> str:
+    """Translate ``text`` from ``src`` to ``dst``.
+
+    If translation fails (e.g. because no API key is configured) the original
+    text is returned. This keeps tests deterministic and avoids network calls
+    when running in CI environments without OpenAI access."""
+
+    if src == dst:
+        return text
+    try:
+        if os.getenv("OPENAI_API_KEY", "test") == "test":
+            raise RuntimeError("translation disabled")
+        from backend.services.translation import translate_text  # local import
+
+        return translate_text(text, src, dst)
+    except Exception:
+        return text
+
+
 class SurveyCreate(BaseModel):
     """Payload for creating or replacing a survey."""
 
@@ -58,20 +82,17 @@ class SurveyCreate(BaseModel):
     selection_type: Literal["single", "multiple"] = "single"
     status: Literal["pending", "approved"] = "pending"
     options: List[OptionIn]
-    auto_translate: bool = False  # Placeholder; translation handled elsewhere
 
 
 @router.post("/")
 def create_survey(payload: SurveyCreate):
-    """Insert a new survey and its options.
-
-    The function intentionally keeps the implementation simple: translation and
-    cross-language cloning are omitted for now. Each option is assigned a fresh
-    ``option_group_id`` so future translations can reference it."""
+    """Insert a new survey and its options and create translated variants."""
 
     supabase = db.get_supabase()
     survey_group_id = str(uuid4())
     approved_at = _now_iso() if payload.status == "approved" else None
+
+    # Base survey -----------------------------------------------------------
     survey_row = {
         "survey_group_id": survey_group_id,
         "title": payload.title,
@@ -89,8 +110,10 @@ def create_survey(payload: SurveyCreate):
     )
     if not res.data:
         raise HTTPException(500, "failed to insert survey")
-    survey_id = res.data[0]["id"]
+    base_row = res.data[0]
+    survey_id = base_row["id"]
 
+    option_group_ids = [str(uuid4()) for _ in payload.options]
     option_rows = [
         {
             "survey_id": survey_id,
@@ -98,16 +121,50 @@ def create_survey(payload: SurveyCreate):
             "order": opt.order,
             "is_exclusive": opt.is_exclusive,
             "requires_text": opt.requires_text,
-            "option_group_id": str(uuid4()),
+            "option_group_id": option_group_ids[idx],
         }
-        for opt in payload.options
+        for idx, opt in enumerate(payload.options)
     ]
     if option_rows:
-        supabase.table("survey_options").insert(
-            option_rows, returning="representation"
-        ).execute()
+        supabase.table("survey_options").insert(option_rows).execute()
 
-    created = res.data[0]
+    # Translations ----------------------------------------------------------
+    for tgt in SUPPORTED_LANGS:
+        if tgt == payload.language:
+            continue
+        translated_row = {
+            "survey_group_id": survey_group_id,
+            "title": _translate(payload.title, payload.language, tgt),
+            "question_text": _translate(payload.question_text, payload.language, tgt),
+            "language": tgt,
+            "allowed_countries": payload.allowed_countries,
+            "selection_type": payload.selection_type,
+            "status": payload.status,
+            "approved_at": approved_at,
+        }
+        t_res = (
+            supabase.table("surveys")
+            .insert(translated_row, returning="representation")
+            .execute()
+        )
+        if not t_res.data:
+            continue
+        t_id = t_res.data[0]["id"]
+        t_opts = [
+            {
+                "survey_id": t_id,
+                "option_text": _translate(opt.text, payload.language, tgt),
+                "order": opt.order,
+                "is_exclusive": opt.is_exclusive,
+                "requires_text": opt.requires_text,
+                "option_group_id": option_group_ids[idx],
+            }
+            for idx, opt in enumerate(payload.options)
+        ]
+        if t_opts:
+            supabase.table("survey_options").insert(t_opts).execute()
+
+    created = base_row
     created["options"] = option_rows
     return created
 

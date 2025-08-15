@@ -16,6 +16,10 @@ export default function TestPage() {
   const [questions, setQuestions] = React.useState([]);
   const [answers, setAnswers] = React.useState([]);
   const [current, setCurrent] = React.useState(0);
+  const [pendingSurveys, setPendingSurveys] = React.useState([]);
+  const [surveyAnswers, setSurveyAnswers] = React.useState([]);
+  const [surveySelection, setSurveySelection] = React.useState([]);
+  const [surveyTexts, setSurveyTexts] = React.useState({});
   const DURATION = parseInt(import.meta.env.VITE_QUIZ_DURATION_MINUTES || '25', 10) * 60;
   const [timeLeft, setTimeLeft] = React.useState(DURATION);
   const [suspicious, setSuspicious] = React.useState(false);
@@ -58,6 +62,7 @@ export default function TestPage() {
         const data = await getQuizStart(undefined, i18n.language);
         setSession(data.session_id);
         setQuestions(data.questions);
+        setPendingSurveys(data.pending_surveys || []);
         setCurrent(0);
         sessionStorage.setItem('quiz_session', data.session_id);
         if (data.expires_at) {
@@ -144,7 +149,7 @@ export default function TestPage() {
     setSubmitting(true);
     try {
       // console.log('submitQuiz called');
-      const result = await submitQuiz(session, list);
+      const result = await submitQuiz(session, list, surveyAnswers);
       sessionStorage.setItem('quiz_status', 'submitted');
       sessionStorage.removeItem('quiz_session');
       sessionStorage.removeItem('quiz_expires');
@@ -226,6 +231,83 @@ export default function TestPage() {
       await submit(a.map((ans, idx) => ({ id: questions[idx].id, answer: ans })));
     }
   };
+
+  const handleSurveyToggle = (idx) => {
+    if (pendingSurveys.length <= surveyAnswers.length) return;
+    const s = pendingSurveys[surveyAnswers.length];
+    const isMultiple = s.selection_type === 'multiple';
+    setSurveySelection((prev) => {
+      let next = [...prev];
+      const exists = next.includes(idx);
+      const opt = s.options[idx];
+      if (isMultiple) {
+        if (exists) {
+          next = next.filter((i) => i !== idx);
+        } else if (opt.is_exclusive) {
+          next = [idx];
+        } else {
+          next = next.filter((i) => !s.options[i].is_exclusive);
+          next.push(idx);
+        }
+      } else {
+        next = exists ? [] : [idx];
+      }
+      return next;
+    });
+  };
+
+  const submitCurrentSurvey = () => {
+    if (pendingSurveys.length <= surveyAnswers.length) return;
+    const s = pendingSurveys[surveyAnswers.length];
+    const ans = { id: s.survey_id, selections: surveySelection.slice() };
+    const texts = {};
+    surveySelection.forEach((i) => {
+      if (s.options[i].requires_text && surveyTexts[i]) {
+        texts[i] = surveyTexts[i];
+      }
+    });
+    if (Object.keys(texts).length) ans.text = texts;
+    setSurveyAnswers((a) => [...a, { survey_group_id: s.survey_group_id, answer: ans }]);
+    setSurveySelection([]);
+    setSurveyTexts({});
+  };
+
+  if (pendingSurveys.length > surveyAnswers.length) {
+    const s = pendingSurveys[surveyAnswers.length];
+    const isMultiple = s.selection_type === 'multiple';
+    return (
+      <AppShell>
+        <Card className="max-w-xl mx-auto p-4 space-y-4">
+          <h2 className="text-lg font-bold">{s.question_text}</h2>
+          {s.options.map((o, idx) => (
+            <div key={o.id} className="flex items-center gap-2">
+              <input
+                type={isMultiple ? 'checkbox' : 'radio'}
+                checked={surveySelection.includes(idx)}
+                onChange={() => handleSurveyToggle(idx)}
+              />
+              <span>{o.option_text}</span>
+              {o.requires_text && surveySelection.includes(idx) && (
+                <input
+                  className="border p-1 ml-2"
+                  value={surveyTexts[idx] || ''}
+                  onChange={(e) =>
+                    setSurveyTexts((t) => ({ ...t, [idx]: e.target.value }))
+                  }
+                />
+              )}
+            </div>
+          ))}
+          <Button
+            onClick={submitCurrentSurvey}
+            disabled={surveySelection.length === 0}
+          >
+            Next
+          </Button>
+        </Card>
+      </AppShell>
+    );
+  }
 
   return (
     <AppShell>

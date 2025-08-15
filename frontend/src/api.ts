@@ -66,8 +66,8 @@ export async function getQuizStart(setId?: string | null, lang?: string | null) 
   return apiGet(url);
 }
 
-export async function submitQuiz(sessionId: string, answers: unknown) {
-  return apiPost('/quiz/submit', { session_id: sessionId, answers });
+export async function submitQuiz(sessionId: string, answers: unknown, surveys?: unknown) {
+  return apiPost('/quiz/submit', { session_id: sessionId, answers, surveys });
 }
 
 export async function abandonQuiz(sessionId: string) {
