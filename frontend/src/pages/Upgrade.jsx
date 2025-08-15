@@ -12,9 +12,9 @@ export default function Upgrade() {
     <AppShell>
       <div
         data-b-spec="upgrade-v1"
-        className="min-h-screen bg-amber-50 text-amber-900 py-10"
+        className="min-h-screen bg-slate-900 text-white py-10"
       >
-        <div className="max-w-5xl mx-auto px-4 space-y-12">
+        <div className="max-w-6xl mx-auto px-4 space-y-12">
           <Link
             to="/dashboard"
             className="inline-block text-sm text-amber-700 hover:text-amber-900"
@@ -31,35 +31,35 @@ export default function Upgrade() {
 
           <section className="grid md:grid-cols-3 gap-8">
             {/* Free Plan */}
-            <div className="relative bg-white/80 border border-amber-200 rounded-lg p-6 shadow-sm opacity-60">
+            <div className="relative glass-card gold-ring gold-sheen p-6 shadow-sm opacity-60">
               <h3 className="text-xl font-semibold mb-2">Free</h3>
               <div className="mb-4">
                 <span className="text-3xl font-bold">¥0</span>
               </div>
               <ul className="space-y-2 mb-6">
                 <li className="flex items-start">
-                  <span className="text-green-600 mr-2">✔</span>
+                  <span className="text-green-500 mr-2">✔</span>
                   <span>1日1回の受験</span>
                 </li>
                 <li className="flex items-start">
-                  <span className="text-red-600 mr-2">✖</span>
+                  <span className="text-red-500 mr-2">✖</span>
                   <span>広告最小化</span>
                 </li>
                 <li className="flex items-start">
-                  <span className="text-red-600 mr-2">✖</span>
+                  <span className="text-red-500 mr-2">✖</span>
                   <span>限定アンケート</span>
                 </li>
               </ul>
               <button
                 disabled
-                className="w-full py-2 rounded-md bg-gray-300 text-gray-500 cursor-not-allowed"
+                className="w-full py-2 rounded-md bg-gray-600 text-gray-400 cursor-not-allowed"
               >
                 現在のプラン
               </button>
             </div>
 
             {/* Monthly Plan */}
-            <div className="relative bg-white border-2 border-amber-400 rounded-lg p-6 shadow-md">
+            <div className="relative glass-card gold-ring gold-sheen p-6 shadow-md border-2 border-amber-400">
               <div className="absolute -top-3 left-0 right-0 flex justify-center">
                 <span className="bg-amber-400 text-white text-xs font-semibold px-3 py-1 rounded-b">
                   POPULAR
@@ -69,28 +69,28 @@ export default function Upgrade() {
               <div className="mb-4">
                 <div className="flex items-baseline space-x-2">
                   <span className="text-3xl font-bold">¥1,200</span>
-                  <span className="text-sm line-through text-amber-600">¥1,500</span>
-                  <span className="text-xs bg-amber-100 text-amber-600 px-2 py-1 rounded">
+                  <span className="text-sm line-through text-amber-500">¥1,500</span>
+                  <span className="text-xs bg-amber-500 text-white px-2 py-1 rounded">
                     20% OFF
                   </span>
                 </div>
               </div>
               <ul className="space-y-2 mb-6">
                 <li className="flex items-start">
-                  <span className="text-green-600 mr-2">✔</span>
+                  <span className="text-green-500 mr-2">✔</span>
                   <span>受験無制限</span>
                 </li>
                 <li className="flex items-start">
-                  <span className="text-green-600 mr-2">✔</span>
+                  <span className="text-green-500 mr-2">✔</span>
                   <span>広告最小化</span>
                 </li>
                 <li className="flex items-start">
-                  <span className="text-green-600 mr-2">✔</span>
+                  <span className="text-green-500 mr-2">✔</span>
                   <span>限定アンケート</span>
                 </li>
               </ul>
               <button
-                className="w-full py-2 rounded-md bg-amber-500 hover:bg-amber-600 text-white font-semibold"
+                className="w-full py-2 rounded-md bg-amber-500 hover:bg-amber-600 hover:shadow-lg hover:shadow-amber-500/50 text-white font-semibold"
                 onClick={() => handleUpgrade('pro-monthly')}
               >
                 今すぐ加入
@@ -98,33 +98,33 @@ export default function Upgrade() {
             </div>
 
             {/* Yearly Plan */}
-            <div className="relative bg-white/80 border border-amber-200 rounded-lg p-6 shadow-sm">
+            <div className="relative glass-card gold-ring gold-sheen p-6 shadow-sm">
               <h3 className="text-xl font-semibold mb-2">Pro 年額</h3>
               <div className="mb-4">
                 <div className="flex items-baseline space-x-2">
                   <span className="text-3xl font-bold">¥10,000</span>
-                  <span className="text-sm line-through text-amber-600">¥12,000</span>
-                  <span className="text-xs bg-amber-100 text-amber-600 px-2 py-1 rounded">
+                  <span className="text-sm line-through text-amber-500">¥12,000</span>
+                  <span className="text-xs bg-amber-500 text-white px-2 py-1 rounded">
                     2ヶ月分お得
                   </span>
                 </div>
               </div>
               <ul className="space-y-2 mb-6">
                 <li className="flex items-start">
-                  <span className="text-green-600 mr-2">✔</span>
+                  <span className="text-green-500 mr-2">✔</span>
                   <span>受験無制限</span>
                 </li>
                 <li className="flex items-start">
-                  <span className="text-green-600 mr-2">✔</span>
+                  <span className="text-green-500 mr-2">✔</span>
                   <span>広告最小化</span>
                 </li>
                 <li className="flex items-start">
-                  <span className="text-green-600 mr-2">✔</span>
+                  <span className="text-green-500 mr-2">✔</span>
                   <span>限定アンケート</span>
                 </li>
               </ul>
               <button
-                className="w-full py-2 rounded-md border-2 border-amber-500 text-amber-600 hover:bg-amber-50 font-semibold"
+                className="w-full py-2 rounded-md border-2 border-amber-400 text-amber-400 hover:bg-amber-500/10 font-semibold"
                 onClick={() => handleUpgrade('pro-yearly')}
               >
                 年額で加入
