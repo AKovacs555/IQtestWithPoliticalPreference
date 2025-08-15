@@ -10,6 +10,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..',
 from main import app
 from backend.deps.auth import create_token
 from backend.routes.dependencies import require_admin
+from backend.routes.admin_surveys import SUPPORTED_LANGS
 
 
 def _create_user(supa, uid: str, gender: str | None = None):
@@ -64,7 +65,8 @@ def test_item_language_on_create(fake_supabase):
         "question_text": "What?",
         "type": "sa",
         "lang": "ja",
-        "choices": ["A", "B"],
+        "items": [{"body": "A"}, {"body": "B"}],
+        "status": "approved",
         "target_countries": ["JP"],
     }
     r = client.post("/admin/surveys", json=payload)
@@ -72,6 +74,35 @@ def test_item_language_on_create(fake_supabase):
     items = fake_supabase.tables.get("survey_items", [])
     assert len(items) == 2
     assert all(it.get("language") == "ja" for it in items)
+
+
+def test_translation_fanout(fake_supabase, monkeypatch):
+    app.dependency_overrides[require_admin] = lambda: True
+    monkeypatch.setattr(
+        "backend.routes.admin_surveys.translate_with_openai", lambda prompt: "T"
+    )
+    monkeypatch.setattr(
+        "routes.admin_surveys.translate_with_openai", lambda prompt: "T"
+    )
+    client = TestClient(app)
+    payload = {
+        "title": "Title",
+        "question_text": "What?",
+        "type": "sa",
+        "lang": "ja",
+        "items": [{"body": "A"}, {"body": "B"}],
+    }
+    r = client.post("/admin/surveys", json=payload)
+    assert r.status_code == 201
+    surveys = fake_supabase.tables.get("surveys", [])
+    group_ids = {s.get("group_id") for s in surveys}
+    assert len(surveys) == 1 + len(SUPPORTED_LANGS)
+    assert len(group_ids) == 1
+    items = fake_supabase.tables.get("survey_items", [])
+    for s in surveys:
+        s_items = [it for it in items if it.get("survey_id") == s["id"]]
+        assert len(s_items) == 2
+        assert all(it.get("language") == s["lang"] for it in s_items)
 
 def test_admin_crud_and_user_flow(fake_supabase):
     app.dependency_overrides[require_admin] = lambda: True
@@ -84,7 +115,8 @@ def test_admin_crud_and_user_flow(fake_supabase):
         "target_countries": ["JP"],
         "type": "sa",
         "target_genders": [],
-        "choices": ["Yes", "No"],
+        "status": "approved",
+        "items": [{"body": "Yes"}, {"body": "No"}],
     }
     r = client.post("/admin/surveys", json=payload)
     assert r.status_code == 201
@@ -92,7 +124,7 @@ def test_admin_crud_and_user_flow(fake_supabase):
 
     upd = dict(payload)
     upd["question_text"] = "Updated?"
-    upd["choices"][0] = "Sure"
+    upd["items"][0]["body"] = "Sure"
     client.put(f"/admin/surveys/{survey_id}", json=upd)
 
     token = create_token("u1")
@@ -174,7 +206,8 @@ def test_gender_filtering(fake_supabase):
         "target_countries": ["JP"],
         "target_genders": ["male"],
         "type": "sa",
-        "choices": ["Yes", "No"],
+        "status": "approved",
+        "items": [{"body": "Yes"}, {"body": "No"}],
     }
     r = client.post("/admin/surveys", json=payload)
     assert r.status_code == 201

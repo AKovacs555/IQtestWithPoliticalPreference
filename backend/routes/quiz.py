@@ -25,7 +25,7 @@ from backend.irt import percentile  # noqa: E402
 from backend.features import generate_share_image  # noqa: E402
 from backend.deps.auth import get_current_user  # noqa: E402
 from backend.db import (  # noqa: E402
-    get_answered_survey_ids,
+    get_answered_survey_group_ids,
     insert_survey_responses,
     get_daily_answer_count,
     consume_free_attempt,
@@ -394,7 +394,7 @@ def get_random_pending_surveys(
 
     try:
         supabase = get_supabase_client()
-        answered = set(get_answered_survey_ids(user_id))
+        answered = set(get_answered_survey_group_ids(user_id))
         resp = (
             supabase.table("surveys")
             .select("*")
@@ -413,7 +413,7 @@ def get_random_pending_surveys(
         genders = s.get("target_genders") or []
         if genders and gender not in genders:
             continue
-        if str(s.get("survey_group_id")) in answered:
+        if str(s.get("group_id")) in answered:
             continue
         opts = (
             supabase.table("survey_items")
@@ -427,7 +427,7 @@ def get_random_pending_surveys(
         eligible.append(
             {
                 "survey_id": s["id"],
-                "survey_group_id": s.get("survey_group_id"),
+                "survey_group_id": s.get("group_id"),
                 "question_text": s.get("question_text"),
                 "selection_type": s.get("type"),
                 "options": [
