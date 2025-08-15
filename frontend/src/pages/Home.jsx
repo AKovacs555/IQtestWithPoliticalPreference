@@ -9,6 +9,7 @@ import GlobalRankCard from '../components/home/GlobalRankCard';
 import Daily3Banner from '../components/home/Daily3Banner';
 import TestStartBanner from '../components/home/TestStartBanner';
 import UpgradeTeaser from '../components/home/UpgradeTeaser';
+import HeroTop from '../components/layout/HeroTop';
 
 export default function Home() {
   useTranslation();
@@ -33,7 +34,10 @@ export default function Home() {
 
   return (
     <AppShell>
-      <div className="max-w-6xl mx-auto px-4 md:px-8 py-8 md:py-12 space-y-6">
+      <div className="max-w-6xl mx-auto px-4 md:px-8 py-6 md:py-10 space-y-6">
+        {/* 上部ロゴ＋小ピル群（B と同仕様） */} {/* data-b-spec: hero-top */}
+        <HeroTop />
+
         <Daily3Banner
           progress={dailyProgressPct}
           onNext={handleStart}
