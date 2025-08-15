@@ -8,12 +8,14 @@
 @layer base {
   html {
     font-size: 100%;
+    scroll-behavior: smooth;
   }
   body {
     min-height: 100dvh;
     font-family: var(--font-sans);
     color: var(--text);
     background: linear-gradient(135deg, var(--bg-950), var(--bg-900), rgba(8,145,178,.20));
+    color-scheme: light dark;
     -webkit-font-smoothing: antialiased;
   }
   * {

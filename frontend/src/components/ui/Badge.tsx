@@ -3,7 +3,7 @@ import clsx from 'clsx';
 
 const variants = {
   primary: 'gradient-primary text-white',
-  outline: 'glass-card text-[var(--text)]',
+  outline: 'glass-card text-[var(--text)] border border-[var(--border)]',
 };
 
 export type BadgeProps = React.HTMLAttributes<HTMLSpanElement> & {

@@ -27,7 +27,7 @@ export default function Home() {
 
   return (
     <AppShell>
-      <div data-b-spec="home-v1" className="space-y-8">
+      <div data-b-spec="home-v1" className="space-y-8 max-w-2xl mx-auto">
         <section className="text-center space-y-4">
           <h1 className="text-4xl md:text-5xl font-bold bg-clip-text text-transparent gradient-primary">
             {t('landing.title', { defaultValue: 'Test your IQ and political preferences' })}
