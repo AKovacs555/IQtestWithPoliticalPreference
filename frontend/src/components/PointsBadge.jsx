@@ -3,7 +3,7 @@ import { useSession } from '../hooks/useSession';
 
 const API_BASE = import.meta.env.VITE_API_BASE || '';
 
-export default function PointsBadge({ userId }) {
+export default function PointsBadge({ userId, className = '' }) {
   const [points, setPoints] = useState(0);
   const { session } = useSession();
 
@@ -31,6 +31,11 @@ export default function PointsBadge({ userId }) {
   }, [userId, session]);
 
   return (
-    <span className="badge badge-secondary" aria-label={`points ${points}`}>{points}</span>
+    <span
+      className={`flex items-center h-8 px-3 rounded-full border border-[rgba(148,163,184,.25)] text-sm hover:bg-[rgba(6,182,212,.08)] ${className}`}
+      aria-label={`points ${points}`}
+    >
+      {points}
+    </span>
   );
 }
