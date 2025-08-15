@@ -43,6 +43,7 @@ def create_survey(payload: dict = Body(...)):
         or payload.get("target_nationalities")
         or payload.get("countries")
     )
+    allowed_countries = _norm_list(payload.get("allowed_countries"))
     survey_type = payload.get("type") or payload.get("selection")
     if survey_type not in {"sa", "ma"}:
         raise HTTPException(400, "type must be 'sa' or 'ma'")
@@ -53,6 +54,7 @@ def create_survey(payload: dict = Body(...)):
         "question_text": question_text,
         "lang": lang,
         "nationalities": nationalities,
+        "allowed_countries": allowed_countries,
         "type": survey_type,
         "status": status,
         "is_active": True,
@@ -115,6 +117,7 @@ def update_survey(survey_id: str, payload: dict = Body(...)):
         or payload.get("target_nationalities")
         or payload.get("countries")
     )
+    allowed_countries = _norm_list(payload.get("allowed_countries"))
     survey_type = payload.get("type") or payload.get("selection")
     if survey_type not in {"sa", "ma"}:
         raise HTTPException(400, "type must be 'sa' or 'ma'")
@@ -125,6 +128,7 @@ def update_survey(survey_id: str, payload: dict = Body(...)):
         "question_text": question_text,
         "lang": lang,
         "nationalities": nationalities,
+        "allowed_countries": allowed_countries,
         "type": survey_type,
         "status": status,
         "is_active": payload.get("is_active", True),
@@ -171,7 +175,7 @@ def update_survey(survey_id: str, payload: dict = Body(...)):
 @router.get("/")
 def list_surveys():
     res = supabase_admin.table("surveys").select(
-        "id,title,question_text,lang,nationalities,type,status"
+        "id,title,question_text,lang,allowed_countries,nationalities,type,status"
     ).execute()
     surveys = res.data or []
     for s in surveys:
