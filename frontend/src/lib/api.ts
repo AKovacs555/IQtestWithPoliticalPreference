@@ -17,9 +17,9 @@ export async function fetchProfile() {
   return res.json() as Promise<{ id: string; email?: string; username?: string; is_admin: boolean }>;
 }
 
-export interface SurveyChoice {
-  text: string;
-  isExclusive?: boolean;
+export interface SurveyItemPayload {
+  body: string;
+  is_exclusive?: boolean;
 }
 
 export interface SurveyPayload {
@@ -29,7 +29,7 @@ export interface SurveyPayload {
   lang: string;
   target_countries: string[];
   target_genders: string[];
-  choices: SurveyChoice[];
+  items: SurveyItemPayload[];
 }
 
 export async function getSurveys() {

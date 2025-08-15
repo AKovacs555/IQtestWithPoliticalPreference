@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 
 # Supported languages for automatic translation
-BASE_TARGET_LANGS = ["en", "tr", "ru", "zh", "ko", "es", "fr", "it", "de", "ar"]
+SUPPORTED_LANGS = ["en", "tr", "ru", "zh", "ko", "es", "fr", "it", "de", "ar"]
 
 LANG_DISPLAY = {
     "en": "English",
@@ -69,49 +69,42 @@ def create_survey(payload: dict = Body(...)):
     if not question_text.strip():
         raise HTTPException(400, "question_text required")
 
-    lang = payload.get("lang") or payload.get("language") or "en"
-    target_countries = _norm_list(
-        payload.get("target_countries") or payload.get("nationalities")
-    )
+    lang = payload.get("lang") or "en"
+    target_countries = _norm_list(payload.get("target_countries"))
     target_genders = _norm_list(payload.get("target_genders"))
-    survey_type = payload.get("type") or payload.get("selection")
+    survey_type = payload.get("type", "sa")
     if survey_type not in {"sa", "ma"}:
         raise HTTPException(400, "type must be 'sa' or 'ma'")
-    status = payload.get("status") or "approved"
-    is_single_choice = survey_type in ("sa", "single")
+    status = payload.get("status", "draft")
+    is_single_choice = survey_type == "sa"
 
-    group_id = payload.get("group_id") or str(uuid.uuid4())
+    group_id = uuid.uuid4()
     row = {
         "title": payload.get("title", ""),
         "question_text": question_text,
+        "type": survey_type,
+        "is_single_choice": is_single_choice,
+        "status": status,
         "lang": lang,
         "target_countries": target_countries,
         "target_genders": target_genders,
-        "type": survey_type,
-        "status": status,
-        "is_active": True,
         "group_id": group_id,
-        "is_single_choice": is_single_choice,
+        "is_active": True,
     }
     res = supabase_admin.table("surveys").insert(row).execute()
     if not res.data:
         raise HTTPException(500, "failed to insert survey")
     new_id = res.data[0]["id"]
 
-    items_in = payload.get("items") or payload.get("choices") or []
+    items_in = payload.get("items") or []
     item_rows = []
     for idx, it in enumerate(items_in):
         if isinstance(it, str):
             text = it.strip()
             exclusive = False
         else:
-            text = (it.get("body") or it.get("text") or "").strip()
-            exclusive = bool(
-                it.get("is_exclusive")
-                or it.get("isExclusive")
-                or it.get("exclusive")
-                or it.get("locks_others")
-            )
+            text = (it.get("body") or "").strip()
+            exclusive = bool(it.get("is_exclusive") or it.get("isExclusive"))
         if not text:
             continue
         item_rows.append(
@@ -128,7 +121,7 @@ def create_survey(payload: dict = Body(...)):
         supabase_admin.table("survey_items").insert(item_rows).execute()
 
     # Determine target languages for translation
-    targets = list(BASE_TARGET_LANGS)
+    targets = list(SUPPORTED_LANGS)
     if lang != "ja":
         targets.append("ja")
     if lang in targets:
@@ -154,14 +147,14 @@ def create_survey(payload: dict = Body(...)):
         trans_row = {
             "title": translated_title,
             "question_text": translated_question,
+            "type": survey_type,
+            "is_single_choice": is_single_choice,
+            "status": status,
             "lang": tgt,
             "target_countries": target_countries,
             "target_genders": target_genders,
-            "type": survey_type,
-            "status": status,
-            "is_active": True,
             "group_id": group_id,
-            "is_single_choice": is_single_choice,
+            "is_active": True,
         }
         res_t = supabase_admin.table("surveys").insert(trans_row).execute()
         if not (res_t.data):
@@ -182,7 +175,7 @@ def create_survey(payload: dict = Body(...)):
         if trans_items:
             supabase_admin.table("survey_items").insert(trans_items).execute()
 
-    return {"id": new_id, "group_id": group_id}
+    return {"id": new_id, "group_id": str(group_id)}
 
 
 @router.put("/{survey_id}")
@@ -196,16 +189,14 @@ def update_survey(survey_id: str, payload: dict = Body(...)):
     if not question_text.strip():
         raise HTTPException(400, "question_text required")
 
-    lang = payload.get("lang") or payload.get("language") or "en"
-    target_countries = _norm_list(
-        payload.get("target_countries") or payload.get("nationalities")
-    )
+    lang = payload.get("lang") or "en"
+    target_countries = _norm_list(payload.get("target_countries"))
     target_genders = _norm_list(payload.get("target_genders"))
-    survey_type = payload.get("type") or payload.get("selection")
+    survey_type = payload.get("type", "sa")
     if survey_type not in {"sa", "ma"}:
         raise HTTPException(400, "type must be 'sa' or 'ma'")
-    status = payload.get("status") or "approved"
-    is_single_choice = survey_type in ("sa", "single")
+    status = payload.get("status", "draft")
+    is_single_choice = survey_type == "sa"
 
     # Determine group_id and existing translations
     gid_resp = (
@@ -232,20 +223,15 @@ def update_survey(survey_id: str, payload: dict = Body(...)):
     supabase_admin.table("surveys").update(data).eq("id", survey_id).execute()
     supabase_admin.table("survey_items").delete().eq("survey_id", survey_id).execute()
 
-    items_in = payload.get("items") or payload.get("choices") or []
+    items_in = payload.get("items") or []
     item_rows = []
     for idx, it in enumerate(items_in):
         if isinstance(it, str):
             text = it.strip()
             exclusive = False
         else:
-            text = (it.get("body") or it.get("text") or "").strip()
-            exclusive = bool(
-                it.get("is_exclusive")
-                or it.get("isExclusive")
-                or it.get("exclusive")
-                or it.get("locks_others")
-            )
+            text = (it.get("body") or "").strip()
+            exclusive = bool(it.get("is_exclusive") or it.get("isExclusive"))
         if not text:
             continue
         item_rows.append(
@@ -278,7 +264,7 @@ def update_survey(survey_id: str, payload: dict = Body(...)):
         supabase_admin.table("surveys").delete().eq("id", sid).execute()
 
     # Determine target languages for translation
-    targets = list(BASE_TARGET_LANGS)
+    targets = list(SUPPORTED_LANGS)
     if lang != "ja":
         targets.append("ja")
     if lang in targets:

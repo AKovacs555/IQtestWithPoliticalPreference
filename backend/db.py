@@ -488,7 +488,7 @@ def get_surveys(lang: Optional[str] = None) -> List[Dict[str, Any]]:
 
     supabase = get_supabase()
     select = (
-        "id,title,question_text,lang,target_countries,target_genders,type,status," "survey_items(id,position,body,is_exclusive)"
+        "id,title,question_text,lang,target_countries,target_genders,type,status,group_id," "survey_items(id,position,body,is_exclusive)"
     )
     query = supabase.from_("surveys").select(select)
     if lang:
@@ -571,18 +571,22 @@ def get_daily_survey_response(
     return rows[0] if rows else None
 
 
-def get_answered_survey_ids(user_id: str) -> List[str]:
-    """Return survey_ids already answered by the user."""
+def get_answered_survey_group_ids(user_id: str) -> List[str]:
+    """Return survey ``group_id`` values already answered by the user."""
 
     supabase = get_supabase()
     resp = (
         supabase.from_("survey_responses")
-        .select("survey_id")
+        .select("survey_group_id")
         .eq("user_id", user_id)
         .execute()
     )
     data = resp.data or []
-    return [str(row["survey_id"]) for row in data if row.get("survey_id") is not None]
+    return [
+        str(row["survey_group_id"])
+        for row in data
+        if row.get("survey_group_id") is not None
+    ]
 
 
 def get_survey_answers(group_id: str) -> List[Dict[str, Any]]:

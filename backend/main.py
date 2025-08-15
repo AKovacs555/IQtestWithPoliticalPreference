@@ -137,7 +137,7 @@ from db import (
     get_supabase,
     get_surveys,
     get_survey_answers,
-    get_answered_survey_ids,
+    get_answered_survey_group_ids,
     insert_survey_responses,
     get_pricing_rule,
     get_or_create_user_id_from_hashed,
@@ -614,13 +614,14 @@ async def survey_start(
                 "message": "Please select your nationality before taking the survey.",
             },
         )
-    answered_ids: set[str] = set()
+    answered_groups: set[str] = set()
     if user_id:
-        answered_ids = set(get_answered_survey_ids(user_id))
+        answered_groups = set(get_answered_survey_group_ids(user_id))
     candidates = [
         s
         for s in surveys
-        if str(s.get("id")) not in answered_ids
+        if s.get("lang") == lang
+        and str(s.get("group_id")) not in answered_groups
         and (
             not s.get("target_countries")
             or user_country in s.get("target_countries")
