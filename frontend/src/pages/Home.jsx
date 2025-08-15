@@ -3,10 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import AppShell from '../components/AppShell';
 import { useSession } from '../hooks/useSession';
 import { useTranslation } from 'react-i18next';
+import StreakCard from '../components/home/StreakCard';
 import CurrentIQCard from '../components/home/CurrentIQCard';
 import GlobalRankCard from '../components/home/GlobalRankCard';
-import StreakCard from '../components/home/StreakCard';
-import TakeTestCard from '../components/home/TakeTestCard';
+import Daily3Banner from '../components/home/Daily3Banner';
+import TestStartBanner from '../components/home/TestStartBanner';
 import UpgradeTeaser from '../components/home/UpgradeTeaser';
 
 export default function Home() {
@@ -26,18 +27,24 @@ export default function Home() {
   const streakDays = 7;
   const currentIQ = 125;
   const globalRank = 1247;
+  const dailyProgressPct = 0;
+  const dailyResetText = '';
+  const handleWatchAd = () => {};
 
   return (
     <AppShell>
-      <div
-        data-b-spec="home-v2"
-        className="max-w-6xl mx-auto px-4 md:px-8 py-8 md:py-12 space-y-6"
-      >
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      <div className="max-w-6xl mx-auto px-4 md:px-8 py-8 md:py-12 space-y-6">
+        <Daily3Banner
+          progress={dailyProgressPct}
+          onNext={handleStart}
+          onWatchAd={handleWatchAd}
+          resetText={dailyResetText}
+        />
+        <TestStartBanner onStart={handleStart} />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <StreakCard days={streakDays} />
           <CurrentIQCard score={currentIQ} />
           <GlobalRankCard rank={globalRank} />
-          <StreakCard days={streakDays} />
-          <TakeTestCard onStart={handleStart} />
         </div>
         <UpgradeTeaser />
       </div>
