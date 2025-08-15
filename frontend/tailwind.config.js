@@ -18,8 +18,14 @@ module.exports = {
           cyan600: "var(--brand-cyan-600)",
           emerald600: "var(--brand-emerald-600)",
         },
+        gold: {
+          from: 'var(--gold-from)',
+          to: 'var(--gold-to)',
+          soft: 'var(--gold-soft)',
+        },
         text: "var(--text)",
         'text-muted': 'var(--text-muted)',
+        'text-inverse': 'var(--text-inverse)',
       },
     },
   },
@@ -41,6 +47,20 @@ module.exports = {
         },
         '.glow': {
           boxShadow: 'var(--shadow-glow)',
+        },
+        '.gradient-text-gold': {
+          backgroundImage: 'linear-gradient(90deg, var(--gold-from), var(--gold-to))',
+          WebkitBackgroundClip: 'text',
+          backgroundClip: 'text',
+          color: 'transparent',
+        },
+        '.shine': {
+          backgroundSize: '200% auto',
+          animation: 'shine 3s linear infinite',
+        },
+        '@keyframes shine': {
+          '0%': { backgroundPosition: '-200% center' },
+          '100%': { backgroundPosition: '200% center' },
         },
       });
     }),
