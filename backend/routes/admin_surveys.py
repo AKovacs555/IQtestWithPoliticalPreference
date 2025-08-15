@@ -55,6 +55,7 @@ def create_survey(payload: dict = Body(...)):
         "nationalities": nationalities,
         "type": survey_type,
         "status": status,
+        "is_active": True,
     }
     res = supabase_admin.table("surveys").insert(row).execute()
     if not res.data:
@@ -65,21 +66,31 @@ def create_survey(payload: dict = Body(...)):
     item_rows = []
     for idx, it in enumerate(items_in):
         if isinstance(it, str):
-            body = it
+            text = it.strip()
             exclusive = False
         else:
-            body = it.get("body") or it.get("label") or it.get("text") or ""
+            text = (
+                it.get("body")
+                or it.get("label")
+                or it.get("text")
+                or ""
+            ).strip()
             exclusive = bool(
                 it.get("is_exclusive")
+                or it.get("isExclusive")
                 or it.get("exclusive")
                 or it.get("locks_others")
             )
+        if not text:
+            continue
         item_rows.append(
             {
                 "survey_id": new_id,
                 "position": idx + 1,
-                "body": body,
+                "body": text,
                 "is_exclusive": exclusive,
+                "language": row["lang"],
+                "is_active": True,
             }
         )
     if item_rows:
@@ -116,6 +127,7 @@ def update_survey(survey_id: str, payload: dict = Body(...)):
         "nationalities": nationalities,
         "type": survey_type,
         "status": status,
+        "is_active": payload.get("is_active", True),
     }
     supabase_admin.table("surveys").update(data).eq("id", survey_id).execute()
     supabase_admin.table("survey_items").delete().eq("survey_id", survey_id).execute()
@@ -124,21 +136,31 @@ def update_survey(survey_id: str, payload: dict = Body(...)):
     item_rows = []
     for idx, it in enumerate(items_in):
         if isinstance(it, str):
-            body = it
+            text = it.strip()
             exclusive = False
         else:
-            body = it.get("body") or it.get("label") or it.get("text") or ""
+            text = (
+                it.get("body")
+                or it.get("label")
+                or it.get("text")
+                or ""
+            ).strip()
             exclusive = bool(
                 it.get("is_exclusive")
+                or it.get("isExclusive")
                 or it.get("exclusive")
                 or it.get("locks_others")
             )
+        if not text:
+            continue
         item_rows.append(
             {
                 "survey_id": survey_id,
                 "position": idx + 1,
-                "body": body,
+                "body": text,
                 "is_exclusive": exclusive,
+                "language": lang,
+                "is_active": True,
             }
         )
     if item_rows:
