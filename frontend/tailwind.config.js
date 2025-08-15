@@ -40,10 +40,11 @@ module.exports = {
           backgroundImage: 'linear-gradient(90deg,var(--brand-cyan),var(--brand-emerald))',
         },
         '.gradient-text-gold': {
-          backgroundImage: 'linear-gradient(120deg,#d4af37,#ffd700,#fff3b0)',
+          backgroundImage: 'linear-gradient(180deg,#FFE37A 0%,#F7C948 45%,#DEA300 100%)',
           WebkitBackgroundClip: 'text',
           backgroundClip: 'text',
           color: 'transparent',
+          textShadow: '0 2px 24px rgba(255,210,63,.25)',
         },
         '.bg-gradient-pro': {
           background: 'linear-gradient(90deg, #06b6d4, #059669)',
@@ -57,9 +58,9 @@ module.exports = {
         /* gold ring + soft glow used on all cards/banners */
         '.gold-ring': {
           border: '1px solid rgba(255,224,130,.35)',
+          borderRadius: '16px',
           boxShadow:
             '0 0 0 1px rgba(255,224,130,.18) inset, 0 10px 28px rgba(255,210,63,.22), 0 2px 0 rgba(255,224,130,.10) inset',
-          borderRadius: '16px',
         },
         '.gold-sheen': { position: 'relative', overflow: 'hidden' },
         '.gold-sheen::before': {
@@ -144,6 +145,76 @@ module.exports = {
           borderBottom: '1px solid rgba(148,163,184,.12)',
         },
         '.gold-card': { '@apply card-glass gold-ring gold-sheen': {} },
+        /* hero stack and pills */
+        '.hero-stack': {
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          textAlign: 'center',
+          gap: '10px',
+          paddingTop: '14px',
+          paddingBottom: '6px',
+        },
+        '.pills-row': {
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
+          overflowX: 'auto',
+          padding: '2px 4px',
+        },
+        '.pill': {
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '8px',
+          height: '32px',
+          padding: '0 12px',
+          borderRadius: '9999px',
+          border: '1px solid rgba(148,163,184,.18)',
+          background: 'rgba(11,17,32,.55)',
+          color: '#E2E8F0',
+          whiteSpace: 'nowrap',
+        },
+        '.pill:hover': {
+          background: 'rgba(255,200,0,.10)',
+        },
+        '.no-scrollbar': {
+          scrollbarWidth: 'none',
+          MsOverflowStyle: 'none',
+        },
+        '.no-scrollbar::-webkit-scrollbar': { display: 'none' },
+        /* floating logo */
+        '@keyframes float-slow': {
+          '0%': { transform: 'translateY(0)' },
+          '50%': { transform: 'translateY(-2px)' },
+          '100%': { transform: 'translateY(0)' },
+        },
+        '.float-slow': { animation: 'float-slow 6s ease-in-out infinite' },
+        /* glass surface */
+        '.glass-surface': {
+          background: 'rgba(15,23,42,.60)',
+          backdropFilter: 'blur(8px)',
+          borderBottom: '1px solid rgba(148,163,184,.12)',
+        },
+        /* google login button */
+        '.btn-google': {
+          background: '#FFFFFF',
+          color: '#0B0F1F',
+          height: '48px',
+          borderRadius: '9999px',
+          padding: '0 16px',
+          fontWeight: '700',
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '10px',
+          width: '100%',
+          boxShadow: '0 6px 16px rgba(0,0,0,.18)',
+          transition: 'transform .15s ease, box-shadow .15s ease',
+        },
+        '.btn-google:hover': {
+          transform: 'translateY(-1px)',
+          boxShadow: '0 10px 28px rgba(0,0,0,.28)',
+        },
       });
     }),
   ],

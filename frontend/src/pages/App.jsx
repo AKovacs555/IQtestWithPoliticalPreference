@@ -20,7 +20,7 @@ import DemographicsForm from './DemographicsForm.jsx';
 import History from './History.jsx';
 import { getQuizStart, submitQuiz } from '../api';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import LoginPage from './LoginPage.jsx';
+import Login from './Login.jsx';
 import TestPage from './TestPage.jsx';
 import Contact from './Contact.jsx';
 import ErrorChunkReload from '../components/common/ErrorChunkReload';
@@ -328,7 +328,7 @@ export default function App() {
         <Route path="/profile" element={<RequireAuth><Profile /></RequireAuth>} />
         <Route path="/history/:userId" element={<RequireAuth><History /></RequireAuth>} />
         <Route path="/select-nationality" element={<RequireAuth><SelectNationality /></RequireAuth>} />
-        <Route path="/login" element={<LoginPage />} />
+        <Route path="/login" element={<Login />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
         {import.meta.env.DEV && (
           <Route path="/theme" element={<ThemeDemo />} />
