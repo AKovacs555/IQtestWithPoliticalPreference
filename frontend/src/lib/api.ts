@@ -27,7 +27,8 @@ export interface SurveyPayload {
   question_text: string;
   type: 'sa' | 'ma';
   lang: string;
-  nationalities: string[];
+  target_countries: string[];
+  target_genders: string[];
   choices: SurveyChoice[];
 }
 

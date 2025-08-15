@@ -20,6 +20,7 @@ import {
   Select,
   MenuItem,
   InputLabel,
+  FormGroup,
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
@@ -57,6 +58,7 @@ export default function SurveyEditorDialog({
   const [language, setLanguage] = useState('en');
   const [choiceType, setChoiceType] = useState<'sa' | 'ma'>('sa');
   const [countryCodes, setCountryCodes] = useState<string[]>([]);
+  const [targetGenders, setTargetGenders] = useState<string[]>([]);
   const [items, setItems] = useState<ChoiceState[]>([]);
   useTranslation();
   const supported = SUPPORTED_LANGS;
@@ -64,13 +66,14 @@ export default function SurveyEditorDialog({
   useEffect(() => {
     if (initialValue) {
       setTitle(initialValue.title || '');
-      setQuestion(initialValue.question_text || initialValue.question || '');
+      setQuestion(initialValue.question_text || '');
       setLanguage(initialValue.lang || initialValue.language || 'en');
       setChoiceType(initialValue.type || 'sa');
-      setCountryCodes(initialValue.nationalities || []);
+      setCountryCodes(initialValue.target_countries || []);
+      setTargetGenders(initialValue.target_genders || []);
       setItems(
         (initialValue.items || []).map((it: any) => ({
-          text: it.body ?? it.statement ?? it.text ?? '',
+          text: it.body ?? it.text ?? '',
           is_exclusive: Boolean(it.is_exclusive),
         }))
       );
@@ -80,6 +83,7 @@ export default function SurveyEditorDialog({
       setLanguage('en');
       setChoiceType('sa');
       setCountryCodes([]);
+      setTargetGenders([]);
       setItems([]);
     }
   }, [initialValue, open]);
@@ -117,7 +121,8 @@ export default function SurveyEditorDialog({
       question_text: question,
       type: choiceType,
       lang: language,
-      nationalities: countryCodes,
+      target_countries: countryCodes,
+      target_genders: targetGenders,
       choices: items.map((it) => ({ text: it.text, isExclusive: it.is_exclusive })),
     };
     let id: string | undefined = initialValue?.id;
@@ -193,6 +198,29 @@ export default function SurveyEditorDialog({
               </Button>
             </Stack>
           </div>
+          <FormControl component="fieldset">
+            <FormLabel>Target Gender</FormLabel>
+            <FormGroup row>
+              {['male', 'female', 'other'].map((gender) => (
+                <FormControlLabel
+                  key={gender}
+                  control={
+                    <Checkbox
+                      checked={targetGenders.includes(gender)}
+                      onChange={() =>
+                        setTargetGenders((prev) =>
+                          prev.includes(gender)
+                            ? prev.filter((g) => g !== gender)
+                            : [...prev, gender]
+                        )
+                      }
+                    />
+                  }
+                  label={gender}
+                />
+              ))}
+            </FormGroup>
+          </FormControl>
           <FormControl fullWidth margin="dense">
             <InputLabel>Language</InputLabel>
             <Select
