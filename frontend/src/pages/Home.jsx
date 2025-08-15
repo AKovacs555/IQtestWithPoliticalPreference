@@ -47,8 +47,6 @@ export default function Home() {
   const resetAt = new Date();
   resetAt.setHours(24, 0, 0, 0);
 
-  const extrasEnabled = import.meta.env.VITE_ENABLED_B_EXTRAS === 'true';
-
   return (
     <AppShell>
       <div
@@ -62,15 +60,15 @@ export default function Home() {
           onStart={handleStart}
           resetAt={resetAt}
         />
-        {extrasEnabled && <MenuBlocks onStart={handleStart} />}
+        <MenuBlocks onStart={handleStart} />
 
         <div className="grid gap-4 md:grid-cols-3">
           <StreakCard days={streakDays} />
           <CurrentIQCard score={currentIQ} />
-          {extrasEnabled && <GlobalRankCard rank={globalRank} />}
+          <GlobalRankCard rank={globalRank} />
         </div>
 
-        {extrasEnabled && <UpgradeTeaser />}
+        <UpgradeTeaser />
       </div>
     </AppShell>
   );
