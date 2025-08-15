@@ -12,18 +12,26 @@ from backend.deps.auth import create_token
 from backend.routes.dependencies import require_admin
 
 
-def _create_user(supa, uid: str):
-    supa.tables.setdefault("app_users", []).append({"hashed_id": uid})
+def _create_user(supa, uid: str, gender: str | None = None):
+    supa.tables.setdefault("app_users", []).append({"hashed_id": uid, "gender": gender})
 
 
-def _seed_survey(supa, *, lang="en", is_single=True, status="approved"):
+def _seed_survey(
+    supa,
+    *,
+    lang="en",
+    survey_type="sa",
+    status="approved",
+    target_genders=None,
+):
     survey = {
         "id": "s1",
         "title": "t",
         "question_text": "q1",
         "lang": lang,
-        "allowed_countries": ["JP"],
-        "is_single_choice": is_single,
+        "target_countries": ["JP"],
+        "target_genders": target_genders or [],
+        "type": survey_type,
         "status": status,
         "is_active": True,
     }
@@ -56,9 +64,9 @@ def test_admin_crud_and_user_flow(fake_supabase):
         "title": "Title",
         "question_text": "What?",
         "lang": "en",
-        "allowed_countries": ["JP"],
-        "selection": "sa",
-        "exclusive_indexes": [],
+        "target_countries": ["JP"],
+        "type": "sa",
+        "target_genders": [],
         "choices": ["Yes", "No"],
     }
     r = client.post("/admin/surveys", json=payload)
@@ -116,7 +124,7 @@ def test_multiple_choice_submission(fake_supabase):
     app.dependency_overrides[require_admin] = lambda: True
     client = TestClient(app)
     # seed survey with multiple selection
-    survey, options = _seed_survey(fake_supabase, is_single=False, status="approved")
+    survey, options = _seed_survey(fake_supabase, survey_type="ma", status="approved")
     token = create_token("u2")
     _create_user(fake_supabase, "u2")
     r = client.get(
@@ -135,4 +143,40 @@ def test_multiple_choice_submission(fake_supabase):
     responses = fake_supabase.tables.get("survey_responses", [])
     assert len(responses) == 2
     assert any(r.get("other_text") == "text" for r in responses)
+
+
+def test_gender_filtering(fake_supabase):
+    app.dependency_overrides[require_admin] = lambda: True
+    client = TestClient(app)
+
+    # create survey targeting male users
+    payload = {
+        "title": "Gendered",
+        "question_text": "Who?",
+        "lang": "en",
+        "target_countries": ["JP"],
+        "target_genders": ["male"],
+        "type": "sa",
+        "choices": ["Yes", "No"],
+    }
+    r = client.post("/admin/surveys", json=payload)
+    assert r.status_code == 200
+
+    token_f = create_token("f1")
+    _create_user(fake_supabase, "f1", gender="female")
+    r = client.get(
+        "/surveys/available?lang=en&country=JP",
+        headers={"Authorization": f"Bearer {token_f}"},
+    )
+    assert r.status_code == 200
+    assert r.json() == []
+
+    token_m = create_token("m1")
+    _create_user(fake_supabase, "m1", gender="male")
+    r = client.get(
+        "/surveys/available?lang=en&country=JP",
+        headers={"Authorization": f"Bearer {token_m}"},
+    )
+    assert r.status_code == 200
+    assert len(r.json()) == 1
 

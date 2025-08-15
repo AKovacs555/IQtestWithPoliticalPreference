@@ -488,7 +488,7 @@ def get_surveys(lang: Optional[str] = None) -> List[Dict[str, Any]]:
 
     supabase = get_supabase()
     select = (
-        "id,title,question_text,lang,nationalities,type,status," "survey_items(id,position,body,is_exclusive)"
+        "id,title,question_text,lang,target_countries,target_genders,type,status," "survey_items(id,position,body,is_exclusive)"
     )
     query = supabase.from_("surveys").select(select)
     if lang:

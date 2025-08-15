@@ -38,12 +38,8 @@ def create_survey(payload: dict = Body(...)):
         raise HTTPException(400, "question_text required")
 
     lang = payload.get("lang") or payload.get("language") or ""
-    nationalities = _norm_list(
-        payload.get("nationalities")
-        or payload.get("target_nationalities")
-        or payload.get("countries")
-    )
-    allowed_countries = _norm_list(payload.get("allowed_countries"))
+    target_countries = _norm_list(payload.get("target_countries"))
+    target_genders = _norm_list(payload.get("target_genders"))
     survey_type = payload.get("type") or payload.get("selection")
     if survey_type not in {"sa", "ma"}:
         raise HTTPException(400, "type must be 'sa' or 'ma'")
@@ -53,8 +49,8 @@ def create_survey(payload: dict = Body(...)):
         "title": payload.get("title", ""),
         "question_text": question_text,
         "lang": lang,
-        "nationalities": nationalities,
-        "allowed_countries": allowed_countries,
+        "target_countries": target_countries,
+        "target_genders": target_genders,
         "type": survey_type,
         "status": status,
         "is_active": True,
@@ -112,12 +108,8 @@ def update_survey(survey_id: str, payload: dict = Body(...)):
         raise HTTPException(400, "question_text required")
 
     lang = payload.get("lang") or payload.get("language") or ""
-    nationalities = _norm_list(
-        payload.get("nationalities")
-        or payload.get("target_nationalities")
-        or payload.get("countries")
-    )
-    allowed_countries = _norm_list(payload.get("allowed_countries"))
+    target_countries = _norm_list(payload.get("target_countries"))
+    target_genders = _norm_list(payload.get("target_genders"))
     survey_type = payload.get("type") or payload.get("selection")
     if survey_type not in {"sa", "ma"}:
         raise HTTPException(400, "type must be 'sa' or 'ma'")
@@ -127,8 +119,8 @@ def update_survey(survey_id: str, payload: dict = Body(...)):
         "title": payload.get("title", ""),
         "question_text": question_text,
         "lang": lang,
-        "nationalities": nationalities,
-        "allowed_countries": allowed_countries,
+        "target_countries": target_countries,
+        "target_genders": target_genders,
         "type": survey_type,
         "status": status,
         "is_active": payload.get("is_active", True),
@@ -175,7 +167,7 @@ def update_survey(survey_id: str, payload: dict = Body(...)):
 @router.get("/")
 def list_surveys():
     res = supabase_admin.table("surveys").select(
-        "id,title,question_text,lang,allowed_countries,nationalities,type,status"
+        "id,title,question_text,lang,target_countries,target_genders,type,status"
     ).execute()
     surveys = res.data or []
     for s in surveys:

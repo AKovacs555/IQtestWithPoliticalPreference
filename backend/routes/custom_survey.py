@@ -27,6 +27,7 @@ async def apply_custom_survey(payload: dict, user: dict = Depends(get_current_us
         "user_id": user["hashed_id"],
         "data": payload.get("data"),
         "target_countries": payload.get("target_countries", []),
+        "target_genders": payload.get("target_genders", []),
         "title": payload.get("title"),
         "payment_id": invoice.get("id") or invoice.get("payment_id"),
         "status": "pending",
@@ -52,6 +53,7 @@ async def approve_custom_survey(request_id: str):
     req = rows[0]
     survey_data = req.get("data", {})
     survey_data["target_countries"] = req.get("target_countries", [])
+    survey_data["target_genders"] = req.get("target_genders", [])
     supabase.table("surveys").insert(survey_data).execute()
     supabase.table("custom_survey_requests").update({"status": "approved"}).eq(
         "id", request_id
