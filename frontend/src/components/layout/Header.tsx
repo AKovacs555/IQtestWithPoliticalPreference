@@ -1,19 +1,13 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import Navbar, { getNavLinks } from '../Navbar';
 import LanguageSelector from '../LanguageSelector';
-import PointsBadge from '../PointsBadge';
 import { useSession } from '../../hooks/useSession';
 import { useTranslation } from 'react-i18next';
-import MobileDrawer from '../nav/MobileDrawer';
+import { User, LogIn } from 'lucide-react';
 
 export default function Header() {
   const { userId, isAdmin } = useSession();
   const { t } = useTranslation();
-  const drawerItems = getNavLinks(t, isAdmin).map((l) => ({
-    label: l.label,
-    href: l.to,
-  }));
   const pillCls =
     'flex items-center h-8 px-3 rounded-full border border-[rgba(148,163,184,.25)] text-sm hover:bg-[rgba(6,182,212,.08)]';
 
@@ -23,9 +17,6 @@ export default function Header() {
       className="sticky top-0 z-50 backdrop-blur-md bg-[var(--glass)] border-b border-[var(--border)]"
     >
       <div className="relative flex items-center justify-center px-4 md:px-6 h-14 md:h-16">
-        <div className="absolute left-4 md:left-6 flex items-center md:hidden">
-          <MobileDrawer items={drawerItems} buttonClassName="text-[var(--text)]" />
-        </div>
         <Link to="/" aria-label="Home">
           <span className="gradient-text-gold text-[28px] leading-tight font-extrabold tracking-tight">
             IQ Arena
@@ -35,8 +26,6 @@ export default function Header() {
           className="absolute right-4 md:right-6 flex items-center gap-2"
           data-b-spec="controls-v1"
         >
-          <div className={pillCls}>{/* User Level badge */}Bronze</div>
-          <PointsBadge userId={userId} className={pillCls} />
           <LanguageSelector className={pillCls} />
           {isAdmin && (
             <Link to="/admin" className={pillCls}>
@@ -44,17 +33,24 @@ export default function Header() {
             </Link>
           )}
           {userId ? (
-            <Link to="/profile" className={pillCls}>
-              {t('nav.profile', { defaultValue: 'Profile' })}
+            <Link
+              to="/profile"
+              className={pillCls}
+              aria-label={t('nav.profile', { defaultValue: 'Profile' })}
+            >
+              <User className="h-4 w-4" />
             </Link>
           ) : (
-            <Link to="/login" className={pillCls}>
-              {t('nav.login', { defaultValue: 'Log in' })}
+            <Link
+              to="/login"
+              className={pillCls}
+              aria-label={t('nav.login', { defaultValue: 'Log in' })}
+            >
+              <LogIn className="h-4 w-4" />
             </Link>
           )}
         </div>
       </div>
-      <Navbar />
     </header>
   );
 }
