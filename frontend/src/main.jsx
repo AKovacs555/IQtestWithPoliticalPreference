@@ -31,7 +31,7 @@ import { SessionProvider, useSession } from './hooks/useSession';
 import './i18n';
 import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
-// b-spec global styles and design tokens
+// Global base styles and design tokens
 import './styles/base.css';
 import { getTheme, ColorModeContext } from './theme';
 
