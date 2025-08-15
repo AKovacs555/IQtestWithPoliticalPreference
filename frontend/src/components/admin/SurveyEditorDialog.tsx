@@ -31,26 +31,7 @@ import {
   createSurvey,
   updateSurvey,
 } from '../../lib/api';
-import { SUPPORTED_LANGUAGES } from '../../i18n/languages';
-
-const SUPPORTED_LANGS = [
-  'en',
-  'ja',
-  'ko',
-  'zh',
-  'es',
-  'de',
-  'fr',
-  'pt',
-  'ru',
-  'ar',
-  'id',
-  'tr',
-  'it',
-  'pl',
-  'nl',
-  'vi',
-];
+import { SUPPORTED_LANGS } from '../../i18n/supported';
 
 interface SurveyEditorDialogProps {
   open: boolean;
@@ -85,11 +66,11 @@ export default function SurveyEditorDialog({
       setTitle(initialValue.title || '');
       setQuestion(initialValue.question_text || initialValue.question || '');
       setLanguage(initialValue.lang || initialValue.language || 'en');
-      setChoiceType(initialValue.is_single_choice ? 'sa' : 'ma');
-      setCountryCodes(initialValue.allowed_countries || []);
+      setChoiceType(initialValue.type || 'sa');
+      setCountryCodes(initialValue.nationalities || []);
       setItems(
         (initialValue.items || []).map((it: any) => ({
-          text: it.statement ?? it.text ?? '',
+          text: it.body ?? it.statement ?? it.text ?? '',
           is_exclusive: Boolean(it.is_exclusive),
         }))
       );
@@ -134,14 +115,10 @@ export default function SurveyEditorDialog({
     const payload: SurveyPayload = {
       title,
       question_text: question,
+      type: choiceType,
       lang: language,
-      allowed_countries: countryCodes,
-      selection: choiceType,
-      exclusive_indexes: items.reduce<number[]>((arr, it, idx) => {
-        if (it.is_exclusive) arr.push(idx);
-        return arr;
-      }, []),
-      choices: items.map((it) => it.text),
+      nationalities: countryCodes,
+      choices: items.map((it) => ({ text: it.text, isExclusive: it.is_exclusive })),
     };
     let id: string | undefined = initialValue?.id;
     try {
@@ -224,8 +201,8 @@ export default function SurveyEditorDialog({
               onChange={(e) => setLanguage(e.target.value)}
             >
               {supported.map((lng) => (
-                <MenuItem key={lng} value={lng}>
-                  {SUPPORTED_LANGUAGES[lng as keyof typeof SUPPORTED_LANGUAGES] || lng}
+                <MenuItem key={lng.code} value={lng.code}>
+                  {lng.label}
                 </MenuItem>
               ))}
             </Select>
