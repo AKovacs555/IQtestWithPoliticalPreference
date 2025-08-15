@@ -605,8 +605,8 @@ async def survey_start(
     if not surveys and lang != "en":
         surveys = get_surveys("en")
     user = get_user(user_id) if user_id else None
-    user_nationality = nationality or (user.get("nationality") if user else None)
-    if not user_nationality:
+    user_country = nationality or (user.get("nationality") if user else None)
+    if not user_country:
         raise HTTPException(
             status_code=400,
             detail={
@@ -622,8 +622,12 @@ async def survey_start(
         for s in surveys
         if str(s.get("id")) not in answered_ids
         and (
-            not s.get("nationalities")
-            or user_nationality in s.get("nationalities")
+            not s.get("target_countries")
+            or user_country in s.get("target_countries")
+        )
+        and (
+            not s.get("target_genders")
+            or (user and user.get("gender") in s.get("target_genders"))
         )
         and s.get("status") == "approved"
     ]
@@ -648,8 +652,7 @@ async def survey_start(
         id=str(survey["id"]),
         statement=survey.get("question_text") or survey.get("question") or "",
         options=options,
-        type=survey.get("type")
-        or ("sa" if survey.get("is_single_choice") else "ma"),
+        type=survey.get("type"),
         exclusive_options=exclusive,
     )
     if user_id:

@@ -32,8 +32,12 @@ def available(lang: str, country: str, user: dict = Depends(get_current_user)):
             continue
         if s.get("status") != "approved":
             continue
-        allowed = s.get("nationalities") or []
+        allowed = s.get("target_countries") or []
         if allowed and country not in allowed:
+            continue
+        genders = s.get("target_genders") or []
+        user_gender = user.get("gender")
+        if genders and user_gender not in genders:
             continue
         existing = (
             supabase.table("survey_responses")
@@ -77,8 +81,7 @@ def available(lang: str, country: str, user: dict = Depends(get_current_user)):
             {
                 "survey_id": s["id"],
                 "question_text": s.get("question_text") or s.get("question"),
-                "selection": s.get("type")
-                or ("sa" if s.get("is_single_choice") else "ma"),
+                "selection": s.get("type"),
                 "choices": choices,
             }
         )

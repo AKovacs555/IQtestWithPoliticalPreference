@@ -251,7 +251,7 @@ async def start_quiz(
             )
         )
     pending = get_random_pending_surveys(
-        user["hashed_id"], user.get("nationality"), lang=lang, limit=3
+        user["hashed_id"], user.get("nationality"), user.get("gender"), lang=lang, limit=3
     )
     return {"session_id": session_id, "expires_at": expires_at.isoformat(), "questions": models, "pending_surveys": pending}
 
@@ -388,9 +388,9 @@ async def abandon_quiz(
 
 
 def get_random_pending_surveys(
-    user_id: str, nationality: Optional[str], *, lang: str, limit: int = 3
+    user_id: str, country: Optional[str], gender: Optional[str], *, lang: str, limit: int = 3
 ) -> List[dict]:
-    """Return up to ``limit`` surveys matching the user's language and country."""
+    """Return up to ``limit`` surveys matching the user's language, country and gender."""
 
     try:
         supabase = get_supabase_client()
@@ -398,7 +398,7 @@ def get_random_pending_surveys(
         resp = (
             supabase.table("surveys")
             .select("*")
-            .eq("language", lang)
+            .eq("lang", lang)
             .eq("status", "approved")
             .execute()
         )
@@ -407,33 +407,36 @@ def get_random_pending_surveys(
     surveys = resp.data or []
     eligible: List[dict] = []
     for s in surveys:
-        countries = s.get("allowed_countries") or []
-        if countries and nationality not in countries:
+        countries = s.get("target_countries") or []
+        if countries and country not in countries:
+            continue
+        genders = s.get("target_genders") or []
+        if genders and gender not in genders:
             continue
         if str(s.get("survey_group_id")) in answered:
             continue
         opts = (
-            supabase.table("survey_options")
+            supabase.table("survey_items")
             .select("*")
             .eq("survey_id", s["id"])
             .execute()
             .data
             or []
         )
-        opts = sorted(opts, key=lambda o: o.get("order", 0))
+        opts = sorted(opts, key=lambda o: o.get("position", 0))
         eligible.append(
             {
                 "survey_id": s["id"],
                 "survey_group_id": s.get("survey_group_id"),
                 "question_text": s.get("question_text"),
-                "selection_type": s.get("selection_type"),
+                "selection_type": s.get("type"),
                 "options": [
                     {
                         "id": o["id"],
-                        "option_text": o.get("option_text"),
+                        "option_text": o.get("body") or o.get("option_text"),
                         "is_exclusive": o.get("is_exclusive", False),
                         "requires_text": o.get("requires_text", False),
-                        "order": o.get("order"),
+                        "order": o.get("position"),
                     }
                     for o in opts
                 ],
