@@ -56,6 +56,23 @@ def _seed_survey(
     return survey, items
 
 
+def test_item_language_on_create(fake_supabase):
+    app.dependency_overrides[require_admin] = lambda: True
+    client = TestClient(app)
+    payload = {
+        "title": "Title",
+        "question_text": "What?",
+        "type": "sa",
+        "lang": "ja",
+        "choices": ["A", "B"],
+        "target_countries": ["JP"],
+    }
+    r = client.post("/admin/surveys", json=payload)
+    assert r.status_code == 201
+    items = fake_supabase.tables.get("survey_items", [])
+    assert len(items) == 2
+    assert all(it.get("language") == "ja" for it in items)
+
 def test_admin_crud_and_user_flow(fake_supabase):
     app.dependency_overrides[require_admin] = lambda: True
     client = TestClient(app)
@@ -70,7 +87,7 @@ def test_admin_crud_and_user_flow(fake_supabase):
         "choices": ["Yes", "No"],
     }
     r = client.post("/admin/surveys", json=payload)
-    assert r.status_code == 200
+    assert r.status_code == 201
     survey_id = r.json()["id"]
 
     upd = dict(payload)
@@ -160,7 +177,7 @@ def test_gender_filtering(fake_supabase):
         "choices": ["Yes", "No"],
     }
     r = client.post("/admin/surveys", json=payload)
-    assert r.status_code == 200
+    assert r.status_code == 201
 
     token_f = create_token("f1")
     _create_user(fake_supabase, "f1", gender="female")
