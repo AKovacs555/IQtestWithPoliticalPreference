@@ -137,8 +137,11 @@ async def start_quiz(
         if remaining is None:
             logger.error("attempts_insufficient", extra={"user_id": user["hashed_id"]})
             raise HTTPException(
-                status_code=402,
-                detail={"code": "NEED_PAYMENT"},
+                status_code=400,
+                detail={
+                    "error": "survey_required",
+                    "message": "Please complete the survey before taking the IQ test.",
+                },
             )
 
     logger.info(
@@ -419,6 +422,8 @@ def get_random_pending_surveys(
             supabase.table("survey_items")
             .select("*")
             .eq("survey_id", s["id"])
+            .eq("language", s.get("lang"))
+            .eq("is_active", True)
             .execute()
             .data
             or []

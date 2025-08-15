@@ -113,7 +113,7 @@ def create_survey(payload: dict = Body(...)):
                 "position": idx + 1,
                 "body": text,
                 "is_exclusive": exclusive,
-                "lang": lang,  # use 'lang' field consistent with table definition
+                "language": lang,
                 "is_active": True,
             }
         )
@@ -168,7 +168,7 @@ def create_survey(payload: dict = Body(...)):
                     "position": base_it["position"],
                     "body": body,
                     "is_exclusive": base_it.get("is_exclusive", False),
-                    "lang": tgt,
+                    "language": tgt,
                     "is_active": True,
                 }
             )
@@ -240,7 +240,7 @@ def update_survey(survey_id: str, payload: dict = Body(...)):
                 "position": idx + 1,
                 "body": text,
                 "is_exclusive": exclusive,
-                "lang": lang,
+                "language": lang,
                 "is_active": True,
             }
         )
@@ -310,7 +310,7 @@ def update_survey(survey_id: str, payload: dict = Body(...)):
                     "position": base_it["position"],
                     "body": body,
                     "is_exclusive": base_it.get("is_exclusive", False),
-                    "lang": tgt,
+                    "language": tgt,
                     "is_active": True,
                 }
             )

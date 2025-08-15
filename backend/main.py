@@ -66,6 +66,7 @@ from routes.settings import router as settings_router
 from routes.quiz import router as quiz_router
 from routes.daily import router as daily_router
 from routes.surveys import router as surveys_router
+from routes.survey_start import router as survey_start_router
 from routes.user import router as user_router
 from routes.sms import router as sms_router
 from routes.referral import router as referral_router
@@ -111,6 +112,7 @@ app.include_router(diagnostics.router)
 app.include_router(quiz_router)
 app.include_router(daily_router)
 app.include_router(surveys_router)
+app.include_router(survey_start_router)
 app.include_router(user_router)
 app.include_router(leaderboard_router)
 app.include_router(sms_router)
