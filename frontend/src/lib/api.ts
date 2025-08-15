@@ -17,22 +17,14 @@ export async function fetchProfile() {
   return res.json() as Promise<{ id: string; email?: string; username?: string; is_admin: boolean }>;
 }
 
-export interface SurveyOptionInput {
-  text: string;
-  is_exclusive?: boolean;
-  requires_text?: boolean;
-  order: number;
-}
-
 export interface SurveyPayload {
   title: string;
   question_text: string;
-  language: string;
+  lang: string;
   allowed_countries: string[];
-  selection_type: 'single' | 'multiple';
-  status?: 'pending' | 'approved';
-  options: SurveyOptionInput[];
-  auto_translate?: boolean;
+  selection: 'sa' | 'ma';
+  exclusive_indexes: number[];
+  choices: string[];
 }
 
 export async function getSurveys() {

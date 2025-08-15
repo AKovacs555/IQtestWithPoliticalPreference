@@ -479,12 +479,26 @@ def delete_question_group(group_key: str) -> None:
 
 
 def get_surveys(lang: Optional[str] = None) -> List[Dict[str, Any]]:
+    """Return surveys with their choice items.
+
+    Only surveys matching ``lang`` are returned when provided.  Choice items are
+    ordered by ``position`` so the caller can render them directly.
+    """
+
     supabase = get_supabase()
-    query = supabase.from_("surveys").select("*")
+    select = (
+        "id,title,question_text,lang,allowed_countries,is_single_choice,status,is_active,"
+        "survey_items(id,position,statement,is_exclusive)"
+    )
+    query = supabase.from_("surveys").select(select)
     if lang:
         query = query.eq("lang", lang)
     resp = query.execute()
-    return resp.data or []
+    surveys = resp.data or []
+    for s in surveys:
+        items = s.get("survey_items") or []
+        items.sort(key=lambda it: it.get("position", 0))
+    return surveys
 
 
 def insert_surveys(rows: List[Dict[str, Any]]) -> None:
@@ -551,16 +565,17 @@ def get_daily_survey_response(
 
 
 def get_answered_survey_ids(user_id: str) -> List[str]:
-    """Return survey_group_ids already answered by the user."""
+    """Return survey_ids already answered by the user."""
+
     supabase = get_supabase()
     resp = (
         supabase.from_("survey_responses")
-        .select("survey_group_id")
+        .select("survey_id")
         .eq("user_id", user_id)
         .execute()
     )
     data = resp.data or []
-    return [str(row["survey_group_id"]) for row in data if row.get("survey_group_id") is not None]
+    return [str(row["survey_id"]) for row in data if row.get("survey_id") is not None]
 
 
 def get_survey_answers(group_id: str) -> List[Dict[str, Any]]:
