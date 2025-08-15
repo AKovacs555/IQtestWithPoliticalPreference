@@ -7,6 +7,7 @@ import ProgressBar from '../components/ProgressBar';
 import Home from './Home';
 import AuthCallback from './AuthCallback';
 import Pricing from './Pricing';
+import Upgrade from './Upgrade';
 import Leaderboard from './Leaderboard';
 import SelectSet from './SelectSet';
 import SelectNationality from './SelectNationality';
@@ -318,6 +319,7 @@ export default function App() {
         <Route path="/survey" element={<RequireAuth><SurveyPage /></RequireAuth>} />
         <Route path="/daily-survey" element={<RequireAuth><DailySurvey /></RequireAuth>} />
         <Route path="/pricing" element={<Pricing />} />
+        <Route path="/upgrade" element={<Upgrade />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/result" element={<Result />} />
         <Route path="/leaderboard" element={<Leaderboard />} />
