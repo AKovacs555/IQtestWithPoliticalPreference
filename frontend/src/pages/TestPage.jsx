@@ -2,10 +2,14 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import AppShell from '../components/AppShell';
 import { getQuizStart, submitQuiz, abandonQuiz } from '../api';
-import LinearProgress from '@mui/material/LinearProgress';
 import { AnimatePresence, motion, MotionConfig } from 'framer-motion';
 import QuestionCard from '../components/QuestionCard';
 import { useNavigate } from 'react-router-dom';
+import { Clock } from 'lucide-react';
+import Card from '../components/ui/Card';
+import Badge from '../components/ui/Badge';
+import Progress from '../components/ui/Progress';
+import Button from '../components/ui/Button';
 
 export default function TestPage() {
   const [session, setSession] = React.useState(null);
@@ -225,30 +229,36 @@ export default function TestPage() {
 
   return (
     <AppShell>
+      {blackout && (
+        <div className="fixed inset-0 glass-card bg-black/80 text-white flex items-center justify-center text-center z-50">
+          {t('warning.screenshot_detected')}
+        </div>
+      )}
       <div
         className="watermark fixed inset-0 pointer-events-none opacity-10 text-xs z-40 flex items-end justify-end p-2 select-none"
       >
         {session && `${session.slice(0,6)} ${new Date().toLocaleString()}`}
       </div>
-      {blackout && (
-        <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center text-white text-center z-50">
-          {t('warning.screenshot_detected')}
-        </div>
-      )}
-      <div className="space-y-4 max-w-lg mx-auto quiz-container">
+      <div data-b-spec="quiz-v1" className="space-y-6 max-w-xl mx-auto quiz-container">
         {loading && <p>Loading...</p>}
         {error && <p className="text-red-600">{error}</p>}
         {!loading && !error && (
           <>
-            <div className="flex justify-between items-center">
-              <span className="text-sm font-mono">
-                {t('quiz.progress', { current: current + 1, total: questions.length })}
-              </span>
-              <div className="text-right font-mono">
+            <div className="flex items-center justify-between">
+              <Button variant="ghost" className="px-0" onClick={() => navigate('/dashboard')}>← {t('dashboard.title', { defaultValue: 'Dashboard' })}</Button>
+              <Badge variant="outline">IQ Test</Badge>
+              <div className="flex items-center gap-1 font-mono">
+                <Clock className="w-4 h-4" />
                 {Math.floor(timeLeft / 60)}:{`${timeLeft % 60}`.padStart(2, '0')}
               </div>
             </div>
-            <LinearProgress variant="determinate" value={(current / questions.length) * 100} sx={{ mb: 1.5 }} />
+            <Card className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span>{t('quiz.progress', { current: current + 1, total: questions.length })}</span>
+                <span>{Math.round((current / questions.length) * 100)}%</span>
+              </div>
+              <Progress value={(current / questions.length) * 100} />
+            </Card>
             <MotionConfig reducedMotion="user">
               <AnimatePresence mode="wait">
                 <motion.div

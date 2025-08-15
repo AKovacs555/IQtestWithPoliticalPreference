@@ -9,6 +9,7 @@ export default function AppShell({ children }: PropsWithChildren) {
   usePersistedLang();
   return (
     <Box
+      data-b-spec="appshell-v1"
       sx={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}
       className="bg-[linear-gradient(135deg,var(--bg-950),var(--bg-900),rgba(8,145,178,.20))] text-[var(--text)]"
     >

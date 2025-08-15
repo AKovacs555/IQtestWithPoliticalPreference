@@ -1,4 +1,4 @@
-import React, { useEffect, useState, lazy, Suspense } from 'react';
+import React, { useEffect, lazy, Suspense } from 'react';
 import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import useShareMeta from '../hooks/useShareMeta';
@@ -24,12 +24,13 @@ import TestPage from './TestPage.jsx';
 import Contact from './Contact.jsx';
 import ErrorChunkReload from '../components/common/ErrorChunkReload';
 import ThemeDemo from './ThemeDemo.jsx';
-import Button from '@mui/material/Button';
+import Card from '../components/ui/Card';
+import Progress from '../components/ui/Progress';
+import UIButton from '../components/ui/Button';
 import RequireAdmin from '../routes/RequireAdmin';
 import RequireAuth from '../routes/RequireAuth';
-import { shareResult, buildLineShareUrl, buildFacebookShareUrl } from '../utils/share';
+import { shareResult } from '../utils/share';
 import Profile from './Profile.jsx';
-const API_BASE = import.meta.env.VITE_API_BASE || "";
 
 const AdminLayout = lazy(() =>
   import('../layouts/AdminLayout').catch(err => {
@@ -248,9 +249,7 @@ const Result = () => {
     shareParam && shareParam !== 'null' && shareParam !== 'undefined' ? shareParam : null;
   const score = iqParam ? Number(iqParam) : NaN;
   const percentile = percentileParam ? Number(percentileParam) : NaN;
-  const [avg, setAvg] = React.useState(null);
   const { t } = useTranslation();
-  const price = import.meta.env.VITE_PRO_PRICE_MONTHLY;
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -262,14 +261,6 @@ const Result = () => {
 
   useShareMeta(share);
 
-  useEffect(() => {
-    fetch(`${API_BASE}/leaderboard`)
-      .then(res => res.json())
-      .then(data => {
-        const all = data.leaderboard.map(l => l.avg_iq);
-        if (all.length) setAvg(all.reduce((a,b) => a+b,0)/all.length);
-      });
-  }, []);
 
   const shareText = t('result.share_text', {
     score: Number(score).toFixed(1),
@@ -279,75 +270,34 @@ const Result = () => {
   return (
     <PageTransition>
       <AppShell>
-        <div className="text-center space-y-4 p-6 max-w-md mx-auto rounded-2xl backdrop-blur-md bg-white/60 shadow-lg">
-          <h2 className="text-2xl font-bold">Your Results</h2>
-          <p>IQ: {Number.isFinite(score) ? score.toFixed(2) : 'N/A'}</p>
-          <p>Percentile: {Number.isFinite(percentile) ? percentile.toFixed(1) : 'N/A'}%</p>
-          <span className="text-xs text-gray-500" title="Scores are for entertainment and may not reflect a clinical IQ">what's this?</span>
-          {avg && <p className="text-sm">Overall average IQ: {avg.toFixed(1)}</p>}
-          {share && <img src={share} alt="IQ share card" className="mx-auto rounded" />}
-          {share && (
-            <div className="space-x-2">
-              <Button
-                onClick={() => shareResult({ text: shareText, url: window.location.href })}
-                variant="contained"
-                size="small"
-              >
-                X
-              </Button>
-              <Button
-                component="a"
-                href={buildLineShareUrl(window.location.href)}
-                target="_blank"
-                rel="noreferrer"
-                variant="contained"
-                size="small"
-              >
-                LINE
-              </Button>
-              <Button
-                component="a"
-                href={buildFacebookShareUrl(window.location.href)}
-                target="_blank"
-                rel="noreferrer"
-                variant="contained"
-                size="small"
-              >
-                Facebook
-              </Button>
-              <Button
-                onClick={() => {
-                  navigator.clipboard.writeText(window.location.href);
-                  alert(t('result.link_copied'));
-                }}
-                variant="contained"
-                size="small"
-              >
-                Copy
-              </Button>
+        <section data-b-spec="result-v1" className="max-w-md mx-auto space-y-6 text-center">
+          <Card className="space-y-4">
+            <div>
+              <div className="text-5xl font-bold">{Number.isFinite(score) ? score.toFixed(1) : 'N/A'}</div>
+              <p className="text-sm text[var(--text-muted)]">IQ score</p>
             </div>
-          )}
-          <Button
-            onClick={() => navigate('/')}
-            variant="contained"
-            size="small"
-            sx={{ mt: 4 }}
-          >
-            {t('result.back_to_home')}
-          </Button>
-          <div className="mt-4 space-y-2">
-            <p>{t('result.pro_prompt', { price })}</p>
-            <Button
-              component="a"
-              href="/pricing"
-              variant="contained"
-              size="small"
+            <div className="space-y-1">
+              <p className="text-sm">Percentile: {Number.isFinite(percentile) ? percentile.toFixed(1) : 'N/A'}%</p>
+              <Progress value={Number.isFinite(percentile) ? percentile : 0} />
+            </div>
+            {share && <img src={share} alt="IQ share card" className="mx-auto rounded" />}
+            {share && (
+              <UIButton
+                variant="outline"
+                onClick={() => shareResult({ text: shareText, url: window.location.href })}
+                className="w-full"
+              >
+                Share
+              </UIButton>
+            )}
+            <UIButton
+              onClick={() => navigate('/')}
+              className="w-full after:content-['→'] after:ml-2"
             >
-              {t('pricing.subscribe')}
-            </Button>
-          </div>
-          <p className="text-sm text-gray-600">This test is for research and entertainment.</p>
-        </div>
+              {t('result.back_to_home')}
+            </UIButton>
+          </Card>
+        </section>
       </AppShell>
     </PageTransition>
   );

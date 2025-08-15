@@ -1,6 +1,7 @@
 import React from 'react';
 import QuestionCanvas from './QuestionCanvas';
-import { OptionCard } from './OptionCard';
+import Button from './ui/Button';
+import Card from './ui/Card';
 
 function getImageUrl(path) {
   if (!path) return null;
@@ -13,7 +14,7 @@ export default function QuestionCard({ question, onSelect, watermark, disabled =
   const { question: text, options, option_images = [] } = question;
   const qImg = getImageUrl(question.image);
   return (
-    <div className="relative space-y-6 p-6 bg-white/70 dark:bg-slate-800/60 backdrop-blur-md rounded-2xl shadow-lg text-gray-900 dark:text-slate-100">
+    <Card className="relative space-y-4">
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-20 text-xs select-none">
         {watermark}
       </div>
@@ -30,17 +31,22 @@ export default function QuestionCard({ question, onSelect, watermark, disabled =
         {options.map((opt, i) => {
           const optImg = getImageUrl(option_images[i]);
           return (
-            <OptionCard
+            <Button
               key={i}
-              label={`${i + 1}. ${opt}`}
-              imgSrc={optImg || undefined}
-              selected={false}
-              onClick={() => onSelect(i)}
+              variant="outline"
               disabled={disabled}
-            />
+              onClick={() => onSelect(i)}
+              className="w-full justify-start gap-3 group"
+            >
+              <span className="w-6 h-6 rounded-full border-2 border-[var(--border)] flex items-center justify-center">
+                <span className="w-3 h-3 rounded-full bg-[var(--brand-cyan)] opacity-0 group-active:opacity-100" />
+              </span>
+              {optImg && <img src={optImg} alt="" className="max-h-10" />}
+              <span className="flex-1 text-left">{opt}</span>
+            </Button>
           );
         })}
       </div>
-    </div>
+    </Card>
   );
 }
