@@ -84,6 +84,12 @@ module.exports = {
           backgroundImage: 'linear-gradient(90deg,#22d3ee,#10b981)',
           transition: 'width 250ms var(--ease)',
         },
+        '.bg-gradient-gold': {
+          background: 'radial-gradient(circle at center, var(--gold-soft), transparent 80%), var(--bg-900)',
+        },
+        '.shadow-gold': {
+          boxShadow: 'var(--shadow-glow)',
+        },
       });
     }),
   ],
