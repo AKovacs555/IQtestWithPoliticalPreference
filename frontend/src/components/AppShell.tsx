@@ -9,9 +9,9 @@ export default function AppShell({ children }: PropsWithChildren) {
   usePersistedLang();
   return (
     <Box
-      data-b-spec="appshell-v1"
+      data-b-spec="appshell-v2"
       sx={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}
-      className="font-sans text-[var(--text)] bg-transparent"
+      className="font-sans text-[var(--text)] page-gradient"
     >
       <Header />
       <Container component="main" maxWidth="lg" sx={{ flex: 1, px: { xs: 1.5, md: 2 }, py: { xs: 2, md: 3 } }}>

@@ -4,16 +4,27 @@ import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import type { NavItem } from './types';
 
-export default function MobileDrawer({ items }: { items: NavItem[] }) {
+export default function MobileDrawer({
+  items,
+  buttonClassName = '',
+}: {
+  items: NavItem[];
+  buttonClassName?: string;
+}) {
   const [open, setOpen] = useState(false);
   return (
     <>
-      <IconButton aria-label="menu" onClick={() => setOpen(true)} size="small">
+      <IconButton
+        aria-label="menu"
+        onClick={() => setOpen(true)}
+        size="small"
+        className={buttonClassName}
+      >
         <MenuIcon />
       </IconButton>
       <Drawer anchor="left" open={open} onClose={() => setOpen(false)}>
         <List sx={{ width: 300 }}>
-          {items.map((it, i) => (
+          {items.map((it, i) =>
             it.element ? (
               <ListItem key={i}>{it.element}</ListItem>
             ) : (
@@ -29,8 +40,8 @@ export default function MobileDrawer({ items }: { items: NavItem[] }) {
               >
                 <ListItemText primary={it.label} />
               </ListItemButton>
-            )
-          ))}
+            ),
+          )}
         </List>
       </Drawer>
     </>
