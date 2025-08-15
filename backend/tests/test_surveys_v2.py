@@ -73,7 +73,7 @@ def test_item_language_on_create(fake_supabase):
     assert r.status_code == 201
     items = fake_supabase.tables.get("survey_items", [])
     assert len(items) == 2
-    assert all(it.get("language") == "ja" for it in items)
+    assert all(it.get("lang") == "ja" for it in items)
 
 
 def test_translation_fanout(fake_supabase, monkeypatch):
@@ -102,7 +102,7 @@ def test_translation_fanout(fake_supabase, monkeypatch):
     for s in surveys:
         s_items = [it for it in items if it.get("survey_id") == s["id"]]
         assert len(s_items) == 2
-        assert all(it.get("language") == s["lang"] for it in s_items)
+        assert all(it.get("lang") == s["lang"] for it in s_items)
 
 def test_admin_crud_and_user_flow(fake_supabase):
     app.dependency_overrides[require_admin] = lambda: True

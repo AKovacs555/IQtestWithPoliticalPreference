@@ -78,7 +78,7 @@ def create_survey(payload: dict = Body(...)):
     status = payload.get("status", "draft")
     is_single_choice = survey_type == "sa"
 
-    group_id = uuid.uuid4()
+    group_id = str(uuid.uuid4())  # ensure group_id is stored as string
     row = {
         "title": payload.get("title", ""),
         "question_text": question_text,
@@ -113,7 +113,7 @@ def create_survey(payload: dict = Body(...)):
                 "position": idx + 1,
                 "body": text,
                 "is_exclusive": exclusive,
-                "language": lang,
+                "lang": lang,  # use 'lang' field consistent with table definition
                 "is_active": True,
             }
         )
@@ -168,14 +168,14 @@ def create_survey(payload: dict = Body(...)):
                     "position": base_it["position"],
                     "body": body,
                     "is_exclusive": base_it.get("is_exclusive", False),
-                    "language": tgt,
+                    "lang": tgt,
                     "is_active": True,
                 }
             )
         if trans_items:
             supabase_admin.table("survey_items").insert(trans_items).execute()
 
-    return {"id": new_id, "group_id": str(group_id)}
+    return {"id": new_id, "group_id": group_id}
 
 
 @router.put("/{survey_id}")
@@ -207,7 +207,7 @@ def update_survey(survey_id: str, payload: dict = Body(...)):
     )
     if not gid_resp.data:
         raise HTTPException(404, "survey not found")
-    group_id = gid_resp.data[0]["group_id"]
+    group_id = str(gid_resp.data[0]["group_id"])
 
     data = {
         "title": payload.get("title", ""),
@@ -240,7 +240,7 @@ def update_survey(survey_id: str, payload: dict = Body(...)):
                 "position": idx + 1,
                 "body": text,
                 "is_exclusive": exclusive,
-                "language": lang,
+                "lang": lang,
                 "is_active": True,
             }
         )
@@ -310,7 +310,7 @@ def update_survey(survey_id: str, payload: dict = Body(...)):
                     "position": base_it["position"],
                     "body": body,
                     "is_exclusive": base_it.get("is_exclusive", False),
-                    "language": tgt,
+                    "lang": tgt,
                     "is_active": True,
                 }
             )
