@@ -11,16 +11,18 @@ export default function UpgradeTeaser() {
   if (isPro) return null;
   return (
     <div
-      data-b-spec="pricing-banner-v1"
-      className="rounded-xl gold-card bg-gradient-gold shadow-gold px-6 py-8 text-center space-y-4"
+      data-b-spec="pricing-banner-pro-v2"
+      className="rounded-xl gold-card bg-gradient-pro shadow-gold px-6 py-8 sm:flex sm:items-center sm:justify-between text-white"
     >
-      <h3 className="text-xl sm:text-2xl font-semibold gradient-text-gold">
-        {t('upgradeBanner.title', { defaultValue: 'Pro会員になろう' })}
-      </h3>
-      <p className="text-sm text-[var(--text-muted)]">
-        {t('upgradeBanner.subtitle', { defaultValue: '無制限テスト・広告なし' })}
-      </p>
-      <div className="flex flex-col sm:flex-row justify-center items-center gap-3 sm:gap-4 pt-2">
+      <div className="text-center sm:text-left">
+        <h3 className="text-xl sm:text-2xl font-semibold">
+          {t('upgradeBanner.title', { defaultValue: 'Pro会員になろう' })}
+        </h3>
+        <p className="text-sm">
+          {t('upgradeBanner.subtitle', { defaultValue: '無制限テスト・広告なし' })}
+        </p>
+      </div>
+      <div className="mt-4 sm:mt-0 text-center sm:text-right">
         <Link
           to="/upgrade"
           className="inline-block h-11 px-5 rounded-xl bg-amber-500 hover:shadow-lg hover:shadow-amber-500/50 text-white font-bold"

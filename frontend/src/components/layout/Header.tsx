@@ -13,7 +13,7 @@ export default function Header() {
 
   return (
     <header
-      data-b-spec="header-v2"
+      data-b-spec="header-no-tabs"
       className="sticky top-0 z-50 backdrop-blur-md bg-[var(--glass)] border-b border-[var(--border)]"
     >
       <div className="relative flex items-center justify-center px-4 md:px-6 h-14 md:h-16">
@@ -24,14 +24,9 @@ export default function Header() {
         </Link>
         <div
           className="absolute right-4 md:right-6 flex items-center gap-2"
-          data-b-spec="controls-v1"
+          data-b-spec="controls-v2"
         >
           <LanguageSelector className={pillCls} />
-          {isAdmin && (
-            <Link to="/admin" className={pillCls}>
-              {t('nav.admin', { defaultValue: 'Admin' })}
-            </Link>
-          )}
           {userId ? (
             <Link
               to="/profile"
@@ -47,6 +42,11 @@ export default function Header() {
               aria-label={t('nav.login', { defaultValue: 'Log in' })}
             >
               <LogIn className="h-4 w-4" />
+            </Link>
+          )}
+          {isAdmin && (
+            <Link to="/admin" className={pillCls}>
+              {t('nav.admin', { defaultValue: 'Admin' })}
             </Link>
           )}
         </div>

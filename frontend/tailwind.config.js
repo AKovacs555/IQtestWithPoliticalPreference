@@ -39,18 +39,18 @@ module.exports = {
           backgroundClip: 'text',
           color: 'transparent',
         },
+        '.bg-gradient-pro': {
+          background: 'linear-gradient(90deg, #06b6d4, #059669)',
+        },
         '.gold-ring': {
-          border: '1px solid var(--gold-soft)',
+          border: '1px solid rgba(255,224,130,.35)',
           boxShadow:
-            '0 0 0 1px rgba(255,224,130,.18) inset, 0 10px 28px var(--gold-glow), 0 2px 0 rgba(255,224,130,.10) inset',
+            '0 0 0 1px rgba(255,224,130,.18) inset, 0 10px 28px rgba(255,210,63,.22), 0 2px 0 rgba(255,224,130,.10) inset',
           borderRadius: 'var(--radius-lg)',
         },
-        '.gold-sheen': {
-          position: 'relative',
-          overflow: 'hidden',
-        },
+        '.gold-sheen': { position: 'relative', overflow: 'hidden' },
         '.gold-sheen::before': {
-          content: '""',
+          content: "\"\"",
           position: 'absolute',
           inset: '-1px',
           borderRadius: 'inherit',
@@ -58,18 +58,19 @@ module.exports = {
           background: 'radial-gradient(600px 300px at 0% 0%, rgba(255,216,96,.16), transparent 40%)',
         },
         '.gold-sheen::after': {
-          content: '""',
+          content: "\"\"",
           position: 'absolute',
-          inset: '-30% -60%',
+          inset: '-40% -80%',
           borderRadius: 'inherit',
           pointerEvents: 'none',
           background:
-            'linear-gradient(115deg, transparent 0%, rgba(255,255,255,.10) 22%, rgba(255,248,196,.22) 38%, transparent 62%)',
+            'linear-gradient(115deg, transparent 0%, rgba(255,255,255,.12) 18%, rgba(255,248,196,.22) 32%, transparent 50%)',
           animation: 'sheen-move 6s linear infinite',
+          maskImage: 'radial-gradient(200% 100% at 50% 50%, #000 60%, transparent 80%)',
         },
         '@keyframes sheen-move': {
-          from: { transform: 'translateX(-60%)' },
-          to: { transform: 'translateX(60%)' },
+          '0%': { transform: 'translateX(-66%)' },
+          '100%': { transform: 'translateX(66%)' },
         },
         '.thin-progress': {
           height: '8px',
@@ -90,6 +91,7 @@ module.exports = {
         '.shadow-gold': {
           boxShadow: 'var(--shadow-glow)',
         },
+        '.gold-card': { '@apply glass-card gold-ring gold-sheen': {} },
       });
     }),
   ],
