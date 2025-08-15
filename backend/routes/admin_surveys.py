@@ -38,7 +38,9 @@ def create_survey(payload: dict = Body(...)):
         raise HTTPException(400, "question_text required")
 
     lang = payload.get("lang") or payload.get("language") or ""
-    target_countries = _norm_list(payload.get("target_countries"))
+    target_countries = _norm_list(
+        payload.get("target_countries") or payload.get("nationalities")
+    )
     target_genders = _norm_list(payload.get("target_genders"))
     survey_type = payload.get("type") or payload.get("selection")
     if survey_type not in {"sa", "ma"}:
@@ -67,12 +69,7 @@ def create_survey(payload: dict = Body(...)):
             text = it.strip()
             exclusive = False
         else:
-            text = (
-                it.get("body")
-                or it.get("label")
-                or it.get("text")
-                or ""
-            ).strip()
+            text = (it.get("body") or it.get("text") or "").strip()
             exclusive = bool(
                 it.get("is_exclusive")
                 or it.get("isExclusive")
@@ -108,7 +105,9 @@ def update_survey(survey_id: str, payload: dict = Body(...)):
         raise HTTPException(400, "question_text required")
 
     lang = payload.get("lang") or payload.get("language") or ""
-    target_countries = _norm_list(payload.get("target_countries"))
+    target_countries = _norm_list(
+        payload.get("target_countries") or payload.get("nationalities")
+    )
     target_genders = _norm_list(payload.get("target_genders"))
     survey_type = payload.get("type") or payload.get("selection")
     if survey_type not in {"sa", "ma"}:
@@ -135,12 +134,7 @@ def update_survey(survey_id: str, payload: dict = Body(...)):
             text = it.strip()
             exclusive = False
         else:
-            text = (
-                it.get("body")
-                or it.get("label")
-                or it.get("text")
-                or ""
-            ).strip()
+            text = (it.get("body") or it.get("text") or "").strip()
             exclusive = bool(
                 it.get("is_exclusive")
                 or it.get("isExclusive")
