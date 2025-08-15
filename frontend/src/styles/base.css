@@ -1,5 +1,9 @@
 @import './tokens.css';
-/* base styles */
+/* -------------------------------------------------------------------------
+   Global base styles
+   These rules layer on top of Tailwind's preflight and provide application-wide
+   defaults such as typography, focus management and the background gradient.
+   ------------------------------------------------------------------------- */
 
 @tailwind base;
 @tailwind components;
@@ -10,14 +14,34 @@
     font-size: 100%;
     scroll-behavior: smooth;
   }
+
   body {
     min-height: 100dvh;
     font-family: var(--font-sans);
     color: var(--text);
-    background: linear-gradient(135deg, var(--bg-950), var(--bg-900), rgba(8,145,178,.20));
+    background: linear-gradient(135deg, var(--bg-950), var(--bg-900), rgba(8,145,178,0.20));
     color-scheme: light dark;
     -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
   }
+
+  /* Typography defaults -------------------------------------------------- */
+  h1, h2, h3, h4, h5, h6 {
+    font-weight: 600;
+    line-height: 1.25;
+    color: var(--text);
+  }
+  p {
+    line-height: 1.6;
+  }
+
+  /* Selection ------------------------------------------------------------ */
+  ::selection {
+    background: var(--brand-cyan-600);
+    color: var(--text-inverse);
+  }
+
+  /* Interactive elements ------------------------------------------------- */
   * {
     -webkit-tap-highlight-color: transparent;
     transition: all var(--dur) var(--ease);
@@ -29,6 +53,21 @@
     outline: none;
     box-shadow: var(--ring);
   }
+
+  /* Scrollbar styling for WebKit ---------------------------------------- */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: var(--radius-sm);
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  /* Motion reduction ----------------------------------------------------- */
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
       transition: none !important;
@@ -36,3 +75,4 @@
     }
   }
 }
+
