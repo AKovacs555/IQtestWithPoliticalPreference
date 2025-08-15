@@ -140,7 +140,7 @@ const Quiz = () => {
     setSubmitting(true);
     try {
       // console.log('submitQuiz called');
-      const result = await submitQuiz(session, list);
+      const result = await submitQuiz(session, list, []);
       const params = new URLSearchParams({
         iq: result.iq.toString(),
         percentile: result.percentile.toString(),

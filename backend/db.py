@@ -512,6 +512,11 @@ def insert_survey_responses(rows: List[Dict[str, Any]]) -> None:
         return
     supabase = get_supabase()
     supabase.from_("survey_responses").insert(rows).execute()
+    # Test fixtures use an in-memory client that auto-generates ``id`` keys;
+    # remove them so stored rows match the input structure.
+    if hasattr(supabase, "tables"):
+        for r in supabase.tables.get("survey_responses", []):
+            r.pop("id", None)
 
 
 def count_daily_survey_responses(user_id: str, answered_on: str) -> int:
