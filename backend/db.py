@@ -482,13 +482,13 @@ def get_surveys(lang: Optional[str] = None) -> List[Dict[str, Any]]:
     """Return surveys with their choice items.
 
     Only surveys matching ``lang`` are returned when provided.  Choice items are
-    ordered by ``position`` so the caller can render them directly.
+    ordered by ``position`` so the caller can render them directly.  ``options``
+    and ``exclusive_options`` are derived for convenience.
     """
 
     supabase = get_supabase()
     select = (
-        "id,title,question_text,lang,allowed_countries,is_single_choice,status,is_active,"
-        "survey_items(id,position,statement,is_exclusive)"
+        "id,title,question_text,lang,nationalities,type,status," "survey_items(id,position,body,is_exclusive)"
     )
     query = supabase.from_("surveys").select(select)
     if lang:
@@ -498,6 +498,13 @@ def get_surveys(lang: Optional[str] = None) -> List[Dict[str, Any]]:
     for s in surveys:
         items = s.get("survey_items") or []
         items.sort(key=lambda it: it.get("position", 0))
+        s["options"] = [
+            (it.get("body") or it.get("label") or it.get("text") or it.get("statement") or "")
+            for it in items
+        ]
+        s["exclusive_options"] = [
+            idx for idx, it in enumerate(items) if it.get("is_exclusive")
+        ]
     return surveys
 
 
