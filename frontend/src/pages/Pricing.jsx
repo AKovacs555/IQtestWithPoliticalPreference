@@ -2,8 +2,9 @@ import React, { useEffect, useState } from 'react';
 import AppShell from '../components/AppShell';
 import { useTranslation } from 'react-i18next';
 import AdProgress from '../components/AdProgress';
+import UpgradeTeaser from '../components/home/UpgradeTeaser';
 
-const API_BASE = import.meta.env.VITE_API_BASE || "";
+const API_BASE = import.meta.env.VITE_API_BASE || '';
 
 const userId = 'demo';
 
@@ -17,12 +18,20 @@ export default function Pricing() {
 
   const watchAd = () => {
     setProgress(0);
-    fetch(`${API_BASE}/ads/start`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ user_id: userId }) });
+    fetch(`${API_BASE}/ads/start`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: userId })
+    });
     const id = setInterval(() => {
       setProgress(p => {
         if (p >= 100) {
           clearInterval(id);
-          fetch(`${API_BASE}/ads/complete`, { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ user_id: userId }) });
+          fetch(`${API_BASE}/ads/complete`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_id: userId })
+          });
           return 100;
         }
         return p + 10;
@@ -53,14 +62,14 @@ export default function Pricing() {
       <div className="max-w-2xl mx-auto py-8 space-y-6">
         <h2 className="text-3xl font-bold text-center">{t('pricing.title')}</h2>
         <div className="grid md:grid-cols-3 gap-4">
-          <div className="p-4 bg-surface rounded-md shadow">
+          <div className="relative glass-card gold-ring gold-sheen p-4 shadow-sm opacity-60">
             <h3 className="font-semibold mb-2">{t('pricing.free')}</h3>
             <p className="mb-4">{freeAttempts}</p>
-            <button className="px-4 py-2 rounded-md bg-primary text-white" disabled>
-              Current
+            <button disabled className="w-full py-2 rounded-md bg-gray-600 text-gray-400 cursor-not-allowed">
+              現在のプラン
             </button>
           </div>
-          <div className="p-4 bg-surface rounded-md shadow">
+          <div className="relative glass-card gold-ring gold-sheen p-4 shadow-sm">
             <h3 className="font-semibold mb-2">{t('pricing.retry')}</h3>
             <p className="mb-4">{price} JPY</p>
             <select
@@ -76,22 +85,31 @@ export default function Pricing() {
               <option value="bnb">BNB</option>
             </select>
             <button
-              className="px-4 py-2 rounded-md border border-primary text-primary"
+              className="w-full py-2 rounded-md border-2 border-amber-400 text-amber-400 hover:bg-amber-500/10 font-semibold"
               onClick={() => {
-              fetch(`${API_BASE}/purchase`, { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ user_id: userId, amount: price, pay_currency: crypto }) })
-                .then(res => res.json())
-                .then(data => { if (data.payment_url) window.location = data.payment_url; });
-            }}
+                fetch(`${API_BASE}/purchase`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ user_id: userId, amount: price, pay_currency: crypto })
+                })
+                  .then(res => res.json())
+                  .then(data => {
+                    if (data.payment_url) window.location = data.payment_url;
+                  });
+              }}
             >
               Pay with Crypto
             </button>
           </div>
-          <div className="p-4 bg-surface rounded-md shadow">
+          <div className="relative glass-card gold-ring gold-sheen p-4 shadow-md border-2 border-amber-400">
             <h3 className="font-semibold mb-2">{t('pricing.subscribe')}</h3>
             <p className="mb-4">{proPrice} JPY / mo</p>
-            <button className="px-4 py-2 rounded-md bg-primary text-white">Subscribe</button>
+            <button className="w-full py-2 rounded-md bg-amber-500 hover:bg-amber-600 hover:shadow-lg hover:shadow-amber-500/50 text-white font-semibold">
+              アップグレード
+            </button>
           </div>
         </div>
+        <UpgradeTeaser />
         <div className="text-center space-y-2">
           <button
             onClick={watchAd}
@@ -105,3 +123,4 @@ export default function Pricing() {
     </AppShell>
   );
 }
+
