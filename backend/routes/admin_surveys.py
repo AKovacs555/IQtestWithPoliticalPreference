@@ -58,7 +58,7 @@ def grant_free_attempts(countries: list[str]) -> None:  # pragma: no cover - leg
     supabase.table("app_users").select("hashed_id").execute()
 
 
-@router.post("/")
+@router.post("/", status_code=201)
 def create_survey(payload: dict = Body(...)):
     question_text = (
         payload.get("question_text")
@@ -69,7 +69,7 @@ def create_survey(payload: dict = Body(...)):
     if not question_text.strip():
         raise HTTPException(400, "question_text required")
 
-    lang = payload.get("lang") or payload.get("language") or ""
+    lang = payload.get("lang") or payload.get("language") or "en"
     target_countries = _norm_list(
         payload.get("target_countries") or payload.get("nationalities")
     )
@@ -78,6 +78,7 @@ def create_survey(payload: dict = Body(...)):
     if survey_type not in {"sa", "ma"}:
         raise HTTPException(400, "type must be 'sa' or 'ma'")
     status = payload.get("status") or "approved"
+    is_single_choice = survey_type in ("sa", "single")
 
     group_id = payload.get("group_id") or str(uuid.uuid4())
     row = {
@@ -90,6 +91,7 @@ def create_survey(payload: dict = Body(...)):
         "status": status,
         "is_active": True,
         "group_id": group_id,
+        "is_single_choice": is_single_choice,
     }
     res = supabase_admin.table("surveys").insert(row).execute()
     if not res.data:
@@ -118,7 +120,7 @@ def create_survey(payload: dict = Body(...)):
                 "position": idx + 1,
                 "body": text,
                 "is_exclusive": exclusive,
-                "lang": lang,
+                "language": lang,
                 "is_active": True,
             }
         )
@@ -159,6 +161,7 @@ def create_survey(payload: dict = Body(...)):
             "status": status,
             "is_active": True,
             "group_id": group_id,
+            "is_single_choice": is_single_choice,
         }
         res_t = supabase_admin.table("surveys").insert(trans_row).execute()
         if not (res_t.data):
@@ -172,7 +175,7 @@ def create_survey(payload: dict = Body(...)):
                     "position": base_it["position"],
                     "body": body,
                     "is_exclusive": base_it.get("is_exclusive", False),
-                    "lang": tgt,
+                    "language": tgt,
                     "is_active": True,
                 }
             )
@@ -193,7 +196,7 @@ def update_survey(survey_id: str, payload: dict = Body(...)):
     if not question_text.strip():
         raise HTTPException(400, "question_text required")
 
-    lang = payload.get("lang") or payload.get("language") or ""
+    lang = payload.get("lang") or payload.get("language") or "en"
     target_countries = _norm_list(
         payload.get("target_countries") or payload.get("nationalities")
     )
@@ -202,6 +205,7 @@ def update_survey(survey_id: str, payload: dict = Body(...)):
     if survey_type not in {"sa", "ma"}:
         raise HTTPException(400, "type must be 'sa' or 'ma'")
     status = payload.get("status") or "approved"
+    is_single_choice = survey_type in ("sa", "single")
 
     # Determine group_id and existing translations
     gid_resp = (
@@ -223,6 +227,7 @@ def update_survey(survey_id: str, payload: dict = Body(...)):
         "type": survey_type,
         "status": status,
         "is_active": payload.get("is_active", True),
+        "is_single_choice": is_single_choice,
     }
     supabase_admin.table("surveys").update(data).eq("id", survey_id).execute()
     supabase_admin.table("survey_items").delete().eq("survey_id", survey_id).execute()
@@ -249,7 +254,7 @@ def update_survey(survey_id: str, payload: dict = Body(...)):
                 "position": idx + 1,
                 "body": text,
                 "is_exclusive": exclusive,
-                "lang": lang,
+                "language": lang,
                 "is_active": True,
             }
         )
@@ -305,6 +310,7 @@ def update_survey(survey_id: str, payload: dict = Body(...)):
             "status": status,
             "is_active": True,
             "group_id": group_id,
+            "is_single_choice": is_single_choice,
         }
         res_t = supabase_admin.table("surveys").insert(trans_row).execute()
         if not (res_t.data):
@@ -318,7 +324,7 @@ def update_survey(survey_id: str, payload: dict = Body(...)):
                     "position": base_it["position"],
                     "body": body,
                     "is_exclusive": base_it.get("is_exclusive", False),
-                    "lang": tgt,
+                    "language": tgt,
                     "is_active": True,
                 }
             )

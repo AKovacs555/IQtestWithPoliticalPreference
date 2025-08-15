@@ -67,7 +67,7 @@ export default function SurveyEditorDialog({
     if (initialValue) {
       setTitle(initialValue.title || '');
       setQuestion(initialValue.question_text || '');
-      setLanguage(initialValue.lang || initialValue.language || 'en');
+      setLanguage(initialValue.lang || 'en');
       setChoiceType(initialValue.type || 'sa');
       setCountryCodes(initialValue.target_countries || []);
       setTargetGenders(initialValue.target_genders || []);
