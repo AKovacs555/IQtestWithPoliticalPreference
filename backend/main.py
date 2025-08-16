@@ -155,6 +155,7 @@ from db import (
     is_payment_processed,
 )
 from postgrest.exceptions import APIError
+from backend.core.supabase_admin import supabase_admin
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
 SUPABASE_API_KEY = os.environ.get("SUPABASE_API_KEY", "")
 
@@ -256,32 +257,43 @@ class AdaptiveAnswerResponse(BaseModel):
     percentile: Optional[float] = None
 
 
+from uuid import UUID
+
+
+class SurveyInfo(BaseModel):
+    id: UUID
+    group_id: UUID
+    lang: str
+    title: str | None = None
+    question_text: str | None = None
+    is_single_choice: bool | None = False
+
+
 class SurveyItem(BaseModel):
-    id: str
-    statement: str
-    options: list[str]
-    type: str
-    exclusive_options: list[int] = []
-
-
-class PartyItem(BaseModel):
-    id: int
-    name: str
+    id: UUID
+    body: str
+    is_exclusive: bool | None = False
+    position: int
+    lang: str | None = None
 
 
 class SurveyStartResponse(BaseModel):
+    survey: SurveyInfo
     items: List[SurveyItem]
-    parties: List[PartyItem]
 
 
-class SurveyAnswer(BaseModel):
-    id: str
-    selections: List[int]
+class Answer(BaseModel):
+    id: UUID
+    selections: List[int] | None = None
+    item_ids: List[UUID] | None = None
 
 
-class SurveySubmitRequest(BaseModel):
-    answers: List[SurveyAnswer]
-    user_id: Optional[str] = None
+class SurveySubmit(BaseModel):
+    user_id: UUID | None = None
+    lang: str | None = None
+    survey_id: UUID
+    survey_group_id: UUID
+    answers: List[Answer]
 
 
 class DemographicInfo(BaseModel):
@@ -290,14 +302,6 @@ class DemographicInfo(BaseModel):
     gender: str
     income_band: str
     occupation: str
-
-
-class SurveyResult(BaseModel):
-    left_right: float
-    libertarian_authoritarian: float
-    category: str
-    description: str
-
 
 class PricingResponse(BaseModel):
     price: int
@@ -695,135 +699,50 @@ async def public_surveys(lang: str = "en"):
     return {"questions": get_surveys(lang)}
 
 
-@app.post("/survey/submit", response_model=SurveyResult)
-async def survey_submit(payload: SurveySubmitRequest):
-    """Persist survey responses and return ideological scores.
-
-    Parameters
-    ----------
-    payload: SurveySubmitRequest
-        JSON body with the user's answers.  Expected structure:
-
-        ``{
-            "user_id": "<hashed id>",
-            "answers": [
-                {"id": "<question id>", "selections": [<int>, ...]},
-                ...
-            ],
-            "items": [ {"id": "<question id>", "group_id": "<group>"}, ... ]  # optional
-        }``
-
-        ``items`` may be omitted; when absent the server will look up survey
-        definitions by ID.  Each selection index must be valid for the referenced
-        item and single‑answer questions must contain exactly one selection.
-
-    Behavior
-    --------
-    The endpoint records every response in ``survey_answers`` and updates the
-    user's ``survey_completed`` flag in one atomic operation.  On success the
-    computed left/right and libertarian/authoritarian scores are returned.
-
-    Errors
-    ------
-    * ``400`` – missing answers, unknown question IDs, invalid option indices or
-      misuse of exclusive choices.
-    * ``500`` – any database failure prevents persistence and marks the request
-      unsuccessful.
-    """
-
+@app.post("/survey/submit")
+async def survey_submit(payload: SurveySubmit):
     if not payload.answers:
         raise HTTPException(status_code=400, detail="No answers provided")
 
-    questions = {str(q["id"]): q for q in get_surveys()}
-    lr_score = 0.0
-    auth_score = 0.0
-
-    response_rows: List[dict] = []
-    for ans in payload.answers:
-        item = questions.get(ans.id)
-        if not item:
-            raise HTTPException(status_code=400, detail=f"Invalid question id {ans.id}")
-
-        selections = ans.selections
-        if item.get("type") == "sa":
-            if len(selections) != 1:
-                raise HTTPException(status_code=400, detail="Exactly one option required")
-            choice = selections[0]
-        else:
-            if not selections:
-                raise HTTPException(status_code=400, detail="At least one option required")
-            if any(
-                idx in item.get("exclusive_options", []) and len(selections) > 1
-                for idx in selections
-            ):
-                raise HTTPException(status_code=400, detail="Exclusive option selected with others")
-            choice = selections[0]
-
-        if choice < 0 or choice >= len(item.get("options", [])):
-            raise HTTPException(status_code=400, detail=f"Invalid option index {choice}")
-
-        weight = choice - (len(item.get("options", [])) - 1) / 2
-        lr_score += weight * (item.get("lr") or 0)
-        auth_score += weight * (item.get("auth") or 0)
-
-        if payload.user_id:
-            response_rows.append(
-                {
-                    "survey_id": ans.id,
-                    "survey_group_id": str(item.get("group_id")),
-                    "answer": {"id": ans.id, "selections": selections},
-                }
-            )
-
-    n = len(payload.answers)
-    if n:
-        lr_score /= n
-        auth_score /= n
-
-    if payload.user_id and response_rows:
-        supabase = get_supabase()
-        hashed_human_id = payload.user_id
-        uuid = get_or_create_user_id_from_hashed(supabase, hashed_human_id)
-
-        def rows_with(u: str) -> List[dict]:
-            return [dict(r, user_id=u) for r in response_rows]
-
-        rows = rows_with(uuid)
+    answer = payload.answers[0]
+    item_uuid_list = answer.item_ids or []
+    if not item_uuid_list:
+        items_q = (
+            supabase_admin.table("survey_items")
+            .select("id,position")
+            .eq("survey_id", str(payload.survey_id))
+        )
         try:
-            insert_survey_answers(rows)
-        except APIError as e:
-            code = getattr(e, "code", "")
-            msg = (getattr(e, "message", "") or "").lower()
-            if code in ("23505",) or "unique" in msg or "duplicate key" in msg:
-                return JSONResponse({"error": "already_answered_today"}, status_code=409)
-            if code in ("23503",) or "foreign key" in msg:
-                uuid = get_or_create_user_id_from_hashed(supabase, hashed_human_id)
-                insert_survey_answers(rows_with(uuid))
-            else:
-                return JSONResponse({"error": "db_error", "detail": str(e)}, status_code=500)
-        # Ensure the user's survey completion is recorded
-        supabase = get_supabase()
-        db_update_user(supabase, hashed_human_id, {"survey_completed": True})
+            items_q = items_q.order("position")
+        except AttributeError:
+            pass
+        items = items_q.execute().data or []
+        idx_map = [row["id"] for row in items]
+        selections = answer.selections or []
+        item_uuid_list = [idx_map[i] for i in selections if 0 <= i < len(idx_map)]
+    if not item_uuid_list:
+        return JSONResponse({"error": "no_selection"}, status_code=400)
 
-    if lr_score > 0.3:
-        category = "Conservative"
-    elif lr_score < -0.3:
-        category = "Progressive"
-    else:
-        category = "Centrist"
+    rows = [
+        {
+            "survey_id": str(payload.survey_id),
+            "survey_group_id": str(payload.survey_group_id),
+            "survey_item_id": str(item_id),
+            "user_id": str(payload.user_id) if payload.user_id else None,
+        }
+        for item_id in item_uuid_list
+    ]
 
-    description = (
-        f"Your economic views lean {'right' if lr_score > 0 else 'left'} and you are "
-        f"{'authoritarian' if auth_score > 0 else 'libertarian'} leaning."
-    )
+    supabase_admin.table("survey_answers").upsert(
+        rows, on_conflict="user_id,survey_item_id"
+    ).execute()
 
-    return {
-        "left_right": lr_score,
-        "libertarian_authoritarian": auth_score,
-        "category": category,
-        "description": description,
-    }
+    if payload.user_id:
+        supabase_admin.table("app_users").update({"survey_completed": True}).eq(
+            "id", str(payload.user_id)
+        ).execute()
 
+    return {"status": "ok"}
 
 class UserAction(BaseModel):
     user_id: str

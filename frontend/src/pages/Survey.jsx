@@ -9,59 +9,88 @@ export default function Survey() {
   const { user, session } = useSession();
   const { t, i18n } = useTranslation();
   const apiBase = import.meta.env.VITE_API_BASE || '';
-  const [answers, setAnswers] = useState({});
+  const [survey, setSurvey] = useState(state?.survey || null);
   const [items, setItems] = useState(state?.items || []);
-  const titleString = state?.title || t('survey.title', { defaultValue: 'Survey' });
+  const [selected, setSelected] = useState(new Set());
+  const [error, setError] = useState('');
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const sid = params.get('sid');
-    if (!items.length && sid) {
+    if ((!items.length || !survey) && sid) {
       fetch(`${apiBase}/survey/start?sid=${sid}&lang=${i18n.language}`, {
         headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {},
       })
         .then(res => res.json())
         .then(data => {
+          setSurvey(data.survey);
           setItems(data.items || []);
         })
         .catch(() => {});
     }
-  }, [apiBase, i18n.language, items.length, session]);
+  }, [apiBase, i18n.language, items.length, session, survey]);
 
-  const handleChange = (itemId, value) => {
-    setAnswers(prev => ({ ...prev, [itemId]: value }));
-  };
+  const single = survey?.is_single_choice;
+
+  function toggleChoice(itemId, isExclusive) {
+    setSelected(prev => {
+      const next = new Set(prev);
+      if (single) {
+        next.clear();
+        next.add(itemId);
+        return next;
+      }
+      if (isExclusive) {
+        next.clear();
+        next.add(itemId);
+        return next;
+      }
+      if (next.has(itemId)) {
+        next.delete(itemId);
+      } else {
+        next.add(itemId);
+      }
+      const chosenExclusive = items.find(i => i.is_exclusive && next.has(i.id));
+      if (chosenExclusive) return new Set([chosenExclusive.id]);
+      return next;
+    });
+  }
 
   const handleSubmit = async () => {
-    if (!user) return;
-    try {
-      if (!user.survey_completed) {
-        await fetch(`${apiBase}/survey/submit`, {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            answers: Object.entries(answers).map(([id, idx]) => ({ id, selections: [Number(idx)] })),
-          }),
-        });
-      } else {
-        const [itemId, choice] = Object.entries(answers)[0];
-        await fetch(`${apiBase}/daily/answer`, {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ question_id: itemId, answer: { choice: Number(choice) } }),
-        });
-      }
-      navigate('/');
-    } catch (err) {
-      console.error(err);
+    const userId = user?.id ?? null;
+    const itemIdList = Array.from(selected);
+    const ordered = [...items].sort((a, b) => a.position - b.position);
+    const indexSelections = itemIdList
+      .map(id => ordered.findIndex(o => o.id === id))
+      .filter(idx => idx >= 0);
+
+    const payload = {
+      user_id: userId,
+      lang: i18n.language,
+      survey_id: survey.id,
+      survey_group_id: survey.group_id,
+      answers: [{ id: survey.id, item_ids: itemIdList, selections: indexSelections }],
+    };
+
+    const res = await fetch(`${apiBase}/survey/submit`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!res.ok) {
+      const msg = await res.text().catch(() => 'Submit failed');
+      setError(msg);
+      return;
     }
+    localStorage.setItem('survey_completed', 'true');
+    navigate('/');
   };
+
+  const titleString = survey?.question_text || survey?.title || t('survey.title', { defaultValue: 'Survey' });
 
   return (
     <div className="max-w-4xl mx-auto px-4 md:px-8 py-6 md:py-10 space-y-6">
@@ -74,36 +103,31 @@ export default function Survey() {
             </h2>
           </div>
         </div>
+        {error && <div className="text-red-500 mb-4">{error}</div>}
         {items.map(item => (
           <div key={item.id} className="space-y-4">
-            <div className="gold-ring glass-surface p-4 md:p-5">
-              <p className="text-base sm:text-lg font-semibold">{item.body || item.statement}</p>
-            </div>
-            <div className="space-y-3 md:space-y-4">
-              {(item.choices || item.options || []).map((option, idx) => {
-                const isSelected = answers[item.id] === idx;
-                return (
-                  <button
-                    type="button"
-                    key={idx}
-                    className={"choice " + (isSelected ? "choice--active" : "")}
-                    onClick={() => handleChange(item.id, idx)}
-                    data-b-spec="survey-option"
-                  >
-                    <span className="choice__radio" />
-                    <span className="text-[15px] sm:text-base leading-6">{option}</span>
-                  </button>
-                );
-              })}
-            </div>
+            <button
+              type="button"
+              className={
+                'choice w-full text-left ' +
+                (selected.has(item.id) ? 'choice--active' : '')
+              }
+              onClick={() => toggleChoice(item.id, item.is_exclusive)}
+              data-b-spec="survey-option"
+            >
+              <span className="choice__radio" />
+              <span className="text-[15px] sm:text-base leading-6">{item.body}</span>
+            </button>
           </div>
         ))}
         {items.length > 0 && (
           <div className="pt-4">
-            <button onClick={handleSubmit} className="btn-cta w-full md:w-auto">
-              {user?.survey_completed
-                ? t('survey.next', { defaultValue: '次へ' })
-                : t('survey.submit', { defaultValue: '次へ' })}
+            <button
+              onClick={handleSubmit}
+              className="btn-cta w-full md:w-auto"
+              disabled={selected.size === 0}
+            >
+              {t('survey.submit', { defaultValue: '次へ' })}
             </button>
           </div>
         )}
@@ -111,4 +135,5 @@ export default function Survey() {
     </div>
   );
 }
+
 

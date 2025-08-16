@@ -43,7 +43,7 @@ class DummyTable:
         self._returning = returning  # ignored but kept for API parity
         return self
 
-    def upsert(self, data):
+    def upsert(self, data, **kwargs):
         """Simplified upsert behaving like insert for tests."""
         return self.insert(data)
 
@@ -148,6 +148,7 @@ def fake_supabase(monkeypatch):
     monkeypatch.setattr("backend.utils.settings.supabase", supa, raising=False)
     monkeypatch.setattr("backend.routes.settings.supabase", supa, raising=False)
     monkeypatch.setattr("backend.core.supabase_admin.supabase_admin", supa, raising=False)
+    monkeypatch.setattr("main.supabase_admin", supa, raising=False)
     monkeypatch.setattr("backend.routes.admin_surveys.supabase_admin", supa, raising=False)
     monkeypatch.setattr("routes.admin_surveys.supabase_admin", supa, raising=False)
     return supa
