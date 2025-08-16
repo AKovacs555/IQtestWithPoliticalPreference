@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 // Layout is provided by AdminLayout.
 import { useTranslation } from 'react-i18next';
+import AdminHeroTop from '../components/admin/AdminHeroTop';
+import AdminScaffold from '../components/admin/AdminScaffold';
 
 const API_BASE = import.meta.env.VITE_API_BASE || '';
 const GITHUB_TOKEN = import.meta.env.VITE_GITHUB_TOKEN;
@@ -44,16 +46,23 @@ export default function AdminSets() {
   };
 
     return (
-      <div className="p-4 space-y-4 max-w-md mx-auto">
-          <h2 className="text-xl font-bold">{t('admin_sets.title')}</h2>
-          <ul className="list-disc pl-5">
-            {sets.map(s => <li key={s}>{s}</li>)}
-          </ul>
-          <div>
-            <label className="block mb-2">{t('admin_sets.upload')}</label>
-            <input type="file" accept="application/json" onChange={upload} />
+      <>
+        <AdminHeroTop />
+        <AdminScaffold>
+          <div className="gold-ring glass-surface p-4" data-b-spec="admin-card-theme">
+            <div className="p-4 space-y-4 max-w-md mx-auto">
+              <h2 className="text-xl font-bold">{t('admin_sets.title')}</h2>
+              <ul className="list-disc pl-5">
+                {sets.map(s => <li key={s}>{s}</li>)}
+              </ul>
+              <div>
+                <label className="block mb-2">{t('admin_sets.upload')}</label>
+                <input type="file" accept="application/json" onChange={upload} />
+              </div>
+              <p className="text-sm text-gray-600">{t('admin_sets.note')}</p>
+            </div>
           </div>
-          <p className="text-sm text-gray-600">{t('admin_sets.note')}</p>
-        </div>
+        </AdminScaffold>
+      </>
     );
   }

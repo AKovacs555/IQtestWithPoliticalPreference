@@ -167,6 +167,7 @@ module.exports = {
           alignItems: 'center',
           gap: '8px',
           height: '32px',
+          minHeight: '32px',
           padding: '0 12px',
           borderRadius: '9999px',
           border: '1px solid rgba(148,163,184,.18)',
@@ -193,7 +194,38 @@ module.exports = {
         '.glass-surface': {
           background: 'rgba(15,23,42,.60)',
           backdropFilter: 'blur(8px)',
-          borderBottom: '1px solid rgba(148,163,184,.12)',
+          borderRadius: '16px',
+        },
+        /* admin buttons */
+        '.btn-solid': {
+          background: '#10b981',
+          color: '#fff',
+          fontWeight: '700',
+          borderRadius: '12px',
+          height: '44px',
+          padding: '0 16px',
+        },
+        '.btn-solid:hover': {
+          boxShadow: '0 8px 24px rgba(16,185,129,.45)',
+          transform: 'translateY(-1px) scale(1.01)',
+          transition: '.15s ease',
+        },
+        '.btn-outline-soft': {
+          border: '1px solid rgba(148,163,184,.25)',
+          color: '#E2E8F0',
+          borderRadius: '12px',
+          height: '44px',
+          padding: '0 14px',
+          background: 'transparent',
+        },
+        '.btn-outline-soft:hover': {
+          background: 'rgba(255,200,0,.10)',
+        },
+        /* table wrapper */
+        '.table-wrap': {
+          width: '100%',
+          overflowX: 'auto',
+          borderRadius: '12px',
         },
         /* google login button */
         '.btn-google': {

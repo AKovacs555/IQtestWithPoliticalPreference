@@ -2,6 +2,8 @@ import React, { useEffect, useState, useRef } from "react";
 // Layout is provided by AdminLayout, so no need to import it here.
 import { useTranslation } from "react-i18next";
 import { useSession } from "../hooks/useSession";
+import AdminHeroTop from "../components/admin/AdminHeroTop";
+import AdminScaffold from "../components/admin/AdminScaffold";
 const languageOptions = [
   "ja",
   "en",
@@ -342,77 +344,86 @@ export default function AdminQuestions() {
   };
 
   return (
-    <div className="space-y-4 max-w-xl mx-auto">
-        {status && <div className="alert alert-info text-sm">{status}</div>}
-        <div className="space-y-2">
-          <div className="space-y-1">
-            <input
-              type="file"
-              accept="application/json"
-              ref={jsonRef}
-              onChange={handleJsonChange}
-            />
-            <input
-              type="file"
-              multiple
-              ref={imgRef}
-              onChange={handleImagesChange}
-            />
-          </div>
-          <button className="btn" onClick={handleImport} disabled={isImporting}>
-            Import Questions
-          </button>
-          {translateModel && (
-            <p className="text-sm text-gray-500 mt-2">
-              Using translation model: {translateModel}
-            </p>
-          )}
-          {isImporting && uploadStatus && (
-            <div className="alert alert-info text-sm">
-              {t(`upload.status.${uploadStatus}`)}
-            </div>
-          )}
-        </div>
-        {allQuestions.length > 0 && (
-          <>
-            <div className="flex items-center space-x-2 mb-2">
+    <>
+      <AdminHeroTop />
+      <AdminScaffold>
+        <div className="gold-ring glass-surface p-4" data-b-spec="admin-card-theme">
+          <div className="space-y-4 max-w-xl mx-auto">
+            {status && <div className="alert alert-info text-sm">{status}</div>}
+            <div className="space-y-2">
+              <div className="space-y-1">
+                <input
+                  type="file"
+                  accept="application/json"
+                  ref={jsonRef}
+                  onChange={handleJsonChange}
+                />
+                <input
+                  type="file"
+                  multiple
+                  ref={imgRef}
+                  onChange={handleImagesChange}
+                />
+              </div>
               <button
-                className="btn btn-primary btn-sm"
+                className="btn-solid"
+                onClick={handleImport}
+                disabled={isImporting}
+                data-b-spec="admin-button-size"
+              >
+                Import Questions
+              </button>
+              {translateModel && (
+                <p className="text-sm text-gray-500 mt-2">
+                  Using translation model: {translateModel}
+                </p>
+              )}
+              {isImporting && uploadStatus && (
+                <div className="alert alert-info text-sm">
+                  {t(`upload.status.${uploadStatus}`)}
+                </div>
+              )}
+            </div>
+            {allQuestions.length > 0 && (
+              <>
+                <div className="flex items-center space-x-2 mb-2">
+              <button
+                className="btn btn-primary btn-sm min-h-[44px] px-4"
                 onClick={() => handleBulkApprove(true)}
                 disabled={selected.size === 0 || status === "updating"}
               >
                 Approve Selected
               </button>
               <button
-                className="btn btn-secondary btn-sm"
+                className="btn btn-secondary btn-sm min-h-[44px] px-4"
                 onClick={() => handleBulkApprove(false)}
                 disabled={selected.size === 0 || status === "updating"}
               >
                 Disapprove Selected
               </button>
               <button
-                className="btn btn-success btn-sm ml-4"
+                className="btn btn-success btn-sm min-h-[44px] px-4 ml-4"
                 onClick={() => approveAll(true)}
                 disabled={status === "updating"}
               >
                 Approve All (all languages)
               </button>
               <button
-                className="btn btn-warning btn-sm"
+                className="btn btn-warning btn-sm min-h-[44px] px-4"
                 onClick={() => approveAll(false)}
                 disabled={status === "updating"}
               >
                 Unapprove All (all languages)
               </button>
               <button
-                className="btn btn-error btn-sm"
+                className="btn btn-error btn-sm min-h-[44px] px-4"
                 onClick={removeSelected}
                 disabled={selected.size === 0 || status === "updating"}
               >
                 Delete Selected
               </button>
               <button
-                className="btn btn-error btn-sm"
+                className="btn btn-error btn-sm min-h-[44px] px-4"
                 onClick={removeAll}
                 disabled={status === "updating"}
               >
@@ -452,6 +463,7 @@ export default function AdminQuestions() {
                 <option value="unapproved">Unapproved Only</option>
               </select>
             </div>
+            <div className="table-wrap" data-b-spec="admin-table-scroll">
             <table className="table w-full">
               <thead>
                 <tr>
@@ -537,7 +549,7 @@ export default function AdminQuestions() {
                         <td>{approved ? "✓" : ""}</td>
                         <td className="space-x-2">
                           <button
-                            className="btn btn-xs"
+                            className="btn btn-sm min-h-[44px] px-4"
                             onClick={() =>
                               setExpanded(
                                 expanded === variant.group_id
@@ -549,7 +561,7 @@ export default function AdminQuestions() {
                             Other Languages ▼
                           </button>
                           <button
-                            className="btn btn-xs"
+                            className="btn btn-sm min-h-[44px] px-4"
                             onClick={() =>
                               handleEdit(variant.group_id, variant.lang)
                             }
@@ -557,13 +569,13 @@ export default function AdminQuestions() {
                             Edit
                           </button>
                           <button
-                            className="btn btn-xs"
+                            className="btn btn-sm min-h-[44px] px-4"
                             onClick={() => toggleApprove(variant.group_id)}
                           >
                             {approved ? "Unapprove" : "Approve"}
                           </button>
                           <button
-                            className="btn btn-xs btn-error"
+                            className="btn btn-error btn-sm min-h-[44px] px-4"
                             onClick={() => remove(variant.id)}
                           >
                             Delete
@@ -579,7 +591,7 @@ export default function AdminQuestions() {
                                 {otherLangs.map((tr) => (
                                   <button
                                     key={tr.lang}
-                                    className="btn btn-xs"
+                                    className="btn btn-sm min-h-[44px] px-4"
                                     onClick={() =>
                                       handleEdit(variant.group_id, tr.lang)
                                     }
@@ -596,6 +608,7 @@ export default function AdminQuestions() {
                 })}
               </tbody>
             </table>
+            </div>
           </>
         )}
         {isEditModalOpen && editingQuestion && (
@@ -692,14 +705,14 @@ export default function AdminQuestions() {
               </label>
               <div className="modal-action">
                 <button
-                  className="btn"
+                  className="btn btn-sm min-h-[44px] px-4"
                   onClick={saveEdit}
                   disabled={status === "saving"}
                 >
                   Save
                 </button>
                 <button
-                  className="btn"
+                  className="btn btn-sm min-h-[44px] px-4"
                   onClick={() => {
                     setIsEditModalOpen(false);
                     setEditingQuestion(null);
@@ -711,6 +724,9 @@ export default function AdminQuestions() {
             </div>
           </dialog>
         )}
-      </div>
-    );
+          </div>
+        </div>
+      </AdminScaffold>
+    </>
+  );
 }

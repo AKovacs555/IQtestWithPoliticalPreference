@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useSession } from '../hooks/useSession';
+import AdminHeroTop from '../components/admin/AdminHeroTop';
+import AdminScaffold from '../components/admin/AdminScaffold';
 // Layout is provided by AdminLayout.
 
 export default function AdminQuestionStats() {
@@ -28,43 +30,52 @@ export default function AdminQuestionStats() {
 
   const languages = Object.keys(stats).sort();
 
-  return (
-    <div className="space-y-4 max-w-2xl mx-auto">
-        <h1 className="text-2xl font-bold">Question Stats</h1>
-        <p>
-          Based on {numQuestions} questions and difficulty ratios (0.3 easy / 0.4 medium / 0.3 hard), each language should have at
-          least {required.easy} easy, {required.medium} medium and {required.hard} hard approved questions. Insufficient
-          categories are highlighted.
-        </p>
-        {error && <p className="text-red-600">{error}</p>}
-        <table className="min-w-full border">
-          <thead>
-            <tr>
-              <th className="border px-2 py-1">Language</th>
-              <th className="border px-2 py-1">Total Approved</th>
-              <th className="border px-2 py-1">Easy</th>
-              <th className="border px-2 py-1">Medium</th>
-              <th className="border px-2 py-1">Hard</th>
-              <th className="border px-2 py-1">Sufficient?</th>
-            </tr>
-          </thead>
-          <tbody>
-            {languages.map((lang) => {
-              const row = stats[lang];
-              const ok = row.sufficient.easy && row.sufficient.medium && row.sufficient.hard;
-              return (
-                <tr key={lang}>
-                  <td className="border px-2 py-1">{lang}</td>
-                  <td className="border px-2 py-1">{row.total}</td>
-                  <td className={`border px-2 py-1 ${row.sufficient.easy ? '' : 'bg-red-200'}`}>{row.easy}</td>
-                  <td className={`border px-2 py-1 ${row.sufficient.medium ? '' : 'bg-red-200'}`}>{row.medium}</td>
-                  <td className={`border px-2 py-1 ${row.sufficient.hard ? '' : 'bg-red-200'}`}>{row.hard}</td>
-                  <td className="border px-2 py-1">{ok ? 'Yes' : 'No'}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-  );
-}
+    return (
+      <>
+        <AdminHeroTop />
+        <AdminScaffold>
+          <div className="gold-ring glass-surface p-4" data-b-spec="admin-card-theme">
+            <div className="space-y-4 max-w-2xl mx-auto">
+              <h1 className="text-2xl font-bold">Question Stats</h1>
+              <p>
+                Based on {numQuestions} questions and difficulty ratios (0.3 easy / 0.4 medium / 0.3 hard), each language should have at
+                least {required.easy} easy, {required.medium} medium and {required.hard} hard approved questions. Insufficient
+                categories are highlighted.
+              </p>
+              {error && <p className="text-red-600">{error}</p>}
+              <div className="table-wrap" data-b-spec="admin-table-scroll">
+                <table className="min-w-full border">
+                  <thead>
+                    <tr>
+                      <th className="border px-2 py-1">Language</th>
+                      <th className="border px-2 py-1">Total Approved</th>
+                      <th className="border px-2 py-1">Easy</th>
+                      <th className="border px-2 py-1">Medium</th>
+                      <th className="border px-2 py-1">Hard</th>
+                      <th className="border px-2 py-1">Sufficient?</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {languages.map((lang) => {
+                      const row = stats[lang];
+                      const ok = row.sufficient.easy && row.sufficient.medium && row.sufficient.hard;
+                      return (
+                        <tr key={lang}>
+                          <td className="border px-2 py-1">{lang}</td>
+                          <td className="border px-2 py-1">{row.total}</td>
+                          <td className={`border px-2 py-1 ${row.sufficient.easy ? '' : 'bg-red-200'}`}>{row.easy}</td>
+                          <td className={`border px-2 py-1 ${row.sufficient.medium ? '' : 'bg-red-200'}`}>{row.medium}</td>
+                          <td className={`border px-2 py-1 ${row.sufficient.hard ? '' : 'bg-red-200'}`}>{row.hard}</td>
+                          <td className="border px-2 py-1">{ok ? 'Yes' : 'No'}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </AdminScaffold>
+      </>
+    );
+  }
