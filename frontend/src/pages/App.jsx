@@ -1,5 +1,5 @@
 import React, { useEffect, lazy, Suspense } from 'react';
-import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
+import { Routes, Route, useLocation, useNavigate, Navigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import useShareMeta from '../hooks/useShareMeta';
 import AppShell from '../components/AppShell';
@@ -33,6 +33,14 @@ import RequireAdmin from '../routes/RequireAdmin';
 import RequireAuth from '../routes/RequireAuth';
 import { shareResult } from '../utils/share';
 import Profile from './Profile.jsx';
+import Welcome from './Welcome.jsx';
+import { useSession } from '../hooks/useSession';
+
+const HomeEntry = () => {
+  const { user, loading } = useSession();
+  if (!loading && !user) return <Navigate to="/welcome" replace />;
+  return <Home />;
+};
 
 const AdminLayout = lazy(() =>
   import('../layouts/AdminLayout').catch(err => {
@@ -312,7 +320,7 @@ export default function App() {
   return (
     <AnimatePresence mode="wait">
       <Routes location={location} key={location.pathname}>
-        <Route path="/" element={<Home />} />
+        <Route path="/" element={<HomeEntry />} />
         <Route path="/select-set" element={<RequireAuth><SelectSet /></RequireAuth>} />
         <Route path="/demographics" element={<RequireAuth><DemographicsForm /></RequireAuth>} />
         <Route path="/quiz" element={<RequireAuth><TestPage /></RequireAuth>} />
@@ -331,6 +339,7 @@ export default function App() {
         <Route path="/history/:userId" element={<RequireAuth><History /></RequireAuth>} />
         <Route path="/select-nationality" element={<RequireAuth><SelectNationality /></RequireAuth>} />
         <Route path="/login" element={<Login />} />
+        <Route path="/welcome" element={<Welcome />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
         {import.meta.env.DEV && (
           <Route path="/theme" element={<ThemeDemo />} />

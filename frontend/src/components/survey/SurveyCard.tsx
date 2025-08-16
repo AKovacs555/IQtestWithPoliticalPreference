@@ -14,15 +14,20 @@ interface Props {
 export default function SurveyCard({ item, onAnswer }: Props) {
   return (
     <div className="space-y-4">
-      <p className="text-lg">{item.body}</p>
-      <div className="space-y-2">
+      <div className="gold-ring glass-surface p-4 md:p-5">
+        <p className="text-base sm:text-lg font-semibold">{item.body}</p>
+      </div>
+      <div className="space-y-3 md:space-y-4">
         {item.choices.map((c, idx) => (
           <button
             key={idx}
-            className="w-full rounded bg-[var(--btn-primary)] text-white px-4 py-2 min-h-[44px]"
+            type="button"
+            className="choice"
             onClick={() => onAnswer(idx)}
+            data-b-spec="survey-option"
           >
-            {c}
+            <span className="choice__radio" />
+            <span className="text-[15px] sm:text-base leading-6">{c}</span>
           </button>
         ))}
       </div>

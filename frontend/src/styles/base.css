@@ -3,6 +3,19 @@
 @tailwind components;
 @tailwind utilities;
 
+/* colors & motion — exact values */
+:root {
+  --text:#E2E8F0;
+  --text-muted:#94A3B8;
+  --bg-glass:rgba(15,23,42,.60);
+  --border-soft:rgba(148,163,184,.18);
+  --gold-border:rgba(255,224,130,.35);
+  --gold-inner:rgba(255,224,130,.10);
+  --gold-glow:rgba(255,210,63,.22);
+  --emerald:#10b981;
+  --teal:#22d3ee;
+}
+
 @layer components {
   .gold-card { @apply glass-card gold-ring gold-sheen; }
 }
