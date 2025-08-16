@@ -81,7 +81,9 @@ export default function Home() {
       );
       if (res.ok) {
         const payload = await res.json();
-        navigate(`/survey?sid=${payload.survey.id}`);
+        navigate(`/survey?sid=${payload.survey.id}`, { state: payload });
+      } else if (res.status === 404 || res.status === 204) {
+        await handleStartQuiz();
       }
     } catch {}
   };

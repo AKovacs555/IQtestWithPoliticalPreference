@@ -623,7 +623,7 @@ def get_daily_answer_count(user_id: str, day: date) -> int:
     end = start + timedelta(days=1)
     resp = (
         supabase.table("survey_answers")
-        .select("created_at, answered_on")
+        .select("created_at")
         .eq("user_id", user_id)
         .execute()
     )

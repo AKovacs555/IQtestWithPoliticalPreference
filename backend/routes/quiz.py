@@ -98,9 +98,17 @@ async def start_quiz(
                 "message": "Please complete the demographics form before taking the IQ test.",
             },
         )
+    if set_id:
+        try:
+            get_balanced_random_questions_by_set(1, set_id)
+        except ValueError as e:
+            raise HTTPException(status_code=404, detail=str(e))
     today = datetime.utcnow()
+    pending_surveys = get_random_pending_surveys(
+        user["hashed_id"], user.get("nationality"), user.get("gender"), lang=lang, limit=3
+    )
     daily_count = get_daily_answer_count(user["hashed_id"], today.date())
-    if daily_count < 3:
+    if daily_count < 3 and (pending_surveys is None or pending_surveys):
         reset_at = (
             datetime.combine(today.date(), datetime.min.time()) + timedelta(days=1)
         ).isoformat() + "Z"
@@ -245,10 +253,12 @@ async def start_quiz(
                 option_images=[o.get("image") for o in q.get("options", [])] if q.get("options") and isinstance(q.get("options")[0], dict) else q.get("option_images"),
             )
         )
-    pending = get_random_pending_surveys(
-        user["hashed_id"], user.get("nationality"), user.get("gender"), lang=lang, limit=3
-    )
-    return {"session_id": session_id, "expires_at": expires_at.isoformat(), "questions": models, "pending_surveys": pending}
+    return {
+        "session_id": session_id,
+        "expires_at": expires_at.isoformat(),
+        "questions": models,
+        "pending_surveys": pending_surveys or [],
+    }
 
 @router.post("/submit")
 async def submit_quiz(
@@ -383,9 +393,17 @@ async def abandon_quiz(
 
 
 def get_random_pending_surveys(
-    user_id: str, country: Optional[str], gender: Optional[str], *, lang: str, limit: int = 3
-) -> List[dict]:
-    """Return up to ``limit`` surveys matching the user's language, country and gender."""
+    user_id: str,
+    country: Optional[str],
+    gender: Optional[str],
+    *,
+    lang: str,
+    limit: int = 3,
+) -> List[dict] | None:
+    """Return up to ``limit`` surveys matching the user's language, country and gender.
+
+    Returns ``None`` if the lookup fails.
+    """
 
     try:
         supabase = get_supabase_client()
@@ -398,7 +416,7 @@ def get_random_pending_surveys(
             .execute()
         )
     except Exception:
-        return []
+        return None
     surveys = resp.data or []
     eligible: List[dict] = []
     for s in surveys:
