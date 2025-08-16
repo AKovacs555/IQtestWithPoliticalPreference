@@ -40,7 +40,7 @@ def available(lang: str, country: str, user: dict = Depends(get_current_user)):
         if genders and user_gender not in genders:
             continue
         existing = (
-            supabase.table("survey_responses")
+            supabase.table("survey_answers")
             .select("id")
             .eq("survey_id", s["id"])
             .eq("user_id", user["hashed_id"])
@@ -99,20 +99,8 @@ def respond(
     if not payload.option_ids:
         raise HTTPException(400, "option_ids required")
     supabase = db.get_supabase()
-    response_group_id = str(uuid4())
-    rows = [
-        {
-            "response_group_id": response_group_id,
-            "survey_id": survey_id,
-            "user_id": user["hashed_id"],
-            "option_id": oid,
-            "other_text": payload.other_texts.get(oid),
-        }
-        for oid in payload.option_ids
-    ]
-    supabase.table("survey_responses").insert(rows).execute()
 
-    # Also persist into survey_answers for arena stats
+    # Persist into survey_answers for arena stats
     group_resp = (
         supabase.table("surveys")
         .select("group_id")

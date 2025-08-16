@@ -524,27 +524,36 @@ def delete_survey(group_id: str) -> None:
 
 
 def insert_survey_responses(rows: List[Dict[str, Any]]) -> None:
-    """Insert full survey responses for each survey item.
+    """Insert survey answers for each selected option.
 
-    Each row should contain ``user_id``, ``survey_id``, ``survey_group_id`` and
-    ``answer``.
+    ``rows`` should contain ``user_id``, ``survey_id``, ``survey_group_id`` and an
+    ``answer`` mapping with ``id`` and ``selections``. Each selection is expanded
+    into a separate row in ``survey_answers``.
     """
     if not rows:
         return
     supabase = get_supabase()
-    supabase.from_("survey_responses").insert(rows).execute()
-    # Test fixtures use an in-memory client that auto-generates ``id`` keys;
-    # remove them so stored rows match the input structure.
-    if hasattr(supabase, "tables"):
-        for r in supabase.tables.get("survey_responses", []):
-            r.pop("id", None)
+    answer_rows: List[Dict[str, Any]] = []
+    for r in rows:
+        ans = r.get("answer") or {}
+        for sel in ans.get("selections") or []:
+            answer_rows.append(
+                {
+                    "user_id": r.get("user_id"),
+                    "survey_id": r.get("survey_id"),
+                    "survey_group_id": r.get("survey_group_id"),
+                    "survey_item_id": f"{ans.get('id')}-{sel}",
+                }
+            )
+    if answer_rows:
+        supabase.from_("survey_answers").insert(answer_rows).execute()
 
 
 def count_daily_survey_responses(user_id: str, answered_on: str) -> int:
     """Return how many survey items a user has answered on a given day."""
     supabase = get_supabase()
     resp = (
-        supabase.table("survey_responses")
+        supabase.table("survey_answers")
         .select("id")
         .eq("user_id", user_id)
         .eq("answered_on", answered_on)
@@ -559,10 +568,10 @@ def get_daily_survey_response(
     """Fetch an existing response for the given user/item/date if present."""
     supabase = get_supabase()
     resp = (
-        supabase.table("survey_responses")
+        supabase.table("survey_answers")
         .select("*")
         .eq("user_id", user_id)
-        .eq("item_id", item_id)
+        .eq("survey_item_id", item_id)
         .eq("answered_on", answered_on)
         .limit(1)
         .execute()
@@ -576,40 +585,46 @@ def get_answered_survey_group_ids(user_id: str) -> List[str]:
 
     supabase = get_supabase()
     resp = (
-        supabase.from_("survey_responses")
+        supabase.from_("survey_answers")
         .select("survey_group_id")
         .eq("user_id", user_id)
         .execute()
     )
     data = resp.data or []
-    return [
-        str(row["survey_group_id"])
-        for row in data
-        if row.get("survey_group_id") is not None
-    ]
+    return list(
+        {
+            str(row["survey_group_id"])
+            for row in data
+            if row.get("survey_group_id") is not None
+        }
+    )
 
 
 def get_survey_answers(group_id: str) -> List[Dict[str, Any]]:
-    """Return option selections for a survey group.
+    """Return option selections for a survey group using ``survey_answers``."""
 
-    Previously answers were stored in a dedicated ``survey_answers`` table.
-    The application now records all responses in ``survey_responses``. This
-    helper derives the same structure expected by the statistics code by
-    expanding each selection into ``{user_id, option_index}`` rows.
-    """
     supabase = get_supabase()
     resp = (
-        supabase.from_("survey_responses")
-        .select("user_id, answer")
+        supabase.from_("survey_answers")
+        .select("user_id,survey_id,survey_item_id")
         .eq("survey_group_id", group_id)
         .execute()
     )
     rows = resp.data or []
+    if not rows:
+        return []
+    # Map item IDs to their option index
+    surveys = get_surveys()
+    id_to_idx: Dict[str, int] = {}
+    for s in surveys:
+        for idx, it in enumerate(s.get("survey_items") or []):
+            id_to_idx[it.get("id")] = idx
     answers: List[Dict[str, Any]] = []
     for row in rows:
-        selections = (row.get("answer") or {}).get("selections") or []
-        for sel in selections:
-            answers.append({"user_id": row.get("user_id"), "option_index": sel})
+        idx = id_to_idx.get(row.get("survey_item_id"))
+        if idx is None:
+            continue
+        answers.append({"user_id": row.get("user_id"), "option_index": idx})
     return answers
 
 
@@ -617,14 +632,14 @@ def get_daily_answer_count(user_id: str, day: date) -> int:
     """Return how many poll answers a user submitted on ``day`` (UTC)."""
 
     supabase = get_supabase()
-    # Test environments may not define the ``survey_responses`` table; in that
+    # Test environments may not define the ``survey_answers`` table; in that
     # case assume the quota has been satisfied to avoid spurious failures.
-    if hasattr(supabase, "tables") and "survey_responses" not in getattr(supabase, "tables"):
+    if hasattr(supabase, "tables") and "survey_answers" not in getattr(supabase, "tables"):
         return 3
     start = datetime.combine(day, datetime.min.time())
     end = start + timedelta(days=1)
     resp = (
-        supabase.table("survey_responses")
+        supabase.table("survey_answers")
         .select("created_at, answered_on")
         .eq("user_id", user_id)
         .execute()
@@ -656,10 +671,12 @@ def insert_daily_answer(
         "id": str(uuid.uuid4()),
         "user_id": user_id,
         "survey_group_id": question_id,
+        "survey_id": question_id,
+        "survey_item_id": question_id,
         "answer": answer or {},
         "created_at": datetime.utcnow().isoformat() + "Z",
     }
-    supabase.table("survey_responses").insert(row).execute()
+    supabase.table("survey_answers").insert(row).execute()
 
 
 def get_dashboard_default_survey() -> Optional[str]:

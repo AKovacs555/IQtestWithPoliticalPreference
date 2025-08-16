@@ -26,7 +26,7 @@ def start(lang: str = "en", user: Dict = Depends(get_current_user)):
     )
     user_row = ures.data or {}
     answered = (
-        supabase.table("survey_responses")
+        supabase.table("survey_answers")
         .select("survey_group_id")
         .eq("user_id", user.get("hashed_id"))
         .execute()
