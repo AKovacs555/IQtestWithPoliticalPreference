@@ -40,3 +40,7 @@ body{
     0 0 36px rgba(34,211,238,.30),
     0 0 60px rgba(34,211,238,.20);
 }
+
+/* QA anchors (no visuals) */
+[data-b-spec="survey-title"] {}
+[data-b-spec="survey-question-stem"] {}
