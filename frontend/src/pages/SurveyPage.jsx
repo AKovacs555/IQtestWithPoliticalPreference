@@ -11,9 +11,26 @@ export default function SurveyPage() {
   const [answers, setAnswers] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [surveyTitle, setSurveyTitle] = useState('');
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const { userId } = useSession();
+
+  // ---------- helpers: robust field extraction ----------
+  const pick = (obj, keys) => {
+    if (!obj) return undefined;
+    for (const k of keys) if (obj[k]) return obj[k];
+    return undefined;
+  };
+  const prefer = (...vals) => vals.find(v => typeof v === 'string' && v.trim().length) || '';
+  const useQS = () => {
+    try {
+      return new URLSearchParams(window.location.search || '');
+    } catch {
+      return new URLSearchParams('');
+    }
+  };
+  const qs = useQS();
 
   useEffect(() => {
     // 前提条件チェック
@@ -35,6 +52,14 @@ export default function SurveyPage() {
     getSurvey(i18n.language, uid, nat)
       .then(d => {
         const list = d.items || [];
+        // resolve survey title from data or QS
+        setSurveyTitle(
+          prefer(
+            pick(d, ['title', 'name', 'label', 'heading']),
+            qs.get('title'),
+            ''
+          )
+        );
         if (!list.length) {
           localStorage.setItem('survey_completed', 'true');
           navigate('/quiz');
@@ -99,7 +124,7 @@ export default function SurveyPage() {
     <AppShell>
       <div className="space-y-4 max-w-xl mx-auto">
         <LanguageSelector />
-        <h2 className="text-2xl font-bold text-center">{t('survey.title')}</h2>
+        <h2 className="text-2xl font-bold text-center" data-b-spec="survey-title">{surveyTitle || t('survey.title')}</h2>
         {loading && <p>{t('survey.loading')}</p>}
         {error && <p className="text-red-600">{error}</p>}
         {!loading && items.map(item => (
