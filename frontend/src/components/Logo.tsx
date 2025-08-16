@@ -19,7 +19,7 @@ export default function Logo({ variant = 'header' }: { variant?: Variant }) {
     </div>
   );
 
-  const Label = <span className={`${textSize} text-cyan-400`}>IQ Clash</span>;
+  const Label = <span className={`${textSize} text-cyan-400`}>IQ 2.0</span>;
 
   return (
     <Link to="/" aria-label="Go to Home" className={`flex items-center ${dir} gap-2 select-none`} data-b-spec="logo">

@@ -12,7 +12,7 @@ export default function Login() {
         <div className="w-full max-w-xl gold-ring glass-surface p-6">
           <h2 className="text-lg font-bold mb-2">ログイン必須</h2>
           <p className="text-sm text-[var(--text-muted)] mb-5">
-            IQ Clashをご利用いただくにはGoogleアカウントでのログインが必要です
+            IQ 2.0をご利用いただくにはGoogleアカウントでのログインが必要です
           </p>
           <button
             type="button"
