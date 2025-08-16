@@ -147,8 +147,6 @@ def test_admin_crud_and_user_flow(fake_supabase):
         json={"option_ids": [opt_id], "other_texts": {}},
         headers={"Authorization": f"Bearer {token}"},
     )
-    # survey_responses table should remain empty
-    assert fake_supabase.tables.get("survey_responses", []) == []
     answers = fake_supabase.tables.get("survey_answers", [])
     assert len(answers) == 1
     assert answers[0]["survey_item_id"] == opt_id

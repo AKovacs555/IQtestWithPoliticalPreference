@@ -103,6 +103,10 @@ export default function Home() {
         navigate(`/quiz/play?attempt_id=${payload.attempt_id}`);
       } else {
         const err = await res.json().catch(() => ({}));
+        if (err?.detail?.code === 'DAILY3_REQUIRED') {
+          await handleAnswerNext();
+          return;
+        }
         if (
           err?.detail?.error === 'survey_required' ||
           err?.error === 'survey_required'

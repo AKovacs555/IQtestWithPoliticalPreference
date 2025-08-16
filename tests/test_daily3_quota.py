@@ -86,6 +86,9 @@ def _setup(monkeypatch):
             return DummyTable()
 
     monkeypatch.setattr("backend.routes.quiz.get_supabase_client", lambda: DummySupabase())
+    monkeypatch.setattr("backend.routes.daily.get_supabase_client", lambda: DummySupabase())
+    monkeypatch.setattr("backend.routes.daily.increment_free_attempts", lambda *a, **k: None)
+    monkeypatch.setattr("backend.routes.daily.update_user", lambda *a, **k: None)
     monkeypatch.setattr("backend.db.consume_free_attempt", lambda uid: 0, raising=False)
     monkeypatch.setattr("backend.routes.quiz.consume_free_attempt", lambda uid: 0, raising=False)
 
@@ -153,3 +156,28 @@ def test_quota_resets_next_day(monkeypatch, caplog):
         datetime.combine(_State.now.date(), datetime.min.time()) + timedelta(days=1)
     ).isoformat() + "Z"
     assert data["reset_at"] == expected_reset
+
+
+def test_grants_attempt_after_three(monkeypatch):
+    _State.now = datetime(2023, 1, 1, 12, 0, 0)
+    _State.answers.clear()
+    client = _setup(monkeypatch)
+
+    calls = []
+    monkeypatch.setattr(
+        "backend.routes.daily.increment_free_attempts",
+        lambda uid, delta=1, reason="": calls.append((uid, delta, reason)),
+    )
+    updated: dict = {}
+
+    def fake_update_user(_supa, uid, data):
+        updated[uid] = data
+
+    monkeypatch.setattr("backend.routes.daily.update_user", fake_update_user)
+    monkeypatch.setattr("backend.routes.daily.get_supabase_client", lambda: object())
+
+    for i in range(3):
+        client.post("/daily/answer", json={"question_id": str(i), "answer": {}})
+
+    assert calls == [("u1", 1, "daily3")]
+    assert updated.get("u1") == {"survey_completed": True}

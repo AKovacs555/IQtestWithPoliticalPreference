@@ -5,7 +5,13 @@ from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
 from backend.deps.auth import get_current_user
-from backend.db import get_daily_answer_count, insert_daily_answer
+from backend.db import (
+    get_daily_answer_count,
+    insert_daily_answer,
+    increment_free_attempts,
+    update_user,
+)
+from backend.deps.supabase_client import get_supabase_client
 
 router = APIRouter(prefix="/daily", tags=["daily"])
 logger = logging.getLogger(__name__)
@@ -35,4 +41,9 @@ async def quota(user: dict = Depends(get_current_user)):
 @router.post("/answer")
 async def answer(payload: DailyAnswer, user: dict = Depends(get_current_user)):
     insert_daily_answer(user["hashed_id"], payload.question_id, payload.answer)
+    answered_count = get_daily_answer_count(user["hashed_id"], datetime.utcnow().date())
+    if answered_count >= 3:
+        increment_free_attempts(user["hashed_id"], 1, reason="daily3")
+        supabase = get_supabase_client()
+        update_user(supabase, user["hashed_id"], {"survey_completed": True})
     return _quota(user["hashed_id"], datetime.utcnow())

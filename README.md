@@ -361,7 +361,7 @@ New tables are created via Supabase migrations:
 
 - `surveys` – survey metadata such as title and `lang`.
 - `survey_options` – answer choices linked to a survey.
-- `survey_responses` – user answers with an `answered_on` date to enforce one response per day.
+- `survey_answers` – user answers with an `answered_on` date to enforce one response per day.
 
 ### API
 
