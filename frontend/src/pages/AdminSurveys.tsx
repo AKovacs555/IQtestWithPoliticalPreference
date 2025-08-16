@@ -61,9 +61,6 @@ export default function AdminSurveys() {
               <Stack direction="row" spacing={1} mt={0.5}>
                 <Chip label={s.lang} size="small" />
                 <Chip label={s.type} size="small" />
-                {(s.target_countries || []).map((c: string) => (
-                  <Chip key={c} label={c} size="small" />
-                ))}
                 {(s.target_genders || []).map((g: string) => (
                   <Chip key={g} label={g} size="small" />
                 ))}
