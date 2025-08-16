@@ -54,8 +54,8 @@ def _setup(monkeypatch):
     monkeypatch.setattr("backend.routes.quiz.datetime", FakeDateTime)
 
     # patch DB helpers
-    def fake_count(user_id, day):
-        return sum(1 for r in _State.answers if r["user_id"] == user_id and r["day"] == day)
+    def fake_count(user_id, day=None):
+        return sum(1 for r in _State.answers if r["user_id"] == user_id and (day is None or r["day"] == day))
 
     def fake_insert(user_id, qid, answer):
         _State.answers.append({"user_id": user_id, "qid": qid, "day": _State.now.date()})
@@ -110,13 +110,9 @@ def test_quiz_start_blocked_until_three(monkeypatch, caplog):
     for i in range(2):
         client.post("/daily/answer", json={"question_id": str(i), "answer": {}})
 
-    with caplog.at_level("ERROR"):
-        res = client.get("/quiz/start?set_id=s1")
-    assert res.status_code == 403
-    data = res.json()["detail"]
-    assert data["code"] == "DAILY3_REQUIRED"
-    assert data["remaining"] == 1
-    assert "daily3_block" in caplog.text
+    res = client.get("/quiz/start?set_id=s1", follow_redirects=False)
+    assert res.status_code == 303
+    assert res.headers["location"].startswith("/survey/start")
 
 
 def test_quiz_start_allows_after_three(monkeypatch, caplog):

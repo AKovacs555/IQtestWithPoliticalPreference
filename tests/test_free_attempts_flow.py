@@ -127,7 +127,7 @@ def _setup_app(monkeypatch, fake_supabase, free_attempts: int):
         ],
     )
     monkeypatch.setattr(quiz, "get_supabase_client", lambda: fake_supabase)
-    monkeypatch.setattr(quiz, "get_daily_answer_count", lambda user_id, day: 3)
+    monkeypatch.setattr(quiz, "get_daily_answer_count", lambda user_id, day=None: 3)
     return app, uid
 
 
