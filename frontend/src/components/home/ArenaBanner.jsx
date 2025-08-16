@@ -9,13 +9,13 @@ export default function ArenaBanner({ to = '/arena' }) {
       data-b-spec="banner-arena"
       className="banner-wrap gold-ring gold-sheen card-glass text-[var(--text)]"
       role="region"
-      aria-label="IQ Clash"
+      aria-label="IQ 2.0"
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="inline-flex h-6 w-6 rounded-full bg-indigo-500/20 items-center justify-center">🏟️</span>
           <h2 className="text-xl font-semibold">
-            {t('home.arena_title', { defaultValue: 'IQ Clash' })}
+            {t('home.arena_title', { defaultValue: 'IQ 2.0' })}
           </h2>
         </div>
         <Link to={to} className="btn-primary">
