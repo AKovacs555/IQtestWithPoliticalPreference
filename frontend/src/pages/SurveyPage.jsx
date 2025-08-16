@@ -103,10 +103,28 @@ export default function SurveyPage() {
         {loading && <p>{t('survey.loading')}</p>}
         {error && <p className="text-red-600">{error}</p>}
         {!loading && items.map(item => (
-          <div key={item.id} className="p-4 bg-surface rounded-md shadow space-y-2">
-            <p>{item.statement}</p>
+          <div key={item.id} className="space-y-2">
+            {/* Question title/stem */}
+            {(() => {
+              const q: any = item;
+              const stem =
+                q.statement ||
+                q.title ||
+                q.text ||
+                q.prompt ||
+                q.question ||
+                q.content ||
+                q.label ||
+                (typeof q === 'string' ? q : '') ||
+                '';
+              return stem ? (
+                <div className="gold-ring glass-surface p-4 md:p-5 mt-3 mb-3" data-b-spec="survey-question-stem">
+                  <h3 className="text-base sm:text-lg font-semibold">{stem}</h3>
+                </div>
+              ) : null;
+            })()}
             <div className="flex flex-col space-y-1">
-              {item.options.map((opt, idx) => {
+              {item.options?.map((opt, idx) => {
                 const selected = answers[item.id] || [];
                 const exclusive = item.exclusive_options || [];
                 const exclusiveSelected = selected.some(i => exclusive.includes(i));

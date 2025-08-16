@@ -33,10 +33,10 @@ body{
   background:linear-gradient(135deg,var(--bg-950),var(--bg-900),rgba(8,145,178,.20));
 }
 
-/* Glow effect for logo backgrounds */
-.glow-effect {
+/* —— Glow for the brain ring (cyan) —— */
+.glow-effect{
   box-shadow:
-    0 0 20px rgba(34, 211, 238, 0.5),
-    0 0 40px rgba(34, 211, 238, 0.3),
-    0 0 60px rgba(34, 211, 238, 0.2);
+    0 0 18px rgba(34,211,238,.40),
+    0 0 36px rgba(34,211,238,.30),
+    0 0 60px rgba(34,211,238,.20);
 }

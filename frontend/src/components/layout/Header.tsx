@@ -1,20 +1,17 @@
 import React from 'react';
 import { Box } from '@mui/material';
-import { useLocation } from 'react-router-dom';
 import Logo from '../Logo';
 
 export default function Header() {
-  const location = useLocation();
-  const path = location.pathname;
-  const isHomeOrLogin = path === '/' || path === '/login';
-
   return (
     <Box
-      data-b-spec="header-no-tabs"
-      className={`sticky top-0 z-50 glass-surface flex items-center ${isHomeOrLogin ? 'justify-center' : 'justify-between'} px-4 py-1`}
+      component="header"
+      className="sticky top-0 z-50 backdrop-blur-md bg-[var(--bg-glass)] border-b border-[var(--border-soft)]"
+      sx={{ px: { xs: 8, md: 16 }, py: 2 }}
     >
-      <Logo />
-      {/* Other header elements can be added here */}
+      <div className="flex justify-center">
+        <Logo />
+      </div>
     </Box>
   );
 }
