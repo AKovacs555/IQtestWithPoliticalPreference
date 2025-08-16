@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import List, Optional
 from datetime import datetime, timedelta
 from fastapi import APIRouter, HTTPException, Request, Depends
+from starlette.responses import RedirectResponse
 import random
 from pydantic import BaseModel
 from backend.deps.supabase_client import get_supabase_client
@@ -103,24 +104,13 @@ async def start_quiz(
             get_balanced_random_questions_by_set(1, set_id)
         except ValueError as e:
             raise HTTPException(status_code=404, detail=str(e))
-    today = datetime.utcnow()
+    daily_count = get_daily_answer_count(user["hashed_id"])
+    free_attempts = int(user.get("free_attempts", 0))
+    if free_attempts <= 0 and daily_count < 3:
+        return RedirectResponse(url=f"/survey/start?lang={lang}", status_code=303)
     pending_surveys = get_random_pending_surveys(
         user["hashed_id"], user.get("nationality"), user.get("gender"), lang=lang, limit=3
     )
-    daily_count = get_daily_answer_count(user["hashed_id"], today.date())
-    if daily_count < 3 and (pending_surveys is None or pending_surveys):
-        reset_at = (
-            datetime.combine(today.date(), datetime.min.time()) + timedelta(days=1)
-        ).isoformat() + "Z"
-        logger.error("daily3_block")
-        raise HTTPException(
-            status_code=403,
-            detail={
-                "code": "DAILY3_REQUIRED",
-                "remaining": 3 - daily_count,
-                "reset_at": reset_at,
-            },
-        )
     # Determine subscription status
     pro_active = False
     pro_until = user.get("pro_active_until")

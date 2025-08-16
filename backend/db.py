@@ -4,6 +4,7 @@ import uuid
 from datetime import datetime, timedelta, date
 from typing import Any, Dict, Optional, List, Iterable
 import random
+from zoneinfo import ZoneInfo
 from supabase import create_client, Client
 from postgrest.exceptions import APIError
 
@@ -611,37 +612,36 @@ def get_survey_answers(group_id: str) -> List[Dict[str, Any]]:
     return answers
 
 
-def get_daily_answer_count(user_id: str, day: date) -> int:
-    """Return how many poll answers a user submitted on ``day`` (UTC)."""
+def get_daily_answer_count(user_hashed_id: str, _day: date | None = None) -> int:
+    """Return the number of survey answers submitted on the given Tokyo day."""
 
     supabase = get_supabase()
-    # Test environments may not define the ``survey_answers`` table; in that
-    # case assume the quota has been satisfied to avoid spurious failures.
-    if hasattr(supabase, "tables") and "survey_answers" not in getattr(supabase, "tables"):
-        return 3
-    start = datetime.combine(day, datetime.min.time())
-    end = start + timedelta(days=1)
+    # Resolve hashed_id to UUID. Missing users simply have zero answers.
+    ures = (
+        supabase.table("app_users")
+        .select("id")
+        .eq("hashed_id", user_hashed_id)
+        .single()
+        .execute()
+    )
+    if not ures.data or "id" not in ures.data:
+        return 0
+    user_id = ures.data["id"]
+
+    tokyo_today = (
+        datetime.now(ZoneInfo("Asia/Tokyo")).date() if _day is None else _day
+    )
+    day_str = tokyo_today.isoformat()
+
     resp = (
         supabase.table("survey_answers")
-        .select("created_at")
+        .select("id")
         .eq("user_id", user_id)
+        .eq("answered_on", day_str)
         .execute()
     )
     rows = resp.data or []
-    total = 0
-    for r in rows:
-        ts = r.get("created_at") or r.get("answered_on")
-        if not ts:
-            continue
-        try:
-            dt = datetime.fromisoformat(ts.replace("Z", "+00:00"))
-        except Exception:
-            continue
-        if start <= dt < end:
-            total += 1
-    if getattr(resp, "count", None) is not None:
-        return resp.count
-    return total
+    return len(rows)
 
 
 def insert_daily_answer(
