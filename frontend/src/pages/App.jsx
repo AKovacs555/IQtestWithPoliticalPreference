@@ -9,6 +9,7 @@ import AuthCallback from './AuthCallback';
 import Pricing from './Pricing';
 import Upgrade from './Upgrade';
 import Leaderboard from './Leaderboard';
+import Arena from './Arena';
 import SelectSet from './SelectSet';
 import SelectNationality from './SelectNationality';
 import SurveyPage from './SurveyPage';
@@ -322,6 +323,7 @@ export default function App() {
         <Route path="/upgrade" element={<Upgrade />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/result" element={<Result />} />
+        <Route path="/arena" element={<Arena />} />
         <Route path="/leaderboard" element={<Leaderboard />} />
         <Route path="/dashboard" element={<RequireAuth><Dashboard /></RequireAuth>} />
         <Route path="/settings/:userId" element={<RequireAuth><Settings /></RequireAuth>} />

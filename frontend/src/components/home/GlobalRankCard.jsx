@@ -1,13 +1,16 @@
 import React from 'react';
 import { Star } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 
 export default function GlobalRankCard({ rank }) {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   return (
     <div
       data-b-spec="card-rank"
-      className="gold-card p-5 min-h-20 text-center space-y-2"
+      className="gold-card p-5 min-h-20 text-center space-y-2 cursor-pointer"
+      onClick={() => navigate('/leaderboard')}
     >
       <div className="flex items-center justify-center gap-2">
         <Star className="w-5 h-5 text-amber-300" />
