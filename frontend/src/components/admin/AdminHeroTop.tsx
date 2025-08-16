@@ -15,7 +15,7 @@ export default function AdminHeroTop() {
         Admin
       </h1>
       <p className="text-[12.5px] sm:text-sm text-[var(--text-muted)]">管理ツール</p>
-      <div className="pills-row no-scrollbar">
+      <div className="pills-row no-scrollbar flex-wrap justify-center sm:justify-start">
         <span className="pill">👑 <span>Bronze レベル</span></span>
         <PointsBadge userId={userId} className="pill" />
         <LanguageSelector className="pill" />

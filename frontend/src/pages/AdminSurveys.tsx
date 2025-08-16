@@ -17,7 +17,8 @@ export default function AdminSurveys() {
   const load = async () => {
     try {
       const data = await getSurveys();
-      setSurveys((data.surveys || []).filter((s: any) => s.lang === 'ja'));
+      const filtered = (data.surveys || []).filter((s: any) => s.lang === 'ja');
+      setSurveys(filtered);
     } catch {
       setSurveys([]);
     }
@@ -72,13 +73,22 @@ export default function AdminSurveys() {
                   <Switch
                     checked={s.status === 'approved'}
                     onChange={async (e) => {
-                      const newStatus = e.target.checked ? 'approved' : 'draft';
-                      await updateSurveyStatus(s.id, { status: newStatus, is_active: s.is_active });
+                      const newStatus = e.target.checked ? 'approved' : 'archived';
+                      await updateSurveyStatus(s.id, {
+                        status: newStatus,
+                        is_active: s.is_active,
+                      });
                       load();
                     }}
                   />
                 }
-                label={s.status === 'approved' ? 'Approved' : 'Rejected'}
+                label={
+                  s.status === 'approved'
+                    ? 'Approved'
+                    : s.status === 'archived'
+                      ? 'Archived'
+                      : 'Draft'
+                }
                 sx={{ mr: 1 }}
               />
               <IconButton onClick={() => setEditing(s)} sx={{ width: 44, height: 44 }}>
