@@ -17,7 +17,7 @@ export default function HeroTop() {
       <p className="text-[12.5px] sm:text-sm text-[var(--text-muted)]">
         あなたのIQポテンシャルを解き放とう！
       </p>
-      <div className="pills-row no-scrollbar justify-center w-full">
+      <div className="pills-row no-scrollbar flex-wrap justify-center w-full">
         <span className="pill">👑 <span>Bronze レベル</span></span>
         <PointsBadge userId={userId} className="pill" />
         <LanguageSelector className="pill" />

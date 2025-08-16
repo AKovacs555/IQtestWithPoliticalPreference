@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AppShell from '../components/AppShell';
 import { useSession } from '../hooks/useSession';
@@ -10,16 +10,64 @@ import Daily3Banner from '../components/home/Daily3Banner';
 import TestStartBanner from '../components/home/TestStartBanner';
 import UpgradeTeaser from '../components/home/UpgradeTeaser';
 import HeroTop from '../components/layout/HeroTop';
+import ArenaBanner from '../components/home/ArenaBanner';
+import ShareButton from '../components/share/ShareButton';
 
 export default function Home() {
-  const { i18n } = useTranslation();
-  const { user, loading, session } = useSession();
+  const { t, i18n } = useTranslation();
+  const { user, loading, session, userId } = useSession();
   const navigate = useNavigate();
   const apiBase = import.meta.env.VITE_API_BASE || '';
 
   const authHeaders = session?.access_token
     ? { Authorization: `Bearer ${session.access_token}` }
     : {};
+
+  const [freeAttempts, setFreeAttempts] = useState(0);
+  const [inviteCode, setInviteCode] = useState('');
+  const [currentIQ, setCurrentIQ] = useState(0);
+  const [globalRank, setGlobalRank] = useState(null);
+
+  const fetchCredits = async () => {
+    if (!session?.access_token) return;
+    try {
+      const headers = { Authorization: `Bearer ${session.access_token}` };
+      const [credRes, codeRes, histRes] = await Promise.all([
+        fetch(`${apiBase}/user/credits`, { headers, credentials: 'include' }),
+        fetch(`${apiBase}/referral/code`, { headers, credentials: 'include' }),
+        userId
+          ? fetch(`${apiBase}/stats/iq_histogram?user_id=${userId}`)
+          : Promise.resolve(null),
+      ]);
+      if (credRes?.ok) {
+        const d = await credRes.json();
+        setFreeAttempts(d.free_attempts ?? 0);
+      }
+      if (codeRes?.ok) {
+        const d = await codeRes.json();
+        setInviteCode(d.invite_code || '');
+      }
+      if (histRes && histRes.ok) {
+        const h = await histRes.json();
+        setCurrentIQ(h.user_score || 0);
+      }
+    } catch {}
+  };
+
+  useEffect(() => {
+    fetchCredits();
+  }, [session, userId]);
+
+  useEffect(() => {
+    if (!userId) return;
+    fetch(`${apiBase}/leaderboard?limit=1000`)
+      .then((r) => r.json())
+      .then((d) => {
+        const idx = d.leaderboard?.findIndex((x) => x.user_id === userId);
+        if (idx != null && idx >= 0) setGlobalRank(idx + 1);
+      })
+      .catch(() => {});
+  }, [userId, apiBase]);
 
   const handleAnswerNext = async () => {
     if (loading) return;
@@ -52,6 +100,7 @@ export default function Home() {
       );
       if (res.ok) {
         const payload = await res.json();
+        await fetchCredits();
         navigate(`/quiz/play?attempt_id=${payload.attempt_id}`);
       } else {
         const err = await res.json().catch(() => ({}));
@@ -74,11 +123,11 @@ export default function Home() {
   };
 
   const streakDays = 7;
-  const currentIQ = 125;
-  const globalRank = 1247;
   const dailyProgressPct = 0;
   const dailyResetText = '';
-  const handleWatchAd = () => {};
+  const handleWatchAd = async () => {
+    await fetchCredits();
+  };
 
   return (
     <AppShell>
@@ -92,11 +141,26 @@ export default function Home() {
           onWatchAd={handleWatchAd}
           resetText={dailyResetText}
         />
-        <TestStartBanner onStart={handleStartQuiz} />
+        <TestStartBanner
+          onStart={handleStartQuiz}
+          statRight={{ value: String(freeAttempts), label: '回利用可能' }}
+        />
+        <ArenaBanner />
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <StreakCard days={streakDays} />
-          <CurrentIQCard score={currentIQ} />
-          <GlobalRankCard rank={globalRank} />
+          <div className="space-y-2">
+            <CurrentIQCard score={currentIQ} />
+            {inviteCode && (
+              <ShareButton
+                label={t('share.button')}
+                url={`${location.origin}?code=${inviteCode}`}
+                title={t('home.share_title', { defaultValue: '結果を共有' })}
+                text={t('home.share_text', { defaultValue: `現在のIQは${currentIQ}です！` })}
+                hashtags={['IQArena', 'IQアリーナ']}
+              />
+            )}
+          </div>
+          <GlobalRankCard rank={globalRank ?? '-'} />
         </div>
         <UpgradeTeaser />
       </div>
