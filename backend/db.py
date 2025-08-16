@@ -523,13 +523,9 @@ def delete_survey(group_id: str) -> None:
     supabase.from_("surveys").delete().eq("group_id", group_id).execute()
 
 
-def insert_survey_responses(rows: List[Dict[str, Any]]) -> None:
-    """Insert survey answers for each selected option.
+def insert_survey_answers(rows: List[Dict[str, Any]]) -> None:
+    """Insert survey answers for each selected option into ``survey_answers``."""
 
-    ``rows`` should contain ``user_id``, ``survey_id``, ``survey_group_id`` and an
-    ``answer`` mapping with ``id`` and ``selections``. Each selection is expanded
-    into a separate row in ``survey_answers``.
-    """
     if not rows:
         return
     supabase = get_supabase()
@@ -547,19 +543,6 @@ def insert_survey_responses(rows: List[Dict[str, Any]]) -> None:
             )
     if answer_rows:
         supabase.from_("survey_answers").insert(answer_rows).execute()
-
-
-def count_daily_survey_responses(user_id: str, answered_on: str) -> int:
-    """Return how many survey items a user has answered on a given day."""
-    supabase = get_supabase()
-    resp = (
-        supabase.table("survey_answers")
-        .select("id")
-        .eq("user_id", user_id)
-        .eq("answered_on", answered_on)
-        .execute()
-    )
-    return len(resp.data or [])
 
 
 def get_daily_survey_response(

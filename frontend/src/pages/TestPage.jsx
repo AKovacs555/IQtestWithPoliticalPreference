@@ -76,6 +76,10 @@ export default function TestPage() {
           navigate('/demographics');
           return;
         }
+        if (err.code === 'DAILY3_REQUIRED') {
+          navigate('/survey');
+          return;
+        }
         if (err.code === 'survey_required') {
           navigate('/survey');
           return;

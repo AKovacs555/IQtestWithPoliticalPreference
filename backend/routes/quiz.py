@@ -26,7 +26,7 @@ from backend.features import generate_share_image  # noqa: E402
 from backend.deps.auth import get_current_user  # noqa: E402
 from backend.db import (  # noqa: E402
     get_answered_survey_group_ids,
-    insert_survey_responses,
+    insert_survey_answers,
     get_daily_answer_count,
     consume_free_attempt,
 )
@@ -88,14 +88,6 @@ async def start_quiz(
             detail={
                 "error": "nationality_required",
                 "message": "Please select your nationality before taking the IQ test.",
-            },
-        )
-    if user and not user.get("survey_completed"):
-        raise HTTPException(
-            status_code=400,
-            detail={
-                "error": "survey_required",
-                "message": "Please complete the survey before taking the IQ test.",
             },
         )
     if user and not (user.get("demographic") or user.get("demographic_completed")):
@@ -350,7 +342,7 @@ async def submit_quiz(
             }
             for s in payload.surveys
         ]
-        insert_survey_responses(rows)
+        insert_survey_answers(rows)
 
     try:
         from backend.referral import credit_referral_if_applicable

@@ -440,7 +440,7 @@
       "applicability": "safe",
       "edits": [
         {
-          "content": "from db import (\n    get_user,\n    create_user as db_create_user,\n    update_user as db_update_user,\n    get_all_users,\n    get_surveys,\n    insert_survey_responses,\n    get_survey_answers,\n    get_answered_survey_ids,\n)",
+          "content": "from db import (\n    get_user,\n    create_user as db_create_user,\n    update_user as db_update_user,\n    get_all_users,\n    get_surveys,\n    insert_survey_answers,\n    get_survey_answers,\n    get_answered_survey_ids,\n)",
           "end_location": {
             "column": 2,
             "row": 133
