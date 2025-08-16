@@ -5,13 +5,30 @@ import { shareResult, ShareParams } from '../../utils/share';
 
 interface Props extends ShareParams {
   label?: string;
+  size?: 'small' | 'medium' | 'large';
+  className?: string;
 }
 
-export default function ShareButton({ title, text, url, hashtags, label }: Props) {
+export default function ShareButton({
+  title,
+  text,
+  url,
+  hashtags,
+  label,
+  size = 'medium',
+  className,
+}: Props) {
   const handleClick = () => {
     void shareResult({ title, text, url, hashtags });
   };
   return (
-    <Button onClick={handleClick} startIcon={<ShareIcon />}>{label || 'Share'}</Button>
+    <Button
+      onClick={handleClick}
+      startIcon={<ShareIcon />}
+      size={size}
+      className={className}
+    >
+      {label || 'Share'}
+    </Button>
   );
 }
