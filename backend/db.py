@@ -295,6 +295,9 @@ def get_available_attempts(user_id: str) -> int:
             except ValueError:
                 pass
         total += int(r.get("delta") or 0)
+    if not rows or total == 0:
+        user_record = get_user(user_id) or {}
+        return int(user_record.get("free_attempts", 0))
     return total
 
 
