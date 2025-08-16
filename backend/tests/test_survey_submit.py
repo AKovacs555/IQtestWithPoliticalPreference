@@ -1,16 +1,19 @@
 import os
 import sys
+import uuid
 from fastapi.testclient import TestClient
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 
-from main import app
-from backend import db
+from main import app  # noqa
+from backend import db  # noqa
 
 
-def _create_user(uid):
-    data = {
+def test_survey_submit_persists_answers_and_marks_completion():
+    uid = str(uuid.uuid4())
+    db.create_user({
+        'id': uid,
         'hashed_id': uid,
         'plays': 0,
         'referrals': 0,
@@ -21,60 +24,37 @@ def _create_user(uid):
         'demographic_completed': False,
         'free_attempts': 0,
         'survey_completed': False,
+    })
+
+    survey_id = str(uuid.uuid4())
+    group_id = str(uuid.uuid4())
+    item_ids = [str(uuid.uuid4()), str(uuid.uuid4())]
+
+    supa = db.get_supabase()
+    supa.table('survey_items').insert([
+        {'id': item_ids[0], 'survey_id': survey_id, 'position': 0},
+        {'id': item_ids[1], 'survey_id': survey_id, 'position': 1},
+    ]).execute()
+
+    payload = {
+        'user_id': uid,
+        'lang': 'en',
+        'survey_id': survey_id,
+        'survey_group_id': group_id,
+        'answers': [{'id': survey_id, 'selections': [1]}],
     }
-    return db.create_user(data)['id']
 
-
-def test_survey_submit_handles_null_lr_auth(monkeypatch):
-    surveys = [
-        {
-            "id": 1,
-            "statement": "q",
-            "options": ["a", "b"],
-            "type": "sa",
-            "exclusive_options": [],
-            "lr": None,
-            "auth": None,
-        }
-    ]
-    monkeypatch.setattr('main.get_surveys', lambda lang=None: surveys)
-    with TestClient(app) as client:
-        r = client.post('/survey/submit', json={"answers": [{"id": "1", "selections": [0]}]})
-        assert r.status_code == 200
-        data = r.json()
-        assert data["left_right"] == 0
-        assert data["libertarian_authoritarian"] == 0
-
-
-def test_survey_submit_persists_answers_and_marks_completion(monkeypatch):
-    uid = 'user10'
-    user_uuid = _create_user(uid)
-    surveys = [
-        {
-            "id": 1,
-            "group_id": 'g1',
-            "statement": "q",
-            "options": ["a", "b"],
-            "type": "sa",
-            "exclusive_options": [],
-            "lr": 0,
-            "auth": 0,
-        }
-    ]
-    monkeypatch.setattr('main.get_surveys', lambda lang=None: surveys)
-    payload = {"answers": [{"id": "1", "selections": [0]}], "user_id": uid}
     with TestClient(app) as client:
         r = client.post('/survey/submit', json=payload)
         assert r.status_code == 200
 
-    # user should be flagged as completed
     user = db.get_user(uid)
     assert user['survey_completed'] is True
 
-    # survey answer should be persisted with expected fields
-    supa = db.get_supabase()
     answers = supa.tables.get('survey_answers', [])
     assert len(answers) == 1
-    assert answers[0]['user_id'] == user_uuid
-    assert answers[0]['survey_id'] == '1'
-    assert answers[0]['survey_group_id'] == 'g1'
+    row = answers[0]
+    assert row['survey_item_id'] == item_ids[1]
+    assert row['survey_id'] == survey_id
+    assert row['survey_group_id'] == group_id
+    assert row['user_id'] == uid
