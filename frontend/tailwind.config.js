@@ -57,10 +57,10 @@ module.exports = {
         },
         /* gold ring + soft glow used on all cards/banners */
         '.gold-ring': {
-          border: '1px solid rgba(255,224,130,.35)',
+          border: '1px solid var(--gold-border)',
           borderRadius: '16px',
           boxShadow:
-            '0 0 0 1px rgba(255,224,130,.18) inset, 0 10px 28px rgba(255,210,63,.22), 0 2px 0 rgba(255,224,130,.10) inset',
+            '0 0 0 1px rgba(255,224,130,.18) inset, 0 10px 28px var(--gold-glow), 0 2px 0 var(--gold-inner) inset',
         },
         '.gold-sheen': { position: 'relative', overflow: 'hidden' },
         '.gold-sheen::before': {
@@ -170,9 +170,9 @@ module.exports = {
           minHeight: '32px',
           padding: '0 12px',
           borderRadius: '9999px',
-          border: '1px solid rgba(148,163,184,.18)',
+          border: '1px solid var(--border-soft)',
           background: 'rgba(11,17,32,.55)',
-          color: '#E2E8F0',
+          color: 'var(--text)',
           whiteSpace: 'nowrap',
         },
         '.pill:hover': {
@@ -192,7 +192,7 @@ module.exports = {
         '.float-slow': { animation: 'float-slow 6s ease-in-out infinite' },
         /* glass surface */
         '.glass-surface': {
-          background: 'rgba(15,23,42,.60)',
+          background: 'var(--bg-glass)',
           backdropFilter: 'blur(8px)',
           borderRadius: '16px',
         },
@@ -246,6 +246,100 @@ module.exports = {
         '.btn-google:hover': {
           transform: 'translateY(-1px)',
           boxShadow: '0 10px 28px rgba(0,0,0,.28)',
+        },
+        /* wave sheen overlay */
+        '.wave-sheen': { position: 'relative', overflow: 'hidden' },
+        '.wave-sheen:after': {
+          content: '""',
+          position: 'absolute',
+          inset: '0',
+          background:
+            'linear-gradient(135deg,rgba(255,224,130,.06) 0%,rgba(255,224,130,.00) 35%,rgba(255,224,130,.06) 70%,rgba(255,224,130,.00) 100%)',
+          pointerEvents: 'none',
+        },
+        /* survey specific */
+        '.choice': {
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px',
+          width: '100%',
+          minHeight: '64px',
+          padding: '14px 16px',
+          borderRadius: '16px',
+          border: '1px solid rgba(148,163,184,.20)',
+          background:
+            'linear-gradient(180deg,rgba(2,6,23,.55) 0%,rgba(2,6,23,.35) 100%)',
+          transition:
+            'transform .12s ease, box-shadow .12s ease, border-color .12s ease',
+        },
+        '.choice:hover': {
+          transform: 'translateY(-1px) scale(1.01)',
+          boxShadow: '0 8px 18px rgba(0,0,0,.25)',
+          borderColor: 'rgba(255,224,130,.35)',
+        },
+        '.choice--active': {
+          borderColor: 'rgba(255,224,130,.55)',
+          boxShadow:
+            '0 10px 22px var(--gold-glow),0 0 0 1px rgba(255,224,130,.35) inset',
+        },
+        '.choice__radio': {
+          width: '20px',
+          height: '20px',
+          borderRadius: '9999px',
+          border: '2px solid rgba(148,163,184,.45)',
+          display: 'inline-block',
+          position: 'relative',
+          flex: '0 0 auto',
+        },
+        '.choice--active .choice__radio': { borderColor: '#F7C948' },
+        '.choice--active .choice__radio:after': {
+          content: '""',
+          position: 'absolute',
+          inset: '4px',
+          borderRadius: '9999px',
+          background: 'linear-gradient(90deg,#FFD700,#FFB800)',
+        },
+        /* CTA buttons for welcome page */
+        '.btn-cta': {
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '10px',
+          height: '56px',
+          minHeight: '56px',
+          padding: '0 18px',
+          borderRadius: '16px',
+          fontWeight: '800',
+          color: '#0B0F1F',
+          background: 'linear-gradient(90deg,var(--teal),var(--emerald))',
+          boxShadow: '0 8px 24px rgba(16,185,129,.35)',
+          transition: 'transform .15s ease, box-shadow .15s ease',
+        },
+        '.btn-cta:hover': {
+          transform: 'translateY(-1px) scale(1.01)',
+          boxShadow: '0 12px 28px rgba(16,185,129,.45)',
+        },
+        '.btn-ghost': {
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '10px',
+          height: '56px',
+          minHeight: '56px',
+          padding: '0 18px',
+          borderRadius: '16px',
+          color: 'var(--text)',
+          border: '1px solid var(--border-soft)',
+          background: 'rgba(11,17,32,.55)',
+        },
+        '.btn-ghost:hover': { background: 'rgba(255,200,0,.10)' },
+        '.center-stack': {
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '18px',
+          textAlign: 'center',
         },
       });
     }),

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabaseClient';
 import { waitForSession } from '../lib/waitForSession';
+import { signInWithGoogle } from '../lib/auth';
 
 interface SessionContextValue {
   session: Session | null;
@@ -12,6 +13,7 @@ interface SessionContextValue {
   loading: boolean;
   refresh: () => Promise<void>;
   logout: () => Promise<void>;
+  signInWithGoogle?: () => Promise<void>;
 }
 
 const SessionContext = createContext<SessionContextValue>({
@@ -22,6 +24,7 @@ const SessionContext = createContext<SessionContextValue>({
   loading: true,
   refresh: async () => {},
   logout: async () => {},
+  signInWithGoogle: async () => {},
 });
 
 export function SessionProvider({ children }: { children: ReactNode }) {
@@ -125,6 +128,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         loading,
         refresh,
         logout,
+        signInWithGoogle,
       }}
     >
       {children}
