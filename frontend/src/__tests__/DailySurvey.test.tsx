@@ -4,6 +4,10 @@ import DailySurvey from '../pages/DailySurvey';
 import { vi, afterAll, test, expect } from 'vitest';
 import '@testing-library/jest-dom/vitest';
 
+vi.mock('../hooks/useSession', () => ({
+  useSession: () => ({ session: { access_token: 'token' } }),
+}));
+
 vi.stubGlobal('fetch', (url: RequestInfo, opts?: RequestInit) => {
   if (typeof url === 'string' && url.includes('/surveys/daily3')) {
     return Promise.resolve({
