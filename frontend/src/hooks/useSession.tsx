@@ -11,6 +11,7 @@ interface SessionContextValue {
   isAdmin: boolean;
   loading: boolean;
   refresh: () => Promise<void>;
+  logout: () => Promise<void>;
 }
 
 const SessionContext = createContext<SessionContextValue>({
@@ -20,6 +21,7 @@ const SessionContext = createContext<SessionContextValue>({
   isAdmin: false,
   loading: true,
   refresh: async () => {},
+  logout: async () => {},
 });
 
 export function SessionProvider({ children }: { children: ReactNode }) {
@@ -82,6 +84,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     await applySession(data.session);
   };
 
+  const logout = async () => {
+    await supabase.auth.signOut();
+  };
+
   useEffect(() => {
     let mounted = true;
     (async () => {
@@ -118,6 +124,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         isAdmin,
         loading,
         refresh,
+        logout,
       }}
     >
       {children}

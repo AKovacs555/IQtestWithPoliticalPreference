@@ -5,9 +5,9 @@ import PointsBadge from '../PointsBadge';
 import { useSession } from '../../hooks/useSession';
 
 export default function HeroTop() {
-  const { userId, isAdmin } = useSession();
+  const { userId, isAdmin, logout } = useSession();
   return (
-    <div className="hero-stack">
+    <div className="hero-stack" data-b-spec="hero-top-with-logout">
       <h1
         className="float-slow gradient-text-gold"
         style={{ fontSize: 'clamp(28px,4vw,36px)', lineHeight: 1.15 }}
@@ -22,9 +22,19 @@ export default function HeroTop() {
         <PointsBadge userId={userId} className="pill" />
         <LanguageSelector className="pill" />
         {userId ? (
-          <Link to="/profile" className="pill">
-            👤 プロフィール
-          </Link>
+          <>
+            <Link to="/profile" className="pill">
+              👤 プロフィール
+            </Link>
+            <button
+              type="button"
+              onClick={logout}
+              className="pill"
+              data-b-spec="pill-logout"
+            >
+              🚪 ログアウト
+            </button>
+          </>
         ) : (
           <Link to="/login" className="pill">
             🔑 ログイン

@@ -1,5 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useSession } from '../hooks/useSession';
+import AdminHeroTop from '../components/admin/AdminHeroTop';
+import AdminScaffold from '../components/admin/AdminScaffold';
 // Layout is provided by AdminLayout.
 
 export default function AdminSettings() {
@@ -46,20 +48,27 @@ export default function AdminSettings() {
   };
 
     return (
-      <div className="max-w-xl mx-auto space-y-4">
-          <div className="space-y-2">
-            <label className="block">
-              <span>Max free attempts</span>
-              <input
-                type="number"
-                className="input input-bordered w-full"
-                value={maxFreeAttempts}
-                onChange={e => setMaxFreeAttempts(e.target.value)}
-              />
-            </label>
-            <button className="btn" onClick={save}>Save</button>
-            {msg && <div className="text-sm">{msg}</div>}
+      <>
+        <AdminHeroTop />
+        <AdminScaffold>
+          <div className="gold-ring glass-surface p-4" data-b-spec="admin-card-theme">
+            <div className="max-w-xl mx-auto space-y-4">
+              <div className="space-y-2">
+                <label className="block">
+                  <span>Max free attempts</span>
+                  <input
+                    type="number"
+                    className="input input-bordered w-full"
+                    value={maxFreeAttempts}
+                    onChange={e => setMaxFreeAttempts(e.target.value)}
+                  />
+                </label>
+                <button className="btn btn-sm min-h-[44px] px-4" onClick={save}>Save</button>
+                {msg && <div className="text-sm">{msg}</div>}
+              </div>
+            </div>
           </div>
-        </div>
+        </AdminScaffold>
+      </>
     );
   }

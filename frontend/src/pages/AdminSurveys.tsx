@@ -1,18 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import {
-  Box,
-  Button,
-  Chip,
-  IconButton,
-  Stack,
-  Typography,
-} from '@mui/material';
+import { Box, Chip, IconButton, Stack, Typography } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 
 import SurveyEditorDialog from '../components/admin/SurveyEditorDialog';
 import { deleteSurvey, getSurveys } from '../lib/api';
 import { useTranslation } from 'react-i18next';
+import AdminHeroTop from '../components/admin/AdminHeroTop';
+import AdminScaffold from '../components/admin/AdminScaffold';
 
 export default function AdminSurveys() {
   const [surveys, setSurveys] = useState<any[]>([]);
@@ -40,15 +35,20 @@ export default function AdminSurveys() {
   };
 
   return (
-    <Box className="space-y-4 max-w-2xl mx-auto">
-      <Typography variant="h5">Surveys</Typography>
-      <Button
-        variant="contained"
-        onClick={() => setEditing({ lang: i18n.language || 'en' })}
-      >
-        New Survey
-      </Button>
-      <Stack spacing={2} mt={2}>
+    <>
+      <AdminHeroTop />
+      <AdminScaffold>
+        <div className="gold-ring glass-surface p-4" data-b-spec="admin-card-theme">
+          <Box className="space-y-4 max-w-2xl mx-auto">
+            <Typography variant="h5">Surveys</Typography>
+            <button
+              className="btn-solid"
+              onClick={() => setEditing({ lang: i18n.language || 'en' })}
+              data-b-spec="admin-button-size"
+            >
+              New Survey
+            </button>
+            <Stack spacing={2} mt={2}>
         {surveys.map((s) => (
           <Box
             key={s.id}
@@ -70,26 +70,29 @@ export default function AdminSurveys() {
               </Stack>
             </div>
             <div>
-              <IconButton onClick={() => setEditing(s)}>
+              <IconButton onClick={() => setEditing(s)} sx={{ width: 44, height: 44 }}>
                 <EditIcon />
               </IconButton>
-              <IconButton onClick={() => handleDelete(s.id)}>
+              <IconButton onClick={() => handleDelete(s.id)} sx={{ width: 44, height: 44 }}>
                 <DeleteIcon />
               </IconButton>
             </div>
           </Box>
         ))}
-      </Stack>
-      <SurveyEditorDialog
-        open={Boolean(editing)}
-        initialValue={editing || undefined}
-        onClose={() => setEditing(null)}
-        onSaved={() => {
-          setEditing(null);
-          load();
-        }}
-      />
-    </Box>
+            </Stack>
+            <SurveyEditorDialog
+              open={Boolean(editing)}
+              initialValue={editing || undefined}
+              onClose={() => setEditing(null)}
+              onSaved={() => {
+                setEditing(null);
+                load();
+              }}
+            />
+          </Box>
+        </div>
+      </AdminScaffold>
+    </>
   );
 }
 
