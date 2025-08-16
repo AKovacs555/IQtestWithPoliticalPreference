@@ -719,7 +719,7 @@ async def survey_submit(payload: SurveySubmitRequest):
 
     Behavior
     --------
-    The endpoint records every response in ``survey_responses`` and updates the
+    The endpoint records every response in ``survey_answers`` and updates the
     user's ``survey_completed`` flag in one atomic operation.  On success the
     computed left/right and libertarian/authoritarian scores are returned.
 

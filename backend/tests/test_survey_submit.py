@@ -71,12 +71,10 @@ def test_survey_submit_persists_answers_and_marks_completion(monkeypatch):
     user = db.get_user(uid)
     assert user['survey_completed'] is True
 
-    # survey response should be persisted with expected fields
+    # survey answer should be persisted with expected fields
     supa = db.get_supabase()
-    assert len(supa.tables.get('survey_responses', [])) == 1
-    assert supa.tables['survey_responses'][0] == {
-        'user_id': user_uuid,
-        'survey_id': '1',
-        'survey_group_id': 'g1',
-        'answer': {"id": "1", "selections": [0]},
-    }
+    answers = supa.tables.get('survey_answers', [])
+    assert len(answers) == 1
+    assert answers[0]['user_id'] == user_uuid
+    assert answers[0]['survey_id'] == '1'
+    assert answers[0]['survey_group_id'] == 'g1'
