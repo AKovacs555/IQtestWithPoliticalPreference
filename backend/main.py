@@ -10,6 +10,7 @@ from typing import List, Optional
 
 import sys
 import logging
+from datetime import datetime, timezone
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -603,67 +604,88 @@ async def adaptive_answer(payload: AdaptiveAnswerRequest):
 async def survey_start(
     lang: str = "en", user_id: str | None = None, nationality: str | None = None
 ):
-    surveys = get_surveys(lang)
-    if not surveys and lang != "en":
-        surveys = get_surveys("en")
+    supabase = get_supabase()
     user = get_user(user_id) if user_id else None
     user_country = nationality or (user.get("nationality") if user else None)
-    if not user_country:
-        raise HTTPException(
-            status_code=400,
-            detail={
-                "error": "nationality_required",
-                "message": "Please select your nationality before taking the survey.",
-            },
+    user_gender = (user.get("gender") if user else None)
+
+    langs = [lang]
+    if lang != "en":
+        langs.append("en")
+
+    try:
+        q = (
+            supabase.table("surveys")
+            .select("*")
+            .eq("is_active", True)
+            .eq("status", "approved")
+            .in_("lang", langs)
         )
+        rows = q.execute().data or []
+    except AttributeError:
+        rows = (
+            supabase.table("surveys").select("*").execute().data or []
+        )
+        rows = [
+            r
+            for r in rows
+            if r.get("is_active")
+            and r.get("status") == "approved"
+            and r.get("lang") in langs
+        ]
+
     answered_groups: set[str] = set()
     if user_id:
         answered_groups = set(get_answered_survey_group_ids(user_id))
-    candidates = [
-        s
-        for s in surveys
-        if s.get("lang") == lang
-        and str(s.get("group_id")) not in answered_groups
-        and (
-            not s.get("target_countries")
-            or user_country in s.get("target_countries")
-        )
-        and (
-            not s.get("target_genders")
-            or (user and user.get("gender") in s.get("target_genders"))
-        )
-        and s.get("status") == "approved"
-    ]
+
+    now = datetime.now(timezone.utc)
+    candidates: list[dict] = []
+    for r in rows:
+        if str(r.get("group_id")) in answered_groups:
+            continue
+        start_date = r.get("start_date")
+        if start_date:
+            dt = datetime.fromisoformat(str(start_date).replace("Z", "+00:00"))
+            if dt > now:
+                continue
+        end_date = r.get("end_date")
+        if end_date:
+            dt = datetime.fromisoformat(str(end_date).replace("Z", "+00:00"))
+            if dt < now:
+                continue
+        countries = r.get("target_countries") or []
+        if countries and (user_country not in countries):
+            continue
+        genders = r.get("target_genders") or []
+        if genders and (user_gender not in genders):
+            continue
+        candidates.append(r)
+
     if not candidates:
-        return {"items": [], "parties": []}
+        return JSONResponse(status_code=204, content={"message": "no surveys"})
+
     survey = candidates[0]
-    choices = survey.get("survey_items", [])
-    options: list[str] = []
-    exclusive: list[int] = []
-    for idx, c in enumerate(choices):
-        txt = (
-            c.get("body")
-            or c.get("label")
-            or c.get("text")
-            or c.get("statement")
-            or ""
-        )
-        options.append(txt)
-        if c.get("is_exclusive"):
-            exclusive.append(idx)
-    item = SurveyItem(
-        id=str(survey["id"]),
-        statement=survey.get("question_text") or survey.get("question") or "",
-        options=options,
-        type=survey.get("type"),
-        exclusive_options=exclusive,
+    items_q = (
+        supabase.table("survey_items")
+        .select("id,body,is_exclusive,position,lang")
+        .eq("survey_id", survey["id"])
+        .eq("lang", survey["lang"])
     )
+    try:
+        items_q = items_q.order("position")
+    except AttributeError:
+        pass
+    items = items_q.execute().data or []
+    items.sort(key=lambda it: it.get("position", 0))
+
+    survey["items"] = items
+
     if user_id:
         try:
-            log_event(user_id, "survey_start", {"lang": lang, "nationality": user_nationality})
+            log_event(user_id, "survey_start", {"lang": lang, "nationality": user_country})
         except Exception:  # pragma: no cover - logging only
             pass
-    return {"items": [item], "parties": []}
+    return {"survey": survey, "items": items}
 
 
 @app.get("/surveys")

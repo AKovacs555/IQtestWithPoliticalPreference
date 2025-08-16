@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Box, Chip, IconButton, Stack, Typography } from '@mui/material';
+import { Box, Chip, IconButton, Stack, Typography, Switch, FormControlLabel } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 
@@ -17,7 +17,7 @@ export default function AdminSurveys() {
   const load = async () => {
     try {
       const data = await getSurveys();
-      setSurveys(data.surveys || []);
+      setSurveys((data.surveys || []).filter((s: any) => s.lang === 'ja'));
     } catch {
       setSurveys([]);
     }
@@ -67,15 +67,19 @@ export default function AdminSurveys() {
               </Stack>
             </div>
             <div>
-              <Chip
-                label={s.status === 'approved' ? 'Approved' : 'Draft'}
-                onClick={async () => {
-                  const newStatus = s.status === 'approved' ? 'draft' : 'approved';
-                  await updateSurveyStatus(s.id, { status: newStatus, is_active: s.is_active });
-                  load();
-                }}
-                color={s.status === 'approved' ? 'success' : 'default'}
-                sx={{ mr: 1, cursor: 'pointer' }}
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={s.status === 'approved'}
+                    onChange={async (e) => {
+                      const newStatus = e.target.checked ? 'approved' : 'draft';
+                      await updateSurveyStatus(s.id, { status: newStatus, is_active: s.is_active });
+                      load();
+                    }}
+                  />
+                }
+                label={s.status === 'approved' ? 'Approved' : 'Rejected'}
+                sx={{ mr: 1 }}
               />
               <IconButton onClick={() => setEditing(s)} sx={{ width: 44, height: 44 }}>
                 <EditIcon />
