@@ -1,21 +1,13 @@
 import React from 'react';
 import { useSession } from '../hooks/useSession';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
+import Logo from '../components/Logo';
 
 export default function Welcome() {
   const { signInWithGoogle } = useSession();
-  const nav = useNavigate();
   return (
     <div className="min-h-[100dvh] center-stack px-4" data-b-spec="welcome-page">
-      {/* big glow icon */}
-      <div
-        className="relative h-24 w-24 rounded-full flex items-center justify-center mb-2"
-        style={{ boxShadow: '0 0 80px rgba(255,210,63,.25) inset, 0 0 60px rgba(255,210,63,.25)' }}
-      >
-        <span className="text-4xl">🧠</span>
-      </div>
-      {/* Title */}
-      <h1 className="gradient-text-gold text-[36px] sm:text-[42px] font-extrabold tracking-tight">IQ Arena</h1>
+      <Logo variant="hero" />
       {/* Subtitle & subcaption */}
       <div className="space-y-1">
         <p className="text-[18px] sm:text-[20px] font-bold">IQで決着をつけよう</p>

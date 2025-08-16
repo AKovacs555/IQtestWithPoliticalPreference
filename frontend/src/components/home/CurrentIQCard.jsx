@@ -28,7 +28,7 @@ export default function CurrentIQCard({ score, inviteCode }) {
             url={`${location.origin}?code=${inviteCode}`}
             title={t('home.share_title', { defaultValue: '結果を共有' })}
             text={t('home.share_text', { defaultValue: `現在のIQは${score}です！` })}
-            hashtags={['IQArena', 'IQアリーナ']}
+            hashtags={['IQClash', 'IQクラッシュ']}
           />
         </div>
       )}

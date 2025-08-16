@@ -8,12 +8,7 @@ export default function HeroTop() {
   const { userId, isAdmin, logout } = useSession();
   return (
     <div className="hero-stack" data-b-spec="hero-top-with-logout">
-      <h1
-        className="float-slow gradient-text-gold"
-        style={{ fontSize: 'clamp(28px,4vw,36px)', lineHeight: 1.15 }}
-      >
-        IQ Arena
-      </h1>
+      {/* Brand label removed; logo now lives in the global Header */}
       <p className="text-[12.5px] sm:text-sm text-[var(--text-muted)]">
         あなたのIQポテンシャルを解き放とう！
       </p>
