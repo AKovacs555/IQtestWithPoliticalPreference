@@ -12,7 +12,7 @@ import Leaderboard from './Leaderboard';
 import Arena from './Arena';
 import SelectSet from './SelectSet';
 import SelectNationality from './SelectNationality';
-import SurveyPage from './SurveyPage';
+import Survey from './Survey.jsx';
 import DailySurvey from './DailySurvey';
 import Dashboard from './Dashboard';
 import QuestionCard from '../components/QuestionCard';
@@ -317,7 +317,7 @@ export default function App() {
         <Route path="/demographics" element={<RequireAuth><DemographicsForm /></RequireAuth>} />
         <Route path="/quiz" element={<RequireAuth><TestPage /></RequireAuth>} />
         <Route path="/test" element={<RequireAuth><TestPage /></RequireAuth>} />
-        <Route path="/survey" element={<RequireAuth><SurveyPage /></RequireAuth>} />
+        <Route path="/survey" element={<RequireAuth><Survey /></RequireAuth>} />
         <Route path="/daily-survey" element={<RequireAuth><DailySurvey /></RequireAuth>} />
         <Route path="/pricing" element={<Pricing />} />
         <Route path="/upgrade" element={<Upgrade />} />
