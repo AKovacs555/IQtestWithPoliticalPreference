@@ -11,7 +11,6 @@ import TestStartBanner from '../components/home/TestStartBanner';
 import UpgradeTeaser from '../components/home/UpgradeTeaser';
 import HeroTop from '../components/layout/HeroTop';
 import ArenaBanner from '../components/home/ArenaBanner';
-import ShareButton from '../components/share/ShareButton';
 
 export default function Home() {
   const { t, i18n } = useTranslation();
@@ -148,18 +147,7 @@ export default function Home() {
         <ArenaBanner />
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <StreakCard days={streakDays} />
-          <div className="space-y-2">
-            <CurrentIQCard score={currentIQ} />
-            {inviteCode && (
-              <ShareButton
-                label={t('share.button')}
-                url={`${location.origin}?code=${inviteCode}`}
-                title={t('home.share_title', { defaultValue: '結果を共有' })}
-                text={t('home.share_text', { defaultValue: `現在のIQは${currentIQ}です！` })}
-                hashtags={['IQArena', 'IQアリーナ']}
-              />
-            )}
-          </div>
+          <CurrentIQCard score={currentIQ} inviteCode={inviteCode} />
           <GlobalRankCard rank={globalRank ?? '-'} />
         </div>
         <UpgradeTeaser />
