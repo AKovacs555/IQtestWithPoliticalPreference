@@ -1,5 +1,5 @@
 import React from 'react';
-import AppShell from '../components/AppShell.jsx';
+import AppShell from '../components/AppShell';
 import { NavLink, Outlet } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
@@ -17,7 +17,7 @@ export default function AdminLayout() {
   ];
 
   return (
-    <AppShell>
+    <AppShell hideNavbar>
       <div className="grid grid-cols-1 md:grid-cols-[220px_1fr] gap-4">
         <nav className="md:sticky md:top-16">
           <ul className="flex md:block overflow-x-auto md:overflow-visible">
