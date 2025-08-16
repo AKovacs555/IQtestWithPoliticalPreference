@@ -101,14 +101,14 @@ def fake_supabase(monkeypatch):
     return supa
 
 
-def _setup_app(monkeypatch, fake_supabase, free_attempts: int):
+def _setup_app(monkeypatch, fake_supabase, free_attempts: int, seed_ledger: bool = True):
     app = FastAPI()
     app.state.sessions = {}
     app.include_router(router)
 
     uid = "u1"
     fake_supabase.table("app_users").insert({"hashed_id": uid, "free_attempts": free_attempts}).execute()
-    if free_attempts:
+    if seed_ledger and free_attempts:
         fake_supabase.table("attempt_ledger").insert({"user_id": uid, "delta": free_attempts, "reason": "seed"}).execute()
 
     app.dependency_overrides[get_current_user] = lambda: {
@@ -140,6 +140,17 @@ def test_consume_ok(monkeypatch, fake_supabase, caplog):
 
     remaining = get_available_attempts(uid)
     assert remaining == 1
+    assert "attempts_consume_ok" in caplog.text
+
+
+def test_fallback_to_profile_when_no_ledger(monkeypatch, fake_supabase, caplog):
+    app, uid = _setup_app(monkeypatch, fake_supabase, 1, seed_ledger=False)
+    from backend.db import get_available_attempts
+
+    assert get_available_attempts(uid) == 1
+    with TestClient(app) as client, caplog.at_level("INFO"):
+        res = client.get("/quiz/start?set_id=s1")
+    assert res.status_code == 200
     assert "attempts_consume_ok" in caplog.text
 
 
