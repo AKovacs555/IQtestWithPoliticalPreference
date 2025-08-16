@@ -111,6 +111,35 @@ def respond(
         for oid in payload.option_ids
     ]
     supabase.table("survey_responses").insert(rows).execute()
+
+    # Also persist into survey_answers for arena stats
+    group_resp = (
+        supabase.table("surveys")
+        .select("group_id")
+        .eq("id", survey_id)
+        .execute()
+    )
+    group_id = None
+    if group_resp.data:
+        group_id = group_resp.data[0].get("group_id")
+    answer_rows = [
+        {
+            "survey_id": survey_id,
+            "survey_group_id": group_id,
+            "survey_item_id": oid,
+            "user_id": user["hashed_id"],
+        }
+        for oid in payload.option_ids
+    ]
+    try:
+        supabase.table("survey_answers").upsert(
+            answer_rows,
+            on_conflict="user_id,survey_item_id",
+            ignore_duplicates=True,
+        ).execute()
+    except TypeError:
+        # Test double lacks upsert kwargs support
+        supabase.table("survey_answers").upsert(answer_rows).execute()
     return Response(status_code=201)
 
 

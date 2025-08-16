@@ -24,6 +24,7 @@ def _seed_survey(
     survey_type="sa",
     status="approved",
     target_genders=None,
+    group_id="g1",
 ):
     survey = {
         "id": "s1",
@@ -35,6 +36,7 @@ def _seed_survey(
         "type": survey_type,
         "status": status,
         "is_active": True,
+        "group_id": group_id,
     }
     supa.tables.setdefault("surveys", []).append(survey)
     items = [
@@ -146,6 +148,9 @@ def test_admin_crud_and_user_flow(fake_supabase):
         headers={"Authorization": f"Bearer {token}"},
     )
     assert len(fake_supabase.tables.get("survey_responses", [])) == 1
+    answers = fake_supabase.tables.get("survey_answers", [])
+    assert len(answers) == 1
+    assert answers[0]["survey_item_id"] == opt_id
 
     r = client.get(
         "/surveys/available?lang=en&country=JP",
@@ -194,6 +199,8 @@ def test_multiple_choice_submission(fake_supabase):
     responses = fake_supabase.tables.get("survey_responses", [])
     assert len(responses) == 2
     assert any(r.get("other_text") == "text" for r in responses)
+    answers = fake_supabase.tables.get("survey_answers", [])
+    assert len(answers) == len(opt_ids)
 
 
 def test_gender_filtering(fake_supabase):
