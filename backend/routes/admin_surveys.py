@@ -78,27 +78,10 @@ def create_survey(payload: dict = Body(...)):
     status = payload.get("status", "draft")
     is_single_choice = survey_type == "sa"
 
-    group_id = str(uuid.uuid4())  # ensure group_id is stored as string
     is_active = payload.get("is_active", True)
-    row = {
-        "title": payload.get("title", ""),
-        "question_text": question_text,
-        "type": survey_type,
-        "is_single_choice": is_single_choice,
-        "status": status,
-        "lang": lang,
-        "target_countries": target_countries,
-        "target_genders": target_genders,
-        "group_id": group_id,
-        "is_active": is_active,
-    }
-    res = supabase_admin.table("surveys").insert(row).execute()
-    if not res.data:
-        raise HTTPException(500, "failed to insert survey")
-    new_id = res.data[0]["id"]
-
     items_in = payload.get("items") or []
     item_rows = []
+    option_texts: list[str] = []
     for idx, it in enumerate(items_in):
         if isinstance(it, str):
             text = it.strip()
@@ -108,9 +91,10 @@ def create_survey(payload: dict = Body(...)):
             exclusive = bool(it.get("is_exclusive") or it.get("isExclusive"))
         if not text:
             continue
+        option_texts.append(text)
         item_rows.append(
             {
-                "survey_id": new_id,
+                "survey_id": None,  # placeholder, will set after survey insert
                 "position": idx + 1,
                 "body": text,
                 "is_exclusive": exclusive,
@@ -118,6 +102,33 @@ def create_survey(payload: dict = Body(...)):
                 "is_active": is_active,
             }
         )
+
+    row = {
+        "title": payload.get("title", ""),
+        "question_text": question_text,
+        "type": survey_type,
+        "options": option_texts,
+        "lang": lang,
+        "target_countries": target_countries,
+        "target_genders": target_genders,
+        "description": payload.get("description"),
+        "is_active": is_active,
+        "status": status,
+        "user_id": payload.get("user_id"),
+        "is_single_choice": is_single_choice,
+    }
+
+    res = supabase_admin.table("surveys").insert(row).execute()
+    if not res.data:
+        raise HTTPException(500, "failed to insert survey")
+    new_row = res.data[0]
+    new_id = new_row["id"]
+    group_id = str(new_row.get("group_id") or uuid.uuid4())
+    if not new_row.get("group_id"):
+        supabase_admin.table("surveys").update({"group_id": group_id}).eq("id", new_id).execute()
+
+    for r in item_rows:
+        r["survey_id"] = new_id
     if item_rows:
         supabase_admin.table("survey_items").insert(item_rows).execute()
 
@@ -149,13 +160,16 @@ def create_survey(payload: dict = Body(...)):
             "title": translated_title,
             "question_text": translated_question,
             "type": survey_type,
-            "is_single_choice": is_single_choice,
-            "status": status,
+            "options": translated_options,
             "lang": tgt,
             "target_countries": target_countries,
             "target_genders": target_genders,
-            "group_id": group_id,
+            "description": payload.get("description"),
             "is_active": is_active,
+            "status": status,
+            "user_id": payload.get("user_id"),
+            "is_single_choice": is_single_choice,
+            "group_id": group_id,
         }
         res_t = supabase_admin.table("surveys").insert(trans_row).execute()
         if not (res_t.data):
@@ -208,25 +222,18 @@ def update_survey(survey_id: str, payload: dict = Body(...)):
     )
     if not gid_resp.data:
         raise HTTPException(404, "survey not found")
-    group_id = str(gid_resp.data[0]["group_id"])
+    raw_gid = gid_resp.data[0].get("group_id")
+    if raw_gid:
+        group_id = str(raw_gid)
+    else:
+        group_id = str(uuid.uuid4())
+        supabase_admin.table("surveys").update({"group_id": group_id}).eq("id", survey_id).execute()
 
     is_active = payload.get("is_active", True)
-    data = {
-        "title": payload.get("title", ""),
-        "question_text": question_text,
-        "lang": lang,
-        "target_countries": target_countries,
-        "target_genders": target_genders,
-        "type": survey_type,
-        "status": status,
-        "is_active": is_active,
-        "is_single_choice": is_single_choice,
-    }
-    supabase_admin.table("surveys").update(data).eq("id", survey_id).execute()
-    supabase_admin.table("survey_items").delete().eq("survey_id", survey_id).execute()
 
     items_in = payload.get("items") or []
     item_rows = []
+    option_texts: list[str] = []
     for idx, it in enumerate(items_in):
         if isinstance(it, str):
             text = it.strip()
@@ -236,6 +243,7 @@ def update_survey(survey_id: str, payload: dict = Body(...)):
             exclusive = bool(it.get("is_exclusive") or it.get("isExclusive"))
         if not text:
             continue
+        option_texts.append(text)
         item_rows.append(
             {
                 "survey_id": survey_id,
@@ -246,6 +254,23 @@ def update_survey(survey_id: str, payload: dict = Body(...)):
                 "is_active": is_active,
             }
         )
+
+    data = {
+        "title": payload.get("title", ""),
+        "question_text": question_text,
+        "lang": lang,
+        "target_countries": target_countries,
+        "target_genders": target_genders,
+        "type": survey_type,
+        "options": option_texts,
+        "description": payload.get("description"),
+        "status": status,
+        "is_active": is_active,
+        "user_id": payload.get("user_id"),
+        "is_single_choice": is_single_choice,
+    }
+    supabase_admin.table("surveys").update(data).eq("id", survey_id).execute()
+    supabase_admin.table("survey_items").delete().eq("survey_id", survey_id).execute()
     if item_rows:
         supabase_admin.table("survey_items").insert(item_rows).execute()
 
@@ -291,14 +316,17 @@ def update_survey(survey_id: str, payload: dict = Body(...)):
         trans_row = {
             "title": translated_title,
             "question_text": translated_question,
+            "type": survey_type,
+            "options": translated_options,
             "lang": tgt,
             "target_countries": target_countries,
             "target_genders": target_genders,
-            "type": survey_type,
-            "status": status,
+            "description": payload.get("description"),
             "is_active": is_active,
-            "group_id": group_id,
+            "status": status,
+            "user_id": payload.get("user_id"),
             "is_single_choice": is_single_choice,
+            "group_id": group_id,
         }
         res_t = supabase_admin.table("surveys").insert(trans_row).execute()
         if not (res_t.data):
