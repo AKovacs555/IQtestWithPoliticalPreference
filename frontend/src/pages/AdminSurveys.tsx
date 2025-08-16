@@ -4,7 +4,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 
 import SurveyEditorDialog from '../components/admin/SurveyEditorDialog';
-import { deleteSurvey, getSurveys } from '../lib/api';
+import { deleteSurvey, getSurveys, updateSurveyStatus } from '../lib/api';
 import { useTranslation } from 'react-i18next';
 import AdminHeroTop from '../components/admin/AdminHeroTop';
 import AdminScaffold from '../components/admin/AdminScaffold';
@@ -70,6 +70,16 @@ export default function AdminSurveys() {
               </Stack>
             </div>
             <div>
+              <Chip
+                label={s.status === 'approved' ? 'Approved' : 'Draft'}
+                onClick={async () => {
+                  const newStatus = s.status === 'approved' ? 'draft' : 'approved';
+                  await updateSurveyStatus(s.id, { status: newStatus, is_active: s.is_active });
+                  load();
+                }}
+                color={s.status === 'approved' ? 'success' : 'default'}
+                sx={{ mr: 1, cursor: 'pointer' }}
+              />
               <IconButton onClick={() => setEditing(s)} sx={{ width: 44, height: 44 }}>
                 <EditIcon />
               </IconButton>

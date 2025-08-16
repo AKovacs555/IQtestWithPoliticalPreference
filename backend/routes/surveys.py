@@ -54,7 +54,7 @@ def available(lang: str, country: str, user: dict = Depends(get_current_user)):
             supabase.table("survey_items")
             .select("*")
             .eq("survey_id", s["id"])
-            .eq("language", s.get("lang"))
+            .eq("lang", s.get("lang"))
             .eq("is_active", True)
             .execute()
             .data

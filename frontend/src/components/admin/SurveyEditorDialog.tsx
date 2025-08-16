@@ -123,7 +123,7 @@ export default function SurveyEditorDialog({
       lang: language,
       target_countries: countryCodes,
       target_genders: targetGenders,
-      items: items.map((it) => ({ body: it.text, is_exclusive: it.is_exclusive })),
+      items: items.map((it) => ({ body: it.text, is_exclusive: it.is_exclusive, lang: language })),
     };
     let id: string | undefined = initialValue?.id;
     try {

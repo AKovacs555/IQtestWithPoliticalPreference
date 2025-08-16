@@ -34,7 +34,7 @@ export default function Home() {
       );
       if (res.ok) {
         const payload = await res.json();
-        navigate(`/survey?sid=${payload.survey_id}`);
+        navigate(`/survey?sid=${payload.survey.id}`);
       }
     } catch {}
   };
@@ -65,7 +65,7 @@ export default function Home() {
           );
           if (s.ok) {
             const p = await s.json();
-            navigate(`/survey?sid=${p.survey_id}`);
+            navigate(`/survey?sid=${p.survey.id}`);
             return;
           }
         }

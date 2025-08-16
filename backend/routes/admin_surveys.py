@@ -79,6 +79,7 @@ def create_survey(payload: dict = Body(...)):
     is_single_choice = survey_type == "sa"
 
     group_id = str(uuid.uuid4())  # ensure group_id is stored as string
+    is_active = payload.get("is_active", True)
     row = {
         "title": payload.get("title", ""),
         "question_text": question_text,
@@ -89,7 +90,7 @@ def create_survey(payload: dict = Body(...)):
         "target_countries": target_countries,
         "target_genders": target_genders,
         "group_id": group_id,
-        "is_active": True,
+        "is_active": is_active,
     }
     res = supabase_admin.table("surveys").insert(row).execute()
     if not res.data:
@@ -113,8 +114,8 @@ def create_survey(payload: dict = Body(...)):
                 "position": idx + 1,
                 "body": text,
                 "is_exclusive": exclusive,
-                "language": lang,
-                "is_active": True,
+                "lang": lang,
+                "is_active": is_active,
             }
         )
     if item_rows:
@@ -154,7 +155,7 @@ def create_survey(payload: dict = Body(...)):
             "target_countries": target_countries,
             "target_genders": target_genders,
             "group_id": group_id,
-            "is_active": True,
+            "is_active": is_active,
         }
         res_t = supabase_admin.table("surveys").insert(trans_row).execute()
         if not (res_t.data):
@@ -168,8 +169,8 @@ def create_survey(payload: dict = Body(...)):
                     "position": base_it["position"],
                     "body": body,
                     "is_exclusive": base_it.get("is_exclusive", False),
-                    "language": tgt,
-                    "is_active": True,
+                    "lang": tgt,
+                    "is_active": is_active,
                 }
             )
         if trans_items:
@@ -209,6 +210,7 @@ def update_survey(survey_id: str, payload: dict = Body(...)):
         raise HTTPException(404, "survey not found")
     group_id = str(gid_resp.data[0]["group_id"])
 
+    is_active = payload.get("is_active", True)
     data = {
         "title": payload.get("title", ""),
         "question_text": question_text,
@@ -217,7 +219,7 @@ def update_survey(survey_id: str, payload: dict = Body(...)):
         "target_genders": target_genders,
         "type": survey_type,
         "status": status,
-        "is_active": payload.get("is_active", True),
+        "is_active": is_active,
         "is_single_choice": is_single_choice,
     }
     supabase_admin.table("surveys").update(data).eq("id", survey_id).execute()
@@ -240,8 +242,8 @@ def update_survey(survey_id: str, payload: dict = Body(...)):
                 "position": idx + 1,
                 "body": text,
                 "is_exclusive": exclusive,
-                "language": lang,
-                "is_active": True,
+                "lang": lang,
+                "is_active": is_active,
             }
         )
     if item_rows:
@@ -294,7 +296,7 @@ def update_survey(survey_id: str, payload: dict = Body(...)):
             "target_genders": target_genders,
             "type": survey_type,
             "status": status,
-            "is_active": True,
+            "is_active": is_active,
             "group_id": group_id,
             "is_single_choice": is_single_choice,
         }
@@ -310,8 +312,8 @@ def update_survey(survey_id: str, payload: dict = Body(...)):
                     "position": base_it["position"],
                     "body": body,
                     "is_exclusive": base_it.get("is_exclusive", False),
-                    "language": tgt,
-                    "is_active": True,
+                    "lang": tgt,
+                    "is_active": is_active,
                 }
             )
         if trans_items:
@@ -322,15 +324,19 @@ def update_survey(survey_id: str, payload: dict = Body(...)):
 
 @router.get("/")
 def list_surveys():
-    res = supabase_admin.table("surveys").select(
-        "id,title,question_text,lang,target_countries,target_genders,type,status"
-    ).execute()
+    res = (
+        supabase_admin.table("surveys")
+        .select("id,title,question_text,lang,target_countries,target_genders,type,status,is_active")
+        .eq("lang", "ja")
+        .execute()
+    )
     surveys = res.data or []
     for s in surveys:
         items = (
             supabase_admin.table("survey_items")
-            .select("id,survey_id,position,body,is_exclusive")
+            .select("id,survey_id,position,body,is_exclusive,lang")
             .eq("survey_id", s["id"])
+            .eq("lang", s.get("lang"))
             .order("position")
             .execute()
             .data
@@ -338,6 +344,55 @@ def list_surveys():
         )
         s["items"] = items
     return {"surveys": surveys}
+
+
+@router.get("/{survey_id}/group")
+def get_group(survey_id: str):
+    base = (
+        supabase_admin.table("surveys").select("group_id").eq("id", survey_id).single().execute()
+    )
+    if not base.data:
+        raise HTTPException(404, "survey not found")
+    group_id = base.data["group_id"]
+    res = (
+        supabase_admin.table("surveys")
+        .select("id,title,question_text,lang,target_countries,target_genders,type,status,is_active")
+        .eq("group_id", group_id)
+        .execute()
+    )
+    surveys = res.data or []
+    for s in surveys:
+        items = (
+            supabase_admin.table("survey_items")
+            .select("id,survey_id,position,body,is_exclusive,lang")
+            .eq("survey_id", s["id"])
+            .order("position")
+            .execute()
+            .data
+            or []
+        )
+        s["items"] = items
+    return {"group_id": group_id, "surveys": surveys}
+
+
+@router.patch("/{survey_id}/status")
+def update_status(survey_id: str, payload: dict = Body(...)):
+    status = payload.get("status")
+    if status not in {"approved", "draft", "archived"}:
+        raise HTTPException(400, "invalid status")
+    is_active = payload.get("is_active")
+    if is_active is None:
+        raise HTTPException(400, "is_active required")
+    base = (
+        supabase_admin.table("surveys").select("group_id").eq("id", survey_id).single().execute()
+    )
+    if not base.data:
+        raise HTTPException(404, "survey not found")
+    group_id = base.data["group_id"]
+    supabase_admin.table("surveys").update({"status": status, "is_active": is_active}).eq(
+        "group_id", group_id
+    ).execute()
+    return {"group_id": group_id}
 
 
 @router.delete("/{survey_id}", status_code=204)

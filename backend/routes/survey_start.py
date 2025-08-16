@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import random
 from typing import Dict, List
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -16,84 +15,87 @@ router = APIRouter(prefix="/survey", tags=["survey"])
 
 @router.get("/start")
 def start(lang: str = "en", user: Dict = Depends(get_current_user)):
-    """Return a single unanswered survey for the user.
-
-    Surveys are filtered by language, target country/gender and previous
-    answers. If no survey in the requested language is available, a fallback
-    English version from the same group is returned.
-    """
+    """Return an unanswered survey for the user with language fallback."""
 
     supabase = db.get_supabase()
 
-    nationality = user.get("nationality")
-    gender = (user.get("demographic") or {}).get("gender") or "other"
-
-    # Fetch answered group ids to avoid duplicates
-    answered = set(db.get_answered_survey_group_ids(user["hashed_id"]))
-
-    # Fetch candidate surveys in requested language or English for fallback
-    resp = (
-        supabase.table("surveys")
-        .select("*")
-        .in_("lang", [lang, "en"])
-        .eq("status", "approved")
-        .eq("is_active", True)
-        .execute()
+    # 1. Fetch user row and previously answered survey group ids
+    user_id = user.get("id")
+    ures = (
+        supabase.table("app_users").select("*").eq("id", user_id).single().execute()
     )
-    surveys = resp.data or []
-
-    # Choose best language per group
-    grouped: Dict[str, dict] = {}
-    for s in surveys:
-        gid = str(s.get("group_id"))
-        current = grouped.get(gid)
-        if current is None or (current.get("lang") != lang and s.get("lang") == lang):
-            grouped[gid] = s
-
-    candidates: List[dict] = []
-    for s in grouped.values():
-        if str(s.get("group_id")) in answered:
-            continue
-        countries = s.get("target_countries") or []
-        if countries and nationality not in countries:
-            continue
-        genders = s.get("target_genders") or []
-        if genders and gender not in genders:
-            continue
-        candidates.append(s)
-
-    if not candidates:
-        raise HTTPException(404, "no_survey_available")
-
-    survey = random.choice(candidates)
-
-    items = (
-        supabase.table("survey_items")
-        .select("*")
-        .eq("survey_id", survey["id"])
-        .eq("language", survey.get("lang"))
-        .eq("is_active", True)
+    user_row = ures.data or {}
+    answered = (
+        supabase.table("survey_responses")
+        .select("survey_group_id")
+        .eq("user_id", user.get("hashed_id"))
         .execute()
         .data
         or []
     )
-    items = sorted(items, key=lambda o: o.get("position", 0))
-    choices = [
-        {
-            "label": i.get("body", ""),
-            "exclusive": i.get("is_exclusive", False),
-            "position": i.get("position"),
-        }
-        for i in items
-    ]
+    answered_group_ids = {r["survey_group_id"] for r in answered if r.get("survey_group_id")}
 
-    return {
-        "survey_id": survey["id"],
-        "group_id": survey.get("group_id"),
-        "title": survey.get("title"),
-        "question": survey.get("question_text"),
-        "type": survey.get("type"),
-        "is_single_choice": survey.get("is_single_choice"),
-        "choices": choices,
-    }
+    # 2. Candidate languages with English fallback
+    langs = [lang, "en"] if lang != "en" else ["en"]
+
+    # 3. Filtering conditions
+    nationality = user_row.get("nationality")
+    gender = (user_row.get("demographic") or {}).get("gender")
+
+    def pick_one(lang_code: str):
+        q = (
+            supabase.table("surveys")
+            .select("*")
+            .eq("status", "approved")
+            .eq("is_active", True)
+            .eq("lang", lang_code)
+            .order("created_at", desc=True)
+            .execute()
+        )
+        rows = q.data or []
+        filtered: List[dict] = []
+        for r in rows:
+            if r.get("group_id") in answered_group_ids:
+                continue
+            countries = r.get("target_countries") or []
+            if countries and nationality not in countries:
+                continue
+            genders = r.get("target_genders") or []
+            if genders and gender not in genders:
+                continue
+            filtered.append(r)
+        return filtered[0] if filtered else None
+
+    survey = None
+    for lc in langs:
+        survey = pick_one(lc)
+        if survey:
+            break
+    if not survey:
+        raise HTTPException(404, detail={"error": "no_survey_available"})
+
+    # 4. Fetch survey items with fallback to English
+    items = (
+        supabase.table("survey_items")
+        .select("id,body,is_exclusive,position,lang")
+        .eq("survey_id", survey["id"])
+        .eq("lang", survey["lang"])
+        .order("position")
+        .execute()
+        .data
+        or []
+    )
+    if not items and survey["lang"] != "en":
+        items = (
+            supabase.table("survey_items")
+            .select("id,body,is_exclusive,position,lang")
+            .eq("survey_id", survey["id"])
+            .eq("lang", "en")
+            .order("position")
+            .execute()
+            .data
+            or []
+        )
+
+    return {"survey": survey, "items": items}
 

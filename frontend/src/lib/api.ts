@@ -20,6 +20,7 @@ export async function fetchProfile() {
 export interface SurveyItemPayload {
   body: string;
   is_exclusive?: boolean;
+  lang: string;
 }
 
 export interface SurveyPayload {
@@ -36,6 +37,15 @@ export async function getSurveys() {
   const res = await fetchWithAuth('/admin/surveys');
   if (!res.ok) throw new Error(String(res.status));
   return res.json() as Promise<{ surveys: any[] }>;
+}
+
+export async function updateSurveyStatus(id: string, payload: { status: string; is_active: boolean }) {
+  const res = await fetchWithAuth(`/admin/surveys/${id}/status`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) throw new Error(String(res.status));
+  return res.json();
 }
 
 export async function createSurvey(payload: SurveyPayload) {
