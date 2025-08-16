@@ -2,7 +2,7 @@
 
 | Area | Old Component | New Surface |
 |------|---------------|-------------|
-| Global | AppShell + Navbar | AppShell with Header (glass) |
+| Global | AppShell | AppShell with Header (glass) |
 | Buttons | MUI Button | ui/Button wrappers |
 | Cards | Generic containers | ui/Card |
 | Badges | PointsBadge | ui/Badge |
