@@ -34,7 +34,7 @@ export default function Settings() {
         <h2 className="text-xl font-bold mb-2">Your Stats</h2>
         <p>Plays: {stats.plays}</p>
         <p>Referrals: {stats.referrals}</p>
-        <p>Free attempts remaining: {stats.free_attempts}</p>
+        <p>Points: {stats.points}</p>
         <div>
           <h3 className="font-semibold">Score History</h3>
           <ul className="list-disc list-inside text-sm">

@@ -1,15 +1,14 @@
 import os
 from datetime import datetime
 from backend.deps.supabase_client import get_supabase_client
-from backend.db import insert_attempt_ledger
 
 
 def credit_referral_if_applicable(user_id: str) -> None:
-    """Credit the referrer with a free attempt if applicable.
+    """Credit the referrer with points if applicable.
 
     Looks for an uncredited row in the ``referrals`` table where
     ``invitee_user`` matches ``user_id``.  If found, the corresponding
-    inviter's ``free_attempts`` is incremented (up to the limit defined by
+    inviter's points are incremented (up to the limit defined by
     the ``REFERRAL_MAX_CREDITS`` environment variable) and the referral row
     is marked as credited.
     """
@@ -30,7 +29,7 @@ def credit_referral_if_applicable(user_id: str) -> None:
         inviter_code = row.get("inviter_code")
         inviter_resp = (
             supabase.table("app_users")
-            .select("hashed_id, free_attempts")
+            .select("id")
             .eq("invite_code", inviter_code)
             .single()
             .execute()
@@ -48,7 +47,10 @@ def credit_referral_if_applicable(user_id: str) -> None:
         )
         credited_count = len(getattr(count_resp, "data", []) or [])
         if credited_count < max_credits:
-            insert_attempt_ledger(inviter["hashed_id"], 1, "referral")
+            supabase.rpc(
+                "award_points",
+                {"p_user_id": str(inviter["id"]), "p_delta": 5},
+            ).execute()
         supabase.table("referrals").update(
             {"credited": True, "credited_at": datetime.utcnow().isoformat()}
         ).eq("invitee_user", user_id).execute()

@@ -21,7 +21,6 @@ ALLOWED_USER_UPDATE_FIELDS = {
     "survey_completed",
     "is_admin",
     "points",
-    "free_attempts",
     "plays",
     "referrals",
     "party_log",
@@ -129,7 +128,6 @@ def create_user(user_data: Dict[str, Any]) -> Dict[str, Any]:
     base = {
         "survey_completed": False,
         "is_admin": False,
-        "free_attempts": 0,
         "points": 0,
         "plays": 0,
         "referrals": 0,
@@ -142,8 +140,6 @@ def create_user(user_data: Dict[str, Any]) -> Dict[str, Any]:
     data.pop("salt", None)
     resp = supabase.from_("app_users").insert(data).execute()
     row = resp.data[0]
-    uid = row.get("hashed_id") or row.get("id")
-    insert_attempt_ledger(uid, 1, "signup")
     return row
 
 
@@ -163,7 +159,6 @@ def upsert_user(user_id: str, username: str | None = None) -> None:
     payload = {
         "id": user_id,
         "hashed_id": user_id,
-        "free_attempts": 0,
         "points": 0,
         "plays": 0,
         "referrals": 0,
@@ -174,7 +169,6 @@ def upsert_user(user_id: str, username: str | None = None) -> None:
     if username is not None:
         payload["username"] = username
     supabase.table("app_users").upsert(payload).execute()
-    insert_attempt_ledger(user_id, 1, "signup")
 
 
 def get_or_create_user_id_from_hashed(
@@ -184,7 +178,7 @@ def get_or_create_user_id_from_hashed(
 
     If the user does not exist a new record is created with ``id`` and
     ``hashed_id`` set to ``hashed_id`` and ``username`` defaulting to the same
-    value. A signup attempt is granted via the ledger. Returns the resulting
+    value. Returns the resulting
     ``id`` or ``None`` on failure.
     """
 
@@ -203,7 +197,6 @@ def get_or_create_user_id_from_hashed(
     supabase.table("app_users").upsert(
         {"id": hashed_id, "hashed_id": hashed_id, "username": hashed_id}
     ).execute()
-    insert_attempt_ledger(hashed_id, 1, "signup")
 
     res = (
         supabase.table("app_users")
@@ -237,89 +230,8 @@ def update_user(supabase: Client, hashed_id: str, data_to_update: Dict[str, Any]
         raise
 
 
-def insert_attempt_ledger(
-    user_id: str, delta: int, reason: str, expires_at: datetime | None = None
-) -> None:
-    """Insert a row into ``attempt_ledger`` and sync ``free_attempts``."""
-
-    supabase = get_supabase()
-    row: Dict[str, Any] = {"user_id": user_id, "delta": delta, "reason": reason}
-    if expires_at is not None:
-        row["expires_at"] = expires_at.isoformat()
-    try:
-        supabase.table("attempt_ledger").insert(row).execute()
-    except Exception:
-        # Tests may not create the table; fail silently
-        pass
-
-    # Mirror to ``app_users.free_attempts`` for backwards compatibility
-    remaining = get_available_attempts(user_id)
-    try:
-        update_user(supabase, user_id, {"free_attempts": remaining})
-    except APIError as exc:  # pragma: no cover - relies on external schema
-        code = getattr(exc, "code", "")
-        if code not in ("PGRST204", "42703"):
-            raise
-
-
-def increment_free_attempts(user_id: str, delta: int = 1, reason: str = "manual") -> None:
-    """Increase a user's attempts by ``delta`` using the ledger."""
-
-    insert_attempt_ledger(user_id, delta, reason)
-
-
-def get_available_attempts(user_id: str) -> int:
-    """Return total remaining attempts for ``user_id`` based on the ledger."""
-
-    supabase = get_supabase()
-    try:
-        resp = (
-            supabase.table("attempt_ledger")
-            .select("delta, expires_at")
-            .eq("user_id", user_id)
-            .execute()
-        )
-    except Exception:
-        return (get_user(user_id) or {}).get("free_attempts", 0)
-
-    rows = resp.data or []
-    now = datetime.utcnow()
-    total = 0
-    for r in rows:
-        exp = r.get("expires_at")
-        if exp:
-            try:
-                exp_dt = datetime.fromisoformat(str(exp).replace("Z", ""))
-                if exp_dt <= now:
-                    continue
-            except ValueError:
-                pass
-        total += int(r.get("delta") or 0)
-    if not rows or total == 0:
-        user_record = get_user(user_id) or {}
-        return int(user_record.get("free_attempts", 0))
-    return total
-
-
-def get_free_attempts(user_id: str) -> int:
-    """Compatibility wrapper returning ``get_available_attempts``."""
-
-    return get_available_attempts(user_id)
-
-
-def consume_free_attempt(user_id: str) -> Optional[int]:
-    """Consume a single attempt via the ledger.
-
-    Returns remaining attempts or ``None`` if insufficient balance.
-    """
-
-    if get_user(user_id) is None:
-        upsert_user(user_id)
-    available = get_available_attempts(user_id)
-    if available <= 0:
-        return None
-    insert_attempt_ledger(user_id, -1, "consume")
-    return get_available_attempts(user_id)
+# The legacy attempt ledger and free attempt functions have been removed in
+# favor of a points-based system handled entirely via database RPCs.
 
 
 def record_payment_event(

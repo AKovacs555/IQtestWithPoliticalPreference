@@ -5,7 +5,6 @@ from fastapi import APIRouter, Depends, HTTPException
 from backend.deps.auth import get_current_user
 from backend.deps.supabase_client import get_supabase_client
 from backend.payment import create_nowpayments_invoice
-from .admin_surveys import grant_free_attempts
 from .dependencies import require_admin
 
 logger = logging.getLogger(__name__)
@@ -58,8 +57,6 @@ async def approve_custom_survey(request_id: str):
     supabase.table("custom_survey_requests").update({"status": "approved"}).eq(
         "id", request_id
     ).execute()
-    if req.get("target_countries"):
-        grant_free_attempts(req["target_countries"])
     return {"status": "approved"}
 
 
