@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 from postgrest.exceptions import APIError
 
-from backend import db
+from .. import db
 
 
 def get_supabase():
@@ -20,7 +20,7 @@ async def get_points(user_id: str):
 
     Examples
     --------
-    >>> from backend.tests.conftest import DummySupabase
+    >>> from tests.conftest import DummySupabase
     >>> supa = DummySupabase()
     >>> supa.table("app_users").insert({"id": "u1", "hashed_id": "u1", "points": 5}).execute()
     >>> get_supabase = lambda: supa  # doctest: +SKIP

@@ -8,9 +8,10 @@ from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, HTTPException, Request, Depends
 import random
 from pydantic import BaseModel
-from backend.deps.supabase_client import get_supabase_client
-from backend.db import update_user
-from backend.questions_loader import (
+# use package-relative imports so ``backend`` can be treated as a package
+from ..deps.supabase_client import get_supabase_client
+from ..db import update_user, debit_points_if_possible, get_answered_survey_group_ids, insert_survey_answers
+from ..questions_loader import (
     get_question_sets,
     get_questions_for_set,
 )
@@ -18,16 +19,12 @@ from backend.questions_loader import (
 def get_balanced_random_questions_by_set(n: int, set_id: str, lang: str | None = None):
     return get_questions_for_set(set_id, n, lang)
 
-from backend.questions import get_balanced_random_questions_global  # noqa: E402
+from ..questions import get_balanced_random_questions_global  # noqa: E402
 
-from backend.scoring import estimate_theta, iq_score, ability_summary, standard_error  # noqa: E402
-from backend.irt import percentile  # noqa: E402
-from backend.features import generate_share_image  # noqa: E402
-from backend.deps.auth import get_current_user  # noqa: E402
-from backend.db import (  # noqa: E402
-    get_answered_survey_group_ids,
-    insert_survey_answers,
-)
+from ..scoring import estimate_theta, iq_score, ability_summary, standard_error  # noqa: E402
+from ..irt import percentile  # noqa: E402
+from ..features import generate_share_image  # noqa: E402
+from ..deps.auth import get_current_user  # noqa: E402
 
 router = APIRouter(prefix="/quiz", tags=["quiz"])
 logger = logging.getLogger(__name__)
@@ -111,10 +108,10 @@ async def start_quiz(
         < datetime.fromisoformat(user["pro_active_until"])
     )
     if not is_pro:
-        ok = supabase.rpc(
-            "spend_points", {"p_user_id": str(user["id"]), "p_cost": 1}
-        ).execute().data
-        if not ok:
+        new_balance = debit_points_if_possible(
+            str(user["id"]), 1, "quiz_spend", {"set_id": set_id}
+        )
+        if new_balance is None:
             logger.error("points_insufficient", extra={"user_id": user["id"]})
             raise HTTPException(
                 status_code=400,
@@ -123,6 +120,7 @@ async def start_quiz(
                     "message": "ポイントが不足しています。",
                 },
             )
+        logger.info("points_debit_ok", extra={"user_id": user["id"], "balance": new_balance})
     logger.info("quiz_start_allowed")
     if set_id:
         try:
@@ -337,7 +335,7 @@ async def submit_quiz(
         insert_survey_answers(rows)
 
     try:
-        from backend.referral import credit_referral_if_applicable
+        from ..referral import credit_referral_if_applicable
 
         credit_referral_if_applicable(user["hashed_id"])
     except Exception:

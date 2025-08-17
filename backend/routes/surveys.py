@@ -4,12 +4,14 @@ from __future__ import annotations
 
 from typing import Dict, List
 from uuid import uuid4
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, HTTPException, Response
 from pydantic import BaseModel, Field
 
-from backend.deps.auth import get_current_user
-from backend import db
+from ..deps.auth import get_current_user
+from .. import db
 
 
 router = APIRouter(prefix="/surveys", tags=["surveys"])
@@ -128,6 +130,10 @@ def respond(
     except TypeError:
         # Test double lacks upsert kwargs support
         supabase.table("survey_answers").upsert(answer_rows).execute()
+
+    today = datetime.now(ZoneInfo("Asia/Tokyo")).date()
+    if db.get_daily_answer_count(user["hashed_id"], today) >= 3:
+        db.daily_reward_claim(str(user["id"]))
     return Response(status_code=201)
 
 

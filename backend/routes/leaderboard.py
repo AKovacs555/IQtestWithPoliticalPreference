@@ -1,5 +1,6 @@
 from fastapi import APIRouter
-from backend.deps.supabase_client import get_supabase_client
+
+from ..deps.supabase_client import get_supabase_client
 
 router = APIRouter(tags=["leaderboard"])
 

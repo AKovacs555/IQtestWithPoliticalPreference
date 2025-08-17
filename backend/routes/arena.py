@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException
 
-from backend import db
+from .. import db
 
 router = APIRouter(prefix="/arena", tags=["arena"])
 

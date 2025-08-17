@@ -106,7 +106,7 @@ export default function Home() {
       } else {
         const err = await res.json().catch(() => ({}));
         if (err?.detail?.error === 'points_insufficient') {
-          alert('ポイントが不足しています。');
+          alert('ポイントが不足しています。広告視聴やデイリー達成でポイントを獲得できます。');
           return;
         }
         if (err?.detail?.code === 'DAILY3_REQUIRED') {

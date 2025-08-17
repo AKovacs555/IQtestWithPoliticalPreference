@@ -12,8 +12,8 @@ os.environ.setdefault("SUPABASE_SERVICE_ROLE_KEY", "test")
 # ``backend.`` prefix for compatibility with legacy imports.
 sys.path.append(os.path.dirname(__file__))
 
-from backend.api import diagnostics
-from backend.routes import (
+from .api import diagnostics
+from .routes import (
     admin_import_questions,
     admin_pricing,
     admin_questions,

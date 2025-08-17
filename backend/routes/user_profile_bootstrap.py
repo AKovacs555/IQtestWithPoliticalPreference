@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Header, HTTPException
-from backend.deps.supabase_jwt import decode_supabase_jwt
-from backend.core.supabase_admin import supabase_admin  # service role client
+
+from ..deps.supabase_jwt import decode_supabase_jwt
+from ..core.supabase_admin import supabase_admin  # service role client
 
 router = APIRouter()
 

@@ -1,7 +1,8 @@
 import random
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
-from backend.sms_service import send_otp
+
+from ..sms_service import send_otp
 
 router = APIRouter(prefix="/sms", tags=["sms"])
 

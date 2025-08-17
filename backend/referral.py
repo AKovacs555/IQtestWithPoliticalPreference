@@ -1,6 +1,8 @@
 import os
 from datetime import datetime
-from backend.deps.supabase_client import get_supabase_client
+
+from .deps.supabase_client import get_supabase_client
+from .db import credit_points
 
 
 def credit_referral_if_applicable(user_id: str) -> None:
@@ -47,10 +49,7 @@ def credit_referral_if_applicable(user_id: str) -> None:
         )
         credited_count = len(getattr(count_resp, "data", []) or [])
         if credited_count < max_credits:
-            supabase.rpc(
-                "award_points",
-                {"p_user_id": str(inviter["id"]), "p_delta": 5},
-            ).execute()
+            credit_points(str(inviter["id"]), 5, "referral_reward", {})
         supabase.table("referrals").update(
             {"credited": True, "credited_at": datetime.utcnow().isoformat()}
         ).eq("invitee_user", user_id).execute()
