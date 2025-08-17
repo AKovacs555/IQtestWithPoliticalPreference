@@ -1,7 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import LanguageSelector from '../LanguageSelector';
-import PointsBadge from '../PointsBadge';
 import { useSession } from '../../hooks/useSession';
 
 export default function AdminHeroTop() {
@@ -15,9 +14,7 @@ export default function AdminHeroTop() {
         Admin
       </h1>
       <p className="text-[12.5px] sm:text-sm text-[var(--text-muted)]">管理ツール</p>
-      <div className="pills-row no-scrollbar flex-wrap justify-center sm:justify-start">
-        <span className="pill">👑 <span>Bronze レベル</span></span>
-        <PointsBadge className="pill" />
+      <div className="pills-row no-scrollbar flex-wrap justify-center sm:justify-start w-full">
         <LanguageSelector className="pill" />
         <Link to="/profile" className="pill">👤 プロフィール</Link>
         <button
