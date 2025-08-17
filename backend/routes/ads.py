@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
 from ..deps.auth import get_current_user
-from ..db import credit_points
+from ..db import credit_points, get_points
 
 router = APIRouter(prefix="/ads", tags=["ads"])
 
@@ -15,5 +15,5 @@ async def ads_start(user: dict = Depends(get_current_user)):
 
 @router.post("/complete")
 async def ads_complete(user: dict = Depends(get_current_user)):
-    points = credit_points(str(user["id"]), 1, "ad_reward", {})
-    return {"points": points}
+    credit_points(str(user["id"]), 1, "ad_reward", {})
+    return {"points": get_points(str(user["id"]))}

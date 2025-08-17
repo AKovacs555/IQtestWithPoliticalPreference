@@ -14,7 +14,7 @@ export default function HeroTop() {
       </p>
       <div className="pills-row no-scrollbar flex-wrap justify-center w-full">
         <span className="pill">👑 <span>Bronze レベル</span></span>
-        <PointsBadge userId={userId} className="pill" />
+        <PointsBadge className="pill" />
         <LanguageSelector className="pill" />
         {userId ? (
           <>

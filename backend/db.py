@@ -263,83 +263,6 @@ def get_points(user_id: str) -> int:
         raise
 
 
-def credit_points(
-    user_id: str, delta: int, reason: str, metadata: dict | None = None
-) -> int:
-    """Add ``delta`` points for ``user_id`` and return the new balance."""
-
-    if delta <= 0:
-        raise ValueError("delta must be positive")
-    supabase = get_supabase()
-    ledger_row = {
-        "user_id": user_id,
-        "delta": delta,
-        "reason": reason,
-        "metadata": metadata or {},
-        "awarded_on": datetime.now(ZoneInfo("Asia/Tokyo")).date().isoformat(),
-    }
-    try:
-        supabase.table("points_ledger").insert(ledger_row).execute()
-    except APIError:
-        # best effort logging; ledger failures should not block point credit
-        logger.exception("points_ledger_insert_failed")
-
-    balance = get_points(user_id) + delta
-    supabase.table("app_users").update({"points": balance}).eq("id", user_id).execute()
-    return balance
-
-
-def debit_points_if_possible(
-    user_id: str, amount: int, reason: str, metadata: dict | None = None
-) -> int | None:
-    """Attempt to debit ``amount`` points.  Return new balance or ``None``."""
-
-    if amount <= 0:
-        raise ValueError("amount must be positive")
-    supabase = get_supabase()
-    current = get_points(user_id)
-    if current < amount:
-        return None
-    new_balance = current - amount
-    supabase.table("app_users").update({"points": new_balance}).eq("id", user_id).execute()
-    try:
-        supabase.table("points_ledger").insert(
-            {
-                "user_id": user_id,
-                "delta": -amount,
-                "reason": reason,
-                "metadata": metadata or {},
-                "awarded_on": datetime.now(ZoneInfo("Asia/Tokyo")).date().isoformat(),
-            }
-        ).execute()
-    except APIError:
-        logger.exception("points_ledger_insert_failed")
-    return new_balance
-
-
-def daily_reward_claim(user_id: str) -> bool:
-    """Grant the daily completion reward if not already claimed today."""
-
-    supabase = get_supabase()
-    today = datetime.now(ZoneInfo("Asia/Tokyo")).date().isoformat()
-    row = {
-        "user_id": user_id,
-        "delta": 1,
-        "reason": "daily_complete",
-        "awarded_on": today,
-    }
-    try:
-        supabase.table("points_ledger").insert(row).execute()
-    except APIError as exc:
-        code = getattr(exc, "code", "")
-        msg = str(exc).lower()
-        if code in ("23505",) or "duplicate" in msg:
-            return False
-        logger.exception("daily_reward_claim_failed")
-        return False
-    new_balance = get_points(user_id) + 1
-    supabase.table("app_users").update({"points": new_balance}).eq("id", user_id).execute()
-    return True
 
 
 def record_payment_event(
@@ -398,7 +321,54 @@ def mark_payment_processed(payment_id: str) -> None:
     supabase.table("payments").update({"processed_at": datetime.utcnow().isoformat()}).eq(
         "payment_id", payment_id
     ).execute()
-    _processed_payments.add(payment_id)
+
+
+# ---------------------------------------------------------------------------
+# RPC wrappers for points
+# ---------------------------------------------------------------------------
+
+from .core.supabase_admin import supabase_admin
+
+
+def spend_point(user_id: str | uuid.UUID, reason: str, meta: dict | None = None) -> bool:
+    """Attempt to atomically spend a single point.
+
+    Returns ``True`` on success, ``False`` when the user has insufficient
+    balance.
+    """
+
+    payload = {"user_id": str(user_id), "reason": reason, "meta": meta or {}}
+    resp = supabase_admin.rpc("spend_point", payload).execute()
+    return bool(resp.data)
+
+
+def credit_points(
+    user_id: str | uuid.UUID, delta: int, reason: str, meta: dict | None = None
+) -> None:
+    """Credit ``delta`` points to ``user_id`` via RPC."""
+
+    payload = {
+        "user_id": str(user_id),
+        "delta": delta,
+        "reason": reason,
+        "meta": meta or {},
+    }
+    supabase_admin.rpc("credit_points", payload).execute()
+
+
+def credit_points_once_per_day(
+    user_id: str | uuid.UUID, delta: int, reason: str, meta: dict | None = None
+) -> bool:
+    """Credit points only if the user has not already received them today."""
+
+    payload = {
+        "user_id": str(user_id),
+        "delta": delta,
+        "reason": reason,
+        "meta": meta or {},
+    }
+    resp = supabase_admin.rpc("credit_points_once_per_day", payload).execute()
+    return bool(resp.data)
 
 
 # ---------------------------------------------------------------------------

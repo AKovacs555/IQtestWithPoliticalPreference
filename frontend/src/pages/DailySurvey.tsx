@@ -62,6 +62,13 @@ export default function DailySurvey() {
           if (err?.detail?.error === 'daily_quota_exceeded') {
             toast.info('Daily 3 completed!');
             setDone(true);
+            try {
+              await fetch(`${apiBase}/points/daily_claim`, {
+                method: 'POST',
+                headers,
+                credentials: 'include',
+              });
+            } catch {}
             return;
           }
           if (err?.detail?.error === 'already_answered') {
@@ -72,7 +79,16 @@ export default function DailySurvey() {
         throw new Error(err?.detail || 'Failed to submit.');
       }
       if (current + 1 < items.length) setCurrent(current + 1);
-      else setDone(true);
+      else {
+        setDone(true);
+        try {
+          await fetch(`${apiBase}/points/daily_claim`, {
+            method: 'POST',
+            headers,
+            credentials: 'include',
+          });
+        } catch {}
+      }
     } catch (e: any) {
       setError(e.message);
       setPendingIdx(idx);
