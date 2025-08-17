@@ -1,5 +1,5 @@
-fastapi
-uvicorn[standard]==0.23.0
+fastapi>=0.116,<0.117
+uvicorn[standard]>=0.35,<0.36
 supabase>=2.5.0,<3.0.0
 stripe
 python-multipart
@@ -14,3 +14,6 @@ httpx>=0.27.0
 tenacity>=8.3.0
 bcrypt>=4.0.0
 PyJWT[crypto]>=2.9
+python-dotenv>=1.0
+pydantic>=2.11
+starlette>=0.47
