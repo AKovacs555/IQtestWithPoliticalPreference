@@ -1,7 +1,6 @@
 from fastapi import APIRouter
 from postgrest.exceptions import APIError
 
-from backend.db import insert_attempt_ledger
 from backend import db
 
 
@@ -40,7 +39,6 @@ async def get_points(user_id: str):
         ).data
         if not exists:
             supabase.table("app_users").upsert({"id": user_id, "hashed_id": user_id}).execute()
-            insert_attempt_ledger(user_id, 1, "signup")
     except Exception:
         # Never block login on failure
         pass

@@ -4,9 +4,8 @@ import logging
 import uuid
 from pathlib import Path
 from typing import List, Optional
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, HTTPException, Request, Depends
-from starlette.responses import RedirectResponse
 import random
 from pydantic import BaseModel
 from backend.deps.supabase_client import get_supabase_client
@@ -28,8 +27,6 @@ from backend.deps.auth import get_current_user  # noqa: E402
 from backend.db import (  # noqa: E402
     get_answered_survey_group_ids,
     insert_survey_answers,
-    get_daily_answer_count,
-    consume_free_attempt,
 )
 
 router = APIRouter(prefix="/quiz", tags=["quiz"])
@@ -99,44 +96,33 @@ async def start_quiz(
                 "message": "Please complete the demographics form before taking the IQ test.",
             },
         )
+    supabase = get_supabase_client()
     if set_id:
         try:
             get_balanced_random_questions_by_set(1, set_id)
         except ValueError as e:
             raise HTTPException(status_code=404, detail=str(e))
-    daily_count = get_daily_answer_count(user["hashed_id"])
-    free_attempts = int(user.get("free_attempts", 0))
-    if free_attempts <= 0 and daily_count < 3:
-        return RedirectResponse(url=f"/survey/start?lang={lang}", status_code=303)
     pending_surveys = get_random_pending_surveys(
         user["hashed_id"], user.get("nationality"), user.get("gender"), lang=lang, limit=3
     )
-    # Determine subscription status
-    pro_active = False
-    pro_until = user.get("pro_active_until")
-    if pro_until:
-        try:
-            pro_dt = datetime.fromisoformat(str(pro_until).replace("Z", ""))
-            pro_active = pro_dt > datetime.utcnow()
-        except ValueError:
-            pro_active = False
-
-    remaining = None
-    if not pro_active:
-        remaining = consume_free_attempt(user["hashed_id"])
-        if remaining is None:
-            logger.error("attempts_insufficient", extra={"user_id": user["hashed_id"]})
+    is_pro = bool(
+        user.get("pro_active_until")
+        and datetime.now(timezone.utc)
+        < datetime.fromisoformat(user["pro_active_until"])
+    )
+    if not is_pro:
+        ok = supabase.rpc(
+            "spend_points", {"p_user_id": str(user["id"]), "p_cost": 1}
+        ).execute().data
+        if not ok:
+            logger.error("points_insufficient", extra={"user_id": user["id"]})
             raise HTTPException(
                 status_code=400,
                 detail={
-                    "error": "survey_required",
-                    "message": "Please complete the survey before taking the IQ test.",
+                    "error": "points_insufficient",
+                    "message": "ポイントが不足しています。",
                 },
             )
-
-    logger.info(
-        "attempts_consume_ok", extra={"user_id": user["hashed_id"], "remaining": remaining}
-    )
     logger.info("quiz_start_allowed")
     if set_id:
         try:
@@ -296,6 +282,11 @@ async def submit_quiz(
     ability = ability_summary(theta)
     se = standard_error(theta, responses)
     share_url = generate_share_image(user["hashed_id"], iq, pct)
+    is_pro = bool(
+        user.get("pro_active_until")
+        and datetime.now(timezone.utc)
+        < datetime.fromisoformat(user["pro_active_until"])
+    )
     try:
         supabase.from_("user_scores").insert(
             {
@@ -315,6 +306,7 @@ async def submit_quiz(
                 "status": "submitted",
                 "iq_score": iq,
                 "percentile": pct,
+                "paid": not is_pro,
             }
         ).execute()
     except Exception:  # pragma: no cover - best effort only
