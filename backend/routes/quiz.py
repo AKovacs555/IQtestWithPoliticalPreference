@@ -9,10 +9,15 @@ from fastapi import APIRouter, HTTPException, Request, Depends
 import random
 from pydantic import BaseModel
 # use package-relative imports so ``backend`` can be treated as a package
-from ..deps.supabase_client import get_supabase_client
+from backend.deps.supabase_client import get_supabase_client
 from fastapi.responses import JSONResponse
-from ..db import update_user, spend_point, get_answered_survey_group_ids, insert_survey_answers
-from ..questions_loader import (
+from backend.db import (
+    update_user,
+    spend_point,
+    get_answered_survey_group_ids,
+    insert_survey_answers,
+)
+from backend.questions_loader import (
     get_question_sets,
     get_questions_for_set,
 )
@@ -20,12 +25,17 @@ from ..questions_loader import (
 def get_balanced_random_questions_by_set(n: int, set_id: str, lang: str | None = None):
     return get_questions_for_set(set_id, n, lang)
 
-from ..questions import get_balanced_random_questions_global  # noqa: E402
+from backend.questions import get_balanced_random_questions_global  # noqa: E402
 
-from ..scoring import estimate_theta, iq_score, ability_summary, standard_error  # noqa: E402
-from ..irt import percentile  # noqa: E402
-from ..features import generate_share_image  # noqa: E402
-from ..deps.auth import get_current_user  # noqa: E402
+from backend.scoring import (
+    estimate_theta,
+    iq_score,
+    ability_summary,
+    standard_error,
+)  # noqa: E402
+from backend.irt import percentile  # noqa: E402
+from backend.features import generate_share_image  # noqa: E402
+from backend.deps.auth import get_current_user  # noqa: E402
 
 router = APIRouter(prefix="/quiz", tags=["quiz"])
 logger = logging.getLogger(__name__)
@@ -336,7 +346,7 @@ async def submit_quiz(
         insert_survey_answers(rows)
 
     try:
-        from ..referral import credit_referral_if_applicable
+        from backend.referral import credit_referral_if_applicable
 
         credit_referral_if_applicable(user["hashed_id"])
     except Exception:

@@ -3,17 +3,15 @@ import logging
 from typing import Optional
 from math import ceil
 from fastapi import APIRouter, Depends, HTTPException
-import logging
-from typing import Optional
 
-from ..deps.supabase_client import get_supabase_client
-from ..db import (
+from backend.deps.supabase_client import get_supabase_client
+from backend.db import (
     get_group_key_by_id,
     update_question_group,
     approve_question_group,
     delete_question_group,
 )
-from .dependencies import require_admin
+from backend.routes.dependencies import require_admin
 from pydantic import BaseModel
 
 

@@ -1,9 +1,9 @@
 from fastapi import APIRouter, HTTPException, Depends, Response
 from pydantic import BaseModel
 
-from ..deps.supabase_client import get_supabase_client
-from ..db import update_user, get_points
-from .dependencies import get_current_user
+from backend.deps.supabase_client import get_supabase_client
+from backend.db import update_user, get_points
+from backend.routes.dependencies import get_current_user
 
 router = APIRouter(prefix="/user", tags=["user"])
 

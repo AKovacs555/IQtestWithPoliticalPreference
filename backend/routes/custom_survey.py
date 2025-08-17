@@ -1,12 +1,11 @@
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException
-import logging
 
-from ..deps.auth import get_current_user
-from ..deps.supabase_client import get_supabase_client
-from ..payment import create_nowpayments_invoice
-from .dependencies import require_admin
+from backend.deps.auth import get_current_user
+from backend.deps.supabase_client import get_supabase_client
+from backend.payment import create_nowpayments_invoice
+from backend.routes.dependencies import require_admin
 
 logger = logging.getLogger(__name__)
 

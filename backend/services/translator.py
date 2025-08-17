@@ -1,7 +1,7 @@
 import asyncio
 from typing import Dict, Any, List, Optional
 
-from .translation import translate_text
+from backend.services.translation import translate_text
 
 
 def _normalize(q: Dict[str, Any]) -> Dict[str, Any]:

@@ -5,9 +5,9 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 import asyncio
 
-from ..deps.supabase_client import get_supabase_client
-from ..services.openai_client import translate_with_openai
-from .dependencies import require_admin
+from backend.deps.supabase_client import get_supabase_client
+from backend.services.openai_client import translate_with_openai
+from backend.routes.dependencies import require_admin
 
 # Supported languages for automatic translation, including Turkish and Italian
 target_languages = ["en", "tr", "ru", "zh", "ko", "es", "fr", "it", "de", "ar"]

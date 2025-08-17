@@ -3,15 +3,14 @@
 from __future__ import annotations
 
 from typing import Dict, List
-from uuid import uuid4
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, HTTPException, Response
 from pydantic import BaseModel, Field
 
-from ..deps.auth import get_current_user
-from .. import db
+from backend.deps.auth import get_current_user
+from backend import db
 
 
 router = APIRouter(prefix="/surveys", tags=["surveys"])

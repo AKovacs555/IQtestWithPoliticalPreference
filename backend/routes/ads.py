@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
-from ..deps.auth import get_current_user
-from ..db import credit_points, get_points
+from backend.deps.auth import get_current_user
+from backend.db import credit_points, get_points
 
 router = APIRouter(prefix="/ads", tags=["ads"])
 

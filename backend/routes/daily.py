@@ -5,15 +5,15 @@ from zoneinfo import ZoneInfo
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
-from ..deps.auth import get_current_user
-from ..db import (
+from backend.deps.auth import get_current_user
+from backend.db import (
     get_daily_answer_count,
     insert_daily_answer,
     update_user,
     credit_points_once_per_day,
     get_points,
 )
-from ..deps.supabase_client import get_supabase_client
+from backend.deps.supabase_client import get_supabase_client
 
 router = APIRouter(prefix="/daily", tags=["daily"])
 logger = logging.getLogger(__name__)

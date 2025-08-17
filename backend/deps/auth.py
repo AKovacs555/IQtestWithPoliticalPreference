@@ -1,13 +1,12 @@
 import os
-import os
 import time
 from typing import Optional
 
 import jwt
 from fastapi import HTTPException, Header
 
-from ..db import get_user
-from .supabase_jwt import decode_supabase_jwt
+from backend.db import get_user
+from backend.deps.supabase_jwt import decode_supabase_jwt
 
 JWT_SECRET = os.getenv("SUPABASE_JWT_SECRET") or os.getenv("JWT_SECRET")
 ALGORITHM = "HS256"
