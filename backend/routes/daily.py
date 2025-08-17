@@ -10,7 +10,7 @@ from ..db import (
     get_daily_answer_count,
     insert_daily_answer,
     update_user,
-    daily_reward_claim,
+    credit_points_once_per_day,
     get_points,
 )
 from ..deps.supabase_client import get_supabase_client
@@ -47,7 +47,9 @@ async def answer(payload: DailyAnswer, user: dict = Depends(get_current_user)):
     now = datetime.now(ZoneInfo("Asia/Tokyo"))
     answered_count = get_daily_answer_count(user["hashed_id"], now.date())
     if answered_count >= 3:
-        granted = daily_reward_claim(str(user["id"]))
+        granted = credit_points_once_per_day(
+            str(user["id"]), 1, "daily_complete", {}
+        )
         if granted:
             supabase = get_supabase_client()
             update_user(supabase, user["hashed_id"], {"survey_completed": True})
@@ -59,5 +61,5 @@ async def claim(user: dict = Depends(get_current_user)):
     now = datetime.now(ZoneInfo("Asia/Tokyo"))
     if get_daily_answer_count(user["hashed_id"], now.date()) < 3:
         return {"granted": False, "points": get_points(str(user["id"]))}
-    granted = daily_reward_claim(str(user["id"]))
+    granted = credit_points_once_per_day(str(user["id"]), 1, "daily_complete", {})
     return {"granted": granted, "points": get_points(str(user["id"]))}

@@ -3,24 +3,23 @@ import { useSession } from '../hooks/useSession';
 
 const API_BASE = import.meta.env.VITE_API_BASE || '';
 
-export default function PointsBadge({ userId, className = '' }) {
+export default function PointsBadge({ className = '' }) {
   const [points, setPoints] = useState(0);
   const { session } = useSession();
 
   useEffect(() => {
-    if (!userId) return;
+    const accessToken = session?.access_token;
+    if (!accessToken) {
+      setPoints(0);
+      return;
+    }
 
     async function fetchPoints() {
-      const accessToken = session?.access_token;
       try {
-        const res = await fetch(`${API_BASE}/points/${userId}`, {
-          headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+        const res = await fetch(`${API_BASE}/user/credits`, {
+          headers: { Authorization: `Bearer ${accessToken}` },
         });
-        if (res.status === 404) {
-          setPoints(0);
-          return;
-        }
-        const data = await res.json();
+        const data = await res.json().catch(() => ({}));
         setPoints(data?.points ?? 0);
       } catch {
         setPoints(0);
@@ -28,7 +27,7 @@ export default function PointsBadge({ userId, className = '' }) {
     }
 
     fetchPoints();
-  }, [userId, session]);
+  }, [session]);
 
   return (
     <span

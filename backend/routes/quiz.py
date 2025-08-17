@@ -10,7 +10,8 @@ import random
 from pydantic import BaseModel
 # use package-relative imports so ``backend`` can be treated as a package
 from ..deps.supabase_client import get_supabase_client
-from ..db import update_user, debit_points_if_possible, get_answered_survey_group_ids, insert_survey_answers
+from fastapi.responses import JSONResponse
+from ..db import update_user, spend_point, get_answered_survey_group_ids, insert_survey_answers
 from ..questions_loader import (
     get_question_sets,
     get_questions_for_set,
@@ -99,28 +100,28 @@ async def start_quiz(
             get_balanced_random_questions_by_set(1, set_id)
         except ValueError as e:
             raise HTTPException(status_code=404, detail=str(e))
-    pending_surveys = get_random_pending_surveys(
-        user["hashed_id"], user.get("nationality"), user.get("gender"), lang=lang, limit=3
-    )
     is_pro = bool(
         user.get("pro_active_until")
         and datetime.now(timezone.utc)
         < datetime.fromisoformat(user["pro_active_until"])
     )
     if not is_pro:
-        new_balance = debit_points_if_possible(
-            str(user["id"]), 1, "quiz_spend", {"set_id": set_id}
-        )
-        if new_balance is None:
+        ok = spend_point(user["id"], "quiz_spend", {"lang": lang})
+        if not ok:
             logger.error("points_insufficient", extra={"user_id": user["id"]})
-            raise HTTPException(
+            return JSONResponse(
                 status_code=400,
-                detail={
-                    "error": "points_insufficient",
-                    "message": "ポイントが不足しています。",
+                content={
+                    "detail": {
+                        "error": "points_insufficient",
+                        "message": "ポイントが不足しています。",
+                    }
                 },
             )
-        logger.info("points_debit_ok", extra={"user_id": user["id"], "balance": new_balance})
+        logger.info("points_debit_ok", extra={"user_id": user["id"]})
+    pending_surveys = get_random_pending_surveys(
+        user["hashed_id"], user.get("nationality"), user.get("gender"), lang=lang, limit=3
+    )
     logger.info("quiz_start_allowed")
     if set_id:
         try:

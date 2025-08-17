@@ -106,7 +106,7 @@ export default function Home() {
       } else {
         const err = await res.json().catch(() => ({}));
         if (err?.detail?.error === 'points_insufficient') {
-          alert('ポイントが不足しています。広告視聴やデイリー達成でポイントを獲得できます。');
+          alert('ポイントが不足しています。');
           return;
         }
         if (err?.detail?.code === 'DAILY3_REQUIRED') {
@@ -135,6 +135,13 @@ export default function Home() {
   const dailyProgressPct = 0;
   const dailyResetText = '';
   const handleWatchAd = async () => {
+    try {
+      await fetch(`${apiBase}/points/ad_reward`, {
+        method: 'POST',
+        headers: authHeaders,
+        credentials: 'include',
+      });
+    } catch {}
     await fetchCredits();
   };
 

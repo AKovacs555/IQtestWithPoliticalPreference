@@ -133,7 +133,7 @@ def respond(
 
     today = datetime.now(ZoneInfo("Asia/Tokyo")).date()
     if db.get_daily_answer_count(user["hashed_id"], today) >= 3:
-        db.daily_reward_claim(str(user["id"]))
+        db.credit_points_once_per_day(str(user["id"]), 1, "daily_complete", {})
     return Response(status_code=201)
 
 

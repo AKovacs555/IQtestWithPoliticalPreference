@@ -49,7 +49,7 @@ def credit_referral_if_applicable(user_id: str) -> None:
         )
         credited_count = len(getattr(count_resp, "data", []) or [])
         if credited_count < max_credits:
-            credit_points(str(inviter["id"]), 5, "referral_reward", {})
+            credit_points(str(inviter["id"]), 5, "referral_reward", {"invitee": user_id})
         supabase.table("referrals").update(
             {"credited": True, "credited_at": datetime.utcnow().isoformat()}
         ).eq("invitee_user", user_id).execute()

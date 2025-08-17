@@ -1,62 +1,42 @@
-from fastapi import APIRouter
-from postgrest.exceptions import APIError
+import os
+from fastapi import APIRouter, Depends, HTTPException
 
-from .. import db
+from ..deps.auth import get_current_user
+from ..db import (
+    get_points,
+    credit_points,
+    credit_points_once_per_day,
+)
+
+AD_REWARD_POINTS = int(os.getenv("AD_REWARD_POINTS", "1"))
+DAILY_REWARD_POINTS = int(os.getenv("DAILY_REWARD_POINTS", "1"))
+
+router = APIRouter()
 
 
-def get_supabase():
-    return db.get_supabase()
+@router.get("/user/credits")
+async def get_credits(user: dict = Depends(get_current_user)):
+    """Return the current points balance for the authenticated user."""
 
-router = APIRouter(prefix="/points", tags=["points"])
+    return {"points": get_points(str(user["id"]))}
 
 
-@router.get("/{user_id}")
-async def get_points(user_id: str):
-    """Return the legacy ``points`` value for ``user_id``.
+@router.post("/points/ad_reward")
+async def ad_reward(user: dict = Depends(get_current_user)):
+    """Grant points for a verified ad reward."""
 
-    The function ensures a minimal ``app_users`` row exists, granting a single
-    free attempt on first creation. Missing ``points`` columns are treated as
-    zero rather than failing the request.
+    credit_points(str(user["id"]), AD_REWARD_POINTS, "ad_reward", {})
+    return {"points": get_points(str(user["id"]))}
 
-    Examples
-    --------
-    >>> from tests.conftest import DummySupabase
-    >>> supa = DummySupabase()
-    >>> supa.table("app_users").insert({"id": "u1", "hashed_id": "u1", "points": 5}).execute()
-    >>> get_supabase = lambda: supa  # doctest: +SKIP
-    >>> await get_points("u1")  # doctest: +SKIP
-    {'points': 5}
-    >>> await get_points("new")  # doctest: +SKIP
-    {'points': 0}
-    """
 
-    supabase = get_supabase()
+@router.post("/points/daily_claim")
+async def daily_claim(user: dict = Depends(get_current_user)):
+    """Grant the daily completion reward if not already claimed today."""
 
-    # Ensure minimal row exists (id + hashed_id only)
-    try:
-        exists = (
-            supabase.table("app_users").select("id").eq("id", user_id).single().execute()
-        ).data
-        if not exists:
-            supabase.table("app_users").upsert({"id": user_id, "hashed_id": user_id}).execute()
-    except Exception:
-        # Never block login on failure
-        pass
-
-    # Return legacy points if the column exists, else 0
-    try:
-        resp = (
-            supabase.table("app_users")
-            .select("points")
-            .eq("id", user_id)
-            .single()
-            .execute()
-        )
-        pts = (resp.data or {}).get("points", 0)
-        return {"points": int(pts) if isinstance(pts, (int, float)) else 0}
-    except APIError as exc:  # missing column or similar
-        code = getattr(exc, "code", "")
-        if code in ("42703", "PGRST204"):
-            return {"points": 0}
-        raise
+    ok = credit_points_once_per_day(
+        str(user["id"]), DAILY_REWARD_POINTS, "daily_complete", {}
+    )
+    if not ok:
+        raise HTTPException(status_code=409, detail="already_claimed")
+    return {"points": get_points(str(user["id"]))}
 
