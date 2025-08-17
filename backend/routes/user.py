@@ -21,6 +21,7 @@ async def get_profile(user=Depends(get_current_user)):
         "is_admin": bool(
             user.get("is_admin") if isinstance(user, dict) else getattr(user, "is_admin", False)
         ),
+        "survey_completed": bool(user.get("survey_completed", False))  # Include survey completion status
     }
 
 
