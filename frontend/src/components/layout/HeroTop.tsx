@@ -1,7 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import LanguageSelector from '../LanguageSelector';
-import PointsBadge from '../PointsBadge';
 import { useSession } from '../../hooks/useSession';
 
 export default function HeroTop() {
@@ -13,8 +12,6 @@ export default function HeroTop() {
         あなたのIQポテンシャルを解き放とう！
       </p>
       <div className="pills-row no-scrollbar flex-wrap justify-center w-full">
-        <span className="pill">👑 <span>Bronze レベル</span></span>
-        <PointsBadge className="pill" />
         <LanguageSelector className="pill" />
         {userId ? (
           <>
