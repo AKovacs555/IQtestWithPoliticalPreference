@@ -51,7 +51,7 @@ const AdminLayout = lazy(() =>
 const AdminHome = lazy(() => import('./AdminHome'));
 const AdminQuestions = lazy(() => import('./AdminQuestions'));
 const AdminSurveys = lazy(() => import('./AdminSurveys'));
-const AdminUsers = lazy(() => import('./AdminUsers'));
+const AdminUsers = lazy(() => import('./AdminUsers.tsx'));
 const AdminSets = lazy(() => import('./AdminSets'));
 const AdminSettings = lazy(() => import('./AdminSettings.jsx'));
 const AdminQuestionStats = lazy(() => import('./AdminQuestionStats.jsx'));

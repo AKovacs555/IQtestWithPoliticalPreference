@@ -1,5 +1,5 @@
 fastapi
-uvicorn[standard]
+uvicorn[standard]==0.23.0
 supabase>=2.5.0,<3.0.0
 stripe
 python-multipart
