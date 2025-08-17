@@ -1,2 +1,1 @@
-# main.py — wrapper so `uvicorn main:app` works on Render
-from backend.main import app
+from backend.main import app  # re-export for `uvicorn main:app`
