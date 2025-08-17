@@ -1,7 +1,8 @@
 from fastapi import APIRouter, HTTPException, Depends, Response
 from pydantic import BaseModel
-from backend.deps.supabase_client import get_supabase_client
-from backend.db import update_user
+
+from ..deps.supabase_client import get_supabase_client
+from ..db import update_user, get_points
 from .dependencies import get_current_user
 
 router = APIRouter(prefix="/user", tags=["user"])
@@ -57,10 +58,10 @@ async def set_nationality(payload: NationalityPayload):
 
 @router.get("/credits")
 async def get_credits(user: dict = Depends(get_current_user)):
-    return {
-        "points": user.get("points"),
-        "pro_active_until": user.get("pro_active_until"),
-    }
+    """Return the user's current points balance."""
+
+    points = get_points(str(user.get("id")))
+    return {"points": points}
 
 
 @router.get("/history")

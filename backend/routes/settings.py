@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from .dependencies import get_current_user, is_admin
-from backend.utils.settings import supabase, get_setting
+from ..utils.settings import supabase, get_setting
 
 router = APIRouter()
 

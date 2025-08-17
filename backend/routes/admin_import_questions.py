@@ -3,9 +3,10 @@ import uuid
 import logging
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
-from backend.deps.supabase_client import get_supabase_client
 import asyncio
-from backend.services.openai_client import translate_with_openai
+
+from ..deps.supabase_client import get_supabase_client
+from ..services.openai_client import translate_with_openai
 from .dependencies import require_admin
 
 # Supported languages for automatic translation, including Turkish and Italian

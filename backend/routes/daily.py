@@ -1,16 +1,19 @@
 import logging
 from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
-from backend.deps.auth import get_current_user
-from backend.db import (
+from ..deps.auth import get_current_user
+from ..db import (
     get_daily_answer_count,
     insert_daily_answer,
     update_user,
+    daily_reward_claim,
+    get_points,
 )
-from backend.deps.supabase_client import get_supabase_client
+from ..deps.supabase_client import get_supabase_client
 
 router = APIRouter(prefix="/daily", tags=["daily"])
 logger = logging.getLogger(__name__)
@@ -34,19 +37,27 @@ def _quota(user_id: str, now: datetime) -> dict:
 
 @router.get("/quota")
 async def quota(user: dict = Depends(get_current_user)):
-    return _quota(user["hashed_id"], datetime.utcnow())
+    now = datetime.now(ZoneInfo("Asia/Tokyo"))
+    return _quota(user["hashed_id"], now)
 
 
 @router.post("/answer")
 async def answer(payload: DailyAnswer, user: dict = Depends(get_current_user)):
     insert_daily_answer(user["hashed_id"], payload.question_id, payload.answer)
-    answered_count = get_daily_answer_count(
-        user["hashed_id"], datetime.utcnow().date()
-    )
-    if answered_count == 3:
-        supabase = get_supabase_client()
-        supabase.rpc(
-            "award_points", {"p_user_id": str(user["id"]), "p_delta": 1}
-        ).execute()
-        update_user(supabase, user["hashed_id"], {"survey_completed": True})
-    return _quota(user["hashed_id"], datetime.utcnow())
+    now = datetime.now(ZoneInfo("Asia/Tokyo"))
+    answered_count = get_daily_answer_count(user["hashed_id"], now.date())
+    if answered_count >= 3:
+        granted = daily_reward_claim(str(user["id"]))
+        if granted:
+            supabase = get_supabase_client()
+            update_user(supabase, user["hashed_id"], {"survey_completed": True})
+    return _quota(user["hashed_id"], now)
+
+
+@router.post("/claim")
+async def claim(user: dict = Depends(get_current_user)):
+    now = datetime.now(ZoneInfo("Asia/Tokyo"))
+    if get_daily_answer_count(user["hashed_id"], now.date()) < 3:
+        return {"granted": False, "points": get_points(str(user["id"]))}
+    granted = daily_reward_claim(str(user["id"]))
+    return {"granted": granted, "points": get_points(str(user["id"]))}

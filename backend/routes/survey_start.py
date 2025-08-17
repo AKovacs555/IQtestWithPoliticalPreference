@@ -6,8 +6,8 @@ from typing import Dict, List
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from backend import db
-from backend.deps.auth import get_current_user
+from .. import db
+from ..deps.auth import get_current_user
 
 
 router = APIRouter(prefix="/survey", tags=["survey"])

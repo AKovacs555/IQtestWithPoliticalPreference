@@ -231,7 +231,115 @@ def update_user(supabase: Client, hashed_id: str, data_to_update: Dict[str, Any]
 
 
 # The legacy attempt ledger and free attempt functions have been removed in
-# favor of a points-based system handled entirely via database RPCs.
+# favor of a points-based system handled entirely via database updates.
+
+
+# ---------------------------------------------------------------------------
+# Points helpers
+# ---------------------------------------------------------------------------
+
+def get_points(user_id: str) -> int:
+    """Return the current points balance for ``user_id``.
+
+    Missing users or ``points`` columns are treated as zero so the function is
+    safe to call in legacy environments.
+    """
+
+    supabase = get_supabase()
+    try:
+        resp = (
+            supabase.table("app_users")
+            .select("points")
+            .eq("id", user_id)
+            .single()
+            .execute()
+        )
+        pts = (resp.data or {}).get("points", 0)
+        return int(pts) if isinstance(pts, (int, float)) else 0
+    except APIError as exc:  # pragma: no cover - missing column
+        code = getattr(exc, "code", "")
+        if code in ("PGRST204", "42703"):
+            return 0
+        raise
+
+
+def credit_points(
+    user_id: str, delta: int, reason: str, metadata: dict | None = None
+) -> int:
+    """Add ``delta`` points for ``user_id`` and return the new balance."""
+
+    if delta <= 0:
+        raise ValueError("delta must be positive")
+    supabase = get_supabase()
+    ledger_row = {
+        "user_id": user_id,
+        "delta": delta,
+        "reason": reason,
+        "metadata": metadata or {},
+        "awarded_on": datetime.now(ZoneInfo("Asia/Tokyo")).date().isoformat(),
+    }
+    try:
+        supabase.table("points_ledger").insert(ledger_row).execute()
+    except APIError:
+        # best effort logging; ledger failures should not block point credit
+        logger.exception("points_ledger_insert_failed")
+
+    balance = get_points(user_id) + delta
+    supabase.table("app_users").update({"points": balance}).eq("id", user_id).execute()
+    return balance
+
+
+def debit_points_if_possible(
+    user_id: str, amount: int, reason: str, metadata: dict | None = None
+) -> int | None:
+    """Attempt to debit ``amount`` points.  Return new balance or ``None``."""
+
+    if amount <= 0:
+        raise ValueError("amount must be positive")
+    supabase = get_supabase()
+    current = get_points(user_id)
+    if current < amount:
+        return None
+    new_balance = current - amount
+    supabase.table("app_users").update({"points": new_balance}).eq("id", user_id).execute()
+    try:
+        supabase.table("points_ledger").insert(
+            {
+                "user_id": user_id,
+                "delta": -amount,
+                "reason": reason,
+                "metadata": metadata or {},
+                "awarded_on": datetime.now(ZoneInfo("Asia/Tokyo")).date().isoformat(),
+            }
+        ).execute()
+    except APIError:
+        logger.exception("points_ledger_insert_failed")
+    return new_balance
+
+
+def daily_reward_claim(user_id: str) -> bool:
+    """Grant the daily completion reward if not already claimed today."""
+
+    supabase = get_supabase()
+    today = datetime.now(ZoneInfo("Asia/Tokyo")).date().isoformat()
+    row = {
+        "user_id": user_id,
+        "delta": 1,
+        "reason": "daily_complete",
+        "awarded_on": today,
+    }
+    try:
+        supabase.table("points_ledger").insert(row).execute()
+    except APIError as exc:
+        code = getattr(exc, "code", "")
+        msg = str(exc).lower()
+        if code in ("23505",) or "duplicate" in msg:
+            return False
+        logger.exception("daily_reward_claim_failed")
+        return False
+    new_balance = get_points(user_id) + 1
+    supabase.table("app_users").update({"points": new_balance}).eq("id", user_id).execute()
+    return True
 
 
 def record_payment_event(
@@ -527,32 +635,15 @@ def get_survey_answers(group_id: str) -> List[Dict[str, Any]]:
     return answers
 
 
-def get_daily_answer_count(user_hashed_id: str, _day: date | None = None) -> int:
-    """Return the number of survey answers submitted on the given Tokyo day."""
+def get_daily_answer_count(hashed_id: str, target_date: date) -> int:
+    """Return the number of survey answers submitted on ``target_date``."""
 
     supabase = get_supabase()
-    # Resolve hashed_id to UUID. Missing users simply have zero answers.
-    ures = (
-        supabase.table("app_users")
-        .select("id")
-        .eq("hashed_id", user_hashed_id)
-        .single()
-        .execute()
-    )
-    if not ures.data or "id" not in ures.data:
-        return 0
-    user_id = ures.data["id"]
-
-    tokyo_today = (
-        datetime.now(ZoneInfo("Asia/Tokyo")).date() if _day is None else _day
-    )
-    day_str = tokyo_today.isoformat()
-
     resp = (
         supabase.table("survey_answers")
         .select("id")
-        .eq("user_id", user_id)
-        .eq("answered_on", day_str)
+        .eq("user_id", hashed_id)
+        .eq("answered_on", target_date.isoformat())
         .execute()
     )
     rows = resp.data or []
