@@ -34,9 +34,9 @@ try:
         user,
         user_profile_bootstrap,
     )
-except ModuleNotFoundError:
-    from api import diagnostics
-    from routes import (
+except Exception:  # ModuleNotFoundError or package context missing
+    from .api import diagnostics
+    from .routes import (
         admin_import_questions,
         admin_pricing,
         admin_questions,
