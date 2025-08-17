@@ -90,6 +90,10 @@ The backslashes (``\``) allow you to split the command across lines; ensure each
   ```bash
   uvicorn backend.main:app --reload
   ```
+- Render deployments are configured by `render.yaml` with the start command
+  `uvicorn backend.main:app --host 0.0.0.0 --port $PORT`. A thin `main.py`
+  wrapper at the repository root re-exports this app so `uvicorn main:app`
+  continues to work for compatibility.
 - Environment variables (see `.env.example`):
   - `SUPABASE_API_KEY` – API key for Supabase.
   - `SUPABASE_URL` – base URL for Supabase (required for share images).
