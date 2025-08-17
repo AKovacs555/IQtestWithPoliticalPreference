@@ -17,6 +17,7 @@ from backend.routes import (
     admin_import_questions,
     admin_pricing,
     admin_questions,
+    admin_surveys,
     ads,
     arena,
     custom_survey,
@@ -41,6 +42,7 @@ app.include_router(diagnostics.router)
 app.include_router(admin_import_questions.router)
 app.include_router(admin_pricing.router)
 app.include_router(admin_questions.router)
+app.include_router(admin_surveys.router)
 app.include_router(ads.router)
 app.include_router(arena.router)
 app.include_router(custom_survey.router)

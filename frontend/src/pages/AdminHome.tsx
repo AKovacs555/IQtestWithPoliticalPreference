@@ -11,6 +11,10 @@ export default function AdminHome() {
     { to: '/admin/stats', label: 'Question Stats' },
     { to: '/admin/sets', label: t('admin_sets.title') },
     { to: '/admin/settings', label: t('settings', { defaultValue: 'Settings' }) },
+    { to: '/admin/surveys', label: 'Surveys' },       // **Restored Surveys management section**
+    { to: '/admin/users', label: 'Users' },
+    { to: '/admin/pricing', label: 'Pricing' },
+    { to: '/admin/referral', label: 'Referral' }
   ];
   return (
     <>
