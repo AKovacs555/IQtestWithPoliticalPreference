@@ -1,8 +1,8 @@
 import os
 from datetime import datetime
 
-from .deps.supabase_client import get_supabase_client
-from .db import credit_points
+from backend.deps.supabase_client import get_supabase_client
+from backend.db import credit_points
 
 
 def credit_referral_if_applicable(user_id: str) -> None:

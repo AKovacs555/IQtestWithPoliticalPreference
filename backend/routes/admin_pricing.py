@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends
-from db import list_pricing_rules, upsert_pricing_rule, delete_pricing_rule
-from .dependencies import require_admin
+from backend.db import list_pricing_rules, upsert_pricing_rule, delete_pricing_rule
+from backend.routes.dependencies import require_admin
 
 router = APIRouter(prefix="/admin", tags=["admin-pricing"])
 

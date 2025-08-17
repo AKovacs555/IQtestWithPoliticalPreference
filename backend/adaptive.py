@@ -1,7 +1,7 @@
 from typing import Dict, List, Optional
 
 try:
-    from .scoring import standard_error
+    from backend.scoring import standard_error
 except ImportError:  # fallback when not part of package
     from scoring import standard_error
 

@@ -1,6 +1,6 @@
 from fastapi import Depends, HTTPException, Header
 
-from ..deps.auth import (
+from backend.deps.auth import (
     get_current_user as _get_current_user,
     User,
 )

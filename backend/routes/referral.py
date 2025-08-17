@@ -2,9 +2,9 @@ import random
 
 from fastapi import APIRouter, HTTPException, Depends
 
-from ..deps.supabase_client import get_supabase_client
-from ..deps.auth import get_current_user
-from ..db import update_user
+from backend.deps.supabase_client import get_supabase_client
+from backend.deps.auth import get_current_user
+from backend.db import update_user
 
 router = APIRouter(prefix="/referral", tags=["referral"])
 

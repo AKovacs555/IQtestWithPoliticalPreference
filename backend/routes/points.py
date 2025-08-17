@@ -1,8 +1,8 @@
 import os
 from fastapi import APIRouter, Depends, HTTPException
 
-from ..deps.auth import get_current_user
-from ..db import (
+from backend.deps.auth import get_current_user
+from backend.db import (
     get_points,
     credit_points,
     credit_points_once_per_day,

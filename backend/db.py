@@ -1,10 +1,9 @@
 import os
 import logging
 import uuid
-from datetime import datetime, timedelta, date
+from datetime import datetime, date
 from typing import Any, Dict, Optional, List, Iterable
 import random
-from zoneinfo import ZoneInfo
 from supabase import create_client, Client
 from postgrest.exceptions import APIError
 
@@ -327,7 +326,7 @@ def mark_payment_processed(payment_id: str) -> None:
 # RPC wrappers for points
 # ---------------------------------------------------------------------------
 
-from .core.supabase_admin import supabase_admin
+from backend.core.supabase_admin import supabase_admin
 
 
 def spend_point(user_id: str | uuid.UUID, reason: str, meta: dict | None = None) -> bool:
