@@ -15,6 +15,11 @@ export default function Survey() {
   const [error, setError] = useState('');
 
   useEffect(() => {
+    const nat = localStorage.getItem('nationality');
+    if (!nat) {
+      navigate('/select-nationality');
+      return;
+    }
     const params = new URLSearchParams(window.location.search);
     const sid = params.get('sid');
     if ((!items.length || !survey) && sid) {
@@ -28,7 +33,7 @@ export default function Survey() {
         })
         .catch(() => {});
     }
-  }, [apiBase, i18n.language, items.length, session, survey]);
+  }, [apiBase, i18n.language, items.length, session, survey, navigate]);
 
   const single = survey?.is_single_choice;
 

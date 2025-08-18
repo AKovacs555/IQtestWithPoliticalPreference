@@ -29,6 +29,7 @@ test('does not navigate on submit failure', async () => {
     Promise.resolve({ ok: false, text: () => Promise.resolve('err') }),
   );
 
+  localStorage.setItem('nationality', 'US');
   const { container } = render(
     <MemoryRouter>
       <Survey />

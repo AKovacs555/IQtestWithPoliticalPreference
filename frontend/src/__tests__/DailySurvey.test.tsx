@@ -1,6 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import DailySurvey from '../pages/DailySurvey';
+import { MemoryRouter } from 'react-router-dom';
 import { vi, afterAll, test, expect } from 'vitest';
 import '@testing-library/jest-dom/vitest';
 
@@ -26,7 +27,12 @@ afterAll(() => {
 });
 
 test('daily survey flow', async () => {
-  render(<DailySurvey />);
+  localStorage.setItem('nationality', 'US');
+  render(
+    <MemoryRouter>
+      <DailySurvey />
+    </MemoryRouter>
+  );
   expect(await screen.findByText('Q1')).toBeInTheDocument();
   fireEvent.click(screen.getByText('a'));
   expect(await screen.findByText('Q2')).toBeInTheDocument();
