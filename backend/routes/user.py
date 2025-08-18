@@ -58,7 +58,7 @@ async def set_nationality(payload: NationalityPayload):
 @router.get("/credits")
 async def get_credits(user: dict = Depends(get_current_user)):
     return {
-        "free_attempts": user.get("free_attempts"),
+        "points": user.get("points"),
         "pro_active_until": user.get("pro_active_until"),
     }
 

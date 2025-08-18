@@ -38,10 +38,10 @@ export default function AdminUsers() {
       const headers = token
         ? { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
         : { 'Content-Type': 'application/json' };
-      const res = await fetch(`${apiBase}/admin/user/free_attempts`, {
+      const res = await fetch(`${apiBase}/admin/user/points`, {
         method: 'POST',
         headers,
-        body: JSON.stringify({ user_id: id, free_attempts: u.free_attempts })
+        body: JSON.stringify({ user_id: id, points: u.points })
       });
       if (!res.ok) throw new Error();
       setMsg('Saved');
@@ -59,7 +59,7 @@ export default function AdminUsers() {
             <div className="table-wrap" data-b-spec="admin-table-scroll">
               <table className="table w-full">
                 <thead>
-                  <tr><th>ID</th><th>Free attempts</th><th></th></tr>
+                  <tr><th>ID</th><th>Points</th><th></th></tr>
                 </thead>
                 <tbody>
                   {users.map(u => (
@@ -69,12 +69,12 @@ export default function AdminUsers() {
                         <input
                           type="number"
                           className="input input-bordered w-24"
-                          value={u.free_attempts ?? 0}
+                          value={u.points ?? 0}
                           onChange={e =>
                             setUsers(us =>
                               us.map(x =>
                                 x.hashed_id === u.hashed_id
-                                  ? { ...x, free_attempts: parseInt(e.target.value, 10) }
+                                  ? { ...x, points: parseInt(e.target.value, 10) }
                                   : x
                               )
                             )

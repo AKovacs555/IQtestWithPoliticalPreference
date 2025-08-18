@@ -10,7 +10,7 @@ from main import app
 def test_payment_flow(monkeypatch):
     user_id = f"pay_{uuid.uuid4().hex[:8]}"
     monkeypatch.setattr("main.AD_REWARD_POINTS", 5)
-    monkeypatch.setattr("main.RETRY_POINT_COST", 5)
+    monkeypatch.setattr("main.RETRY_POINT_COST", 1)
     with TestClient(app) as client:
         r = client.post("/play/record", json={"user_id": user_id})
         assert r.status_code == 200

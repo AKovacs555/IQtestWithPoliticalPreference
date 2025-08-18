@@ -22,7 +22,7 @@ export default function Home() {
     ? { Authorization: `Bearer ${session.access_token}` }
     : {};
 
-  const [freeAttempts, setFreeAttempts] = useState(0);
+  const [points, setPoints] = useState(0);
   const [inviteCode, setInviteCode] = useState('');
   const [currentIQ, setCurrentIQ] = useState(0);
   const [globalRank, setGlobalRank] = useState(null);
@@ -40,7 +40,7 @@ export default function Home() {
       ]);
       if (credRes?.ok) {
         const d = await credRes.json();
-        setFreeAttempts(d.free_attempts ?? 0);
+        setPoints(d.points ?? 0);
       }
       if (codeRes?.ok) {
         const d = await codeRes.json();
@@ -148,7 +148,7 @@ export default function Home() {
         />
         <TestStartBanner
           onStart={handleStartQuiz}
-          statRight={{ value: String(freeAttempts), label: '回利用可能' }}
+          statRight={{ value: String(points), label: 'ポイント' }}
         />
         <ArenaBanner />
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

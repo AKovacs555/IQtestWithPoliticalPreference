@@ -29,7 +29,7 @@ from backend.db import (  # noqa: E402
     get_answered_survey_group_ids,
     insert_survey_answers,
     get_daily_answer_count,
-    consume_free_attempt,
+    spend_points,
 )
 
 router = APIRouter(prefix="/quiz", tags=["quiz"])
@@ -105,8 +105,8 @@ async def start_quiz(
         except ValueError as e:
             raise HTTPException(status_code=404, detail=str(e))
     daily_count = get_daily_answer_count(user["hashed_id"])
-    free_attempts = int(user.get("free_attempts", 0))
-    if free_attempts <= 0 and daily_count < 3:
+    points = int(user.get("points", 0))
+    if points <= 0 and daily_count < 3:
         return RedirectResponse(url=f"/survey/start?lang={lang}", status_code=303)
     pending_surveys = get_random_pending_surveys(
         user["hashed_id"], user.get("nationality"), user.get("gender"), lang=lang, limit=3
@@ -123,9 +123,9 @@ async def start_quiz(
 
     remaining = None
     if not pro_active:
-        remaining = consume_free_attempt(user["hashed_id"])
+        remaining = spend_points(user["hashed_id"])
         if remaining is None:
-            logger.error("attempts_insufficient", extra={"user_id": user["hashed_id"]})
+            logger.error("points_insufficient", extra={"user_id": user["hashed_id"]})
             raise HTTPException(
                 status_code=400,
                 detail={
@@ -135,7 +135,7 @@ async def start_quiz(
             )
 
     logger.info(
-        "attempts_consume_ok", extra={"user_id": user["hashed_id"], "remaining": remaining}
+        "points_consume_ok", extra={"user_id": user["hashed_id"], "remaining": remaining}
     )
     logger.info("quiz_start_allowed")
     if set_id:
@@ -347,7 +347,7 @@ async def submit_quiz(
     try:
         from backend.referral import credit_referral_if_applicable
 
-        credit_referral_if_applicable(user["hashed_id"])
+        await credit_referral_if_applicable(user["hashed_id"])
     except Exception:
         pass
     try:

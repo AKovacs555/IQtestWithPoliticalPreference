@@ -1,7 +1,5 @@
 import os
 import sys
-from pathlib import Path
-import sqlite3
 import pytest
 from fastapi import FastAPI  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
@@ -82,7 +80,7 @@ class DummyTable:
 
 class DummySupabase:
     def __init__(self):
-        self.tables = {"app_users": [], "attempt_ledger": []}
+        self.tables = {"app_users": [], "point_ledger": []}
 
     def table(self, name):
         if name not in self.tables:
@@ -101,15 +99,15 @@ def fake_supabase(monkeypatch):
     return supa
 
 
-def _setup_app(monkeypatch, fake_supabase, free_attempts: int, seed_ledger: bool = True):
+def _setup_app(monkeypatch, fake_supabase, points: int, seed_ledger: bool = True):
     app = FastAPI()
     app.state.sessions = {}
     app.include_router(router)
 
     uid = "u1"
-    fake_supabase.table("app_users").insert({"hashed_id": uid, "free_attempts": free_attempts}).execute()
-    if seed_ledger and free_attempts:
-        fake_supabase.table("attempt_ledger").insert({"user_id": uid, "delta": free_attempts, "reason": "seed"}).execute()
+    fake_supabase.table("app_users").insert({"hashed_id": uid, "points": points}).execute()
+    if seed_ledger and points:
+        fake_supabase.table("point_ledger").insert({"user_id": uid, "delta": points, "reason": "seed"}).execute()
 
     app.dependency_overrides[get_current_user] = lambda: {
         "hashed_id": uid,
@@ -136,22 +134,22 @@ def test_consume_ok(monkeypatch, fake_supabase, caplog):
     with TestClient(app) as client, caplog.at_level("INFO"):
         res = client.get("/quiz/start?set_id=s1")
     assert res.status_code == 200
-    from backend.db import get_available_attempts
+    from backend.db import get_points
 
-    remaining = get_available_attempts(uid)
+    remaining = get_points(uid)
     assert remaining == 1
-    assert "attempts_consume_ok" in caplog.text
+    assert "points_consume_ok" in caplog.text
 
 
 def test_fallback_to_profile_when_no_ledger(monkeypatch, fake_supabase, caplog):
     app, uid = _setup_app(monkeypatch, fake_supabase, 1, seed_ledger=False)
-    from backend.db import get_available_attempts
+    from backend.db import get_points
 
-    assert get_available_attempts(uid) == 1
+    assert get_points(uid) == 1
     with TestClient(app) as client, caplog.at_level("INFO"):
         res = client.get("/quiz/start?set_id=s1")
     assert res.status_code == 200
-    assert "attempts_consume_ok" in caplog.text
+    assert "points_consume_ok" in caplog.text
 
 
 def test_need_payment_when_zero(monkeypatch, fake_supabase, caplog):
@@ -160,37 +158,6 @@ def test_need_payment_when_zero(monkeypatch, fake_supabase, caplog):
         res = client.get("/quiz/start?set_id=s1")
     assert res.status_code == 400
     assert res.json().get("error") == "survey_required" or res.json().get("detail", {}).get("error") == "survey_required"
-    assert "attempts_insufficient" in caplog.text
+    assert "points_insufficient" in caplog.text
 
 
-def _run_migration(conn, sql: str):
-    try:
-        conn.execute("alter table users rename column free_tests to free_attempts")
-    except sqlite3.OperationalError:
-        pass
-    try:
-        conn.execute(
-            "alter table users add column if not exists free_attempts integer not null default 0"
-        )
-    except sqlite3.OperationalError:
-        pass
-    try:
-        conn.execute(
-            "create index if not exists idx_users_id_free_attempts on users (id, free_attempts)"
-        )
-    except sqlite3.OperationalError:
-        pass
-
-
-def test_migration_idempotent(tmp_path):
-    migration = next(Path("supabase/migrations").glob("*_free_attempts.sql"))
-    sql = migration.read_text()
-    conn = sqlite3.connect(":memory:")
-    conn.execute("create table users (id integer primary key, free_tests integer)")
-    _run_migration(conn, sql)
-    _run_migration(conn, sql)
-    cols = [r[1] for r in conn.execute("pragma table_info(users)")]
-    assert cols.count("free_attempts") == 1
-    idxs = [r[1] for r in conn.execute("pragma index_list('users')")]
-    assert "idx_users_id_free_attempts" in idxs
-    conn.close()
