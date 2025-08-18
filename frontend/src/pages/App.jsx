@@ -3,7 +3,6 @@ import { Routes, Route, useLocation, useNavigate, Navigate } from 'react-router-
 import { useTranslation } from 'react-i18next';
 import useShareMeta from '../hooks/useShareMeta';
 import AppShell from '../components/AppShell';
-import ProgressBar from '../components/ProgressBar';
 import Home from './Home';
 import AuthCallback from './AuthCallback';
 import Pricing from './Pricing';
@@ -15,14 +14,13 @@ import SelectNationality from './SelectNationality';
 import Survey from './Survey.jsx';
 import DailySurvey from './DailySurvey';
 import Dashboard from './Dashboard';
-import QuestionCard from '../components/QuestionCard';
 import Settings from './Settings.jsx';
 import DemographicsForm from './DemographicsForm.jsx';
 import History from './History.jsx';
-import { getQuizStart, submitQuiz } from '../api';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import Login from './Login.jsx';
-import TestPage from './TestPage.jsx';
+import QuizStart from './QuizStart.jsx';
+import QuizPlay from './QuizPlay.jsx';
 import Contact from './Contact.jsx';
 import ErrorChunkReload from '../components/common/ErrorChunkReload';
 import ThemeDemo from './ThemeDemo.jsx';
@@ -74,178 +72,6 @@ const PageTransition = ({ children }) => {
   );
 };
 
-
-const Quiz = () => {
-  const location = useLocation();
-  const params = new URLSearchParams(location.search);
-  const setId = params.get('set');
-  const [session, setSession] = React.useState(null);
-  const [questions, setQuestions] = React.useState([]);
-  const [answers, setAnswers] = React.useState([]);
-  const [current, setCurrent] = React.useState(0);
-  const [timeLeft, setTimeLeft] = React.useState(300);
-  const [suspicious, setSuspicious] = React.useState(false);
-  const [loading, setLoading] = React.useState(true);
-  const [error, setError] = React.useState(null);
-  const [submitting, setSubmitting] = React.useState(false);
-  const { t } = useTranslation();
-  const navigate = useNavigate();
-  const watermark = React.useMemo(() => `${session?.slice(0,6) || ''}-${Date.now()}`,[session]);
-
-  const { user, loading: authLoading } = useAuth();
-
-  React.useEffect(() => {
-    if (authLoading) return;
-    if (!user) {
-      navigate('/login');
-      return;
-    }
-    const nat = localStorage.getItem('nationality');
-    if (!nat) {
-      navigate('/select-nationality');
-      return;
-    }
-    if (localStorage.getItem('demographic_completed') !== 'true') {
-      navigate('/demographics');
-      return;
-    }
-    if (localStorage.getItem('survey_completed') !== 'true') {
-      navigate('/survey');
-      return;
-    }
-    async function load() {
-      try {
-        const data = await getQuizStart(setId, undefined);
-        setSession(data.attempt_id || data.session_id);
-        setQuestions(data.questions);
-        setCurrent(0);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    }
-    load();
-  }, [setId, navigate, user, authLoading]);
-
-  // Prevent copying or cutting text and disable context menu
-  React.useEffect(() => {
-    const preventCopy = (e) => e.preventDefault();
-    const preventContext = (e) => e.preventDefault();
-    document.addEventListener('copy', preventCopy);
-    document.addEventListener('cut', preventCopy);
-    document.addEventListener('contextmenu', preventContext);
-    return () => {
-      document.removeEventListener('copy', preventCopy);
-      document.removeEventListener('cut', preventCopy);
-      document.removeEventListener('contextmenu', preventContext);
-    };
-  }, []);
-
-  React.useEffect(() => {
-    const t = setInterval(() => setTimeLeft(t => Math.max(t - 1, 0)), 1000);
-    return () => clearInterval(t);
-  }, []);
-
-  const submit = async (list) => {
-    if (submitting) return;
-    setSubmitting(true);
-    try {
-      // console.log('submitQuiz called');
-      const result = await submitQuiz(session, list, []);
-      const params = new URLSearchParams({
-        iq: result.iq.toString(),
-        percentile: result.percentile.toString(),
-      });
-      if (result.share_url) params.set('share_url', result.share_url);
-      navigate('/result?' + params.toString());
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  React.useEffect(() => {
-    if (timeLeft === 0 && !loading && !error) {
-      (async () => {
-        await submit(
-          answers.map((ans, idx) => ({
-            id: questions[idx].id,
-            answer: ans ?? -1,
-          }))
-        );
-      })();
-    }
-  }, [timeLeft, loading, error]);
-
-  React.useEffect(() => {
-    let hideTime = null;
-    const onHide = () => { hideTime = Date.now(); };
-    const onShow = () => {
-      if (hideTime && Date.now() - hideTime > 3000) setSuspicious(true);
-      hideTime = null;
-    };
-    // Flag the attempt if the user switches tabs or apps for too long.
-    document.addEventListener('visibilitychange', () => {
-      if (document.hidden) onHide(); else onShow();
-    });
-    window.addEventListener('blur', onHide);
-    window.addEventListener('focus', onShow);
-    return () => {
-      document.removeEventListener('visibilitychange', () => {});
-      window.removeEventListener('blur', onHide);
-      window.removeEventListener('focus', onShow);
-    };
-  }, []);
-
-  const select = async (i) => {
-    if (submitting) return;
-    const a = [...answers];
-    a[current] = i;
-    setAnswers(a);
-    if (current + 1 < questions.length) {
-      setCurrent(c => c + 1);
-    } else {
-      await submit(a.map((ans, idx) => ({ id: questions[idx].id, answer: ans })));
-    }
-  };
-
-  return (
-    <PageTransition>
-      <AppShell>
-        <div className="space-y-4 max-w-lg mx-auto quiz-container">
-          {loading && <p>Loading...</p>}
-          {error && <p className="text-red-600">{error}</p>}
-          {!loading && !error && (
-            <>
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-mono">
-                  {t('quiz.progress', { current: current + 1, total: questions.length })}
-                </span>
-                <div className="text-right font-mono">
-                  {Math.floor(timeLeft / 60)}:{`${timeLeft % 60}`.padStart(2, '0')}
-                </div>
-              </div>
-              <ProgressBar value={(current / questions.length) * 100} />
-              {questions[current] && (
-                <QuestionCard
-                  question={questions[current]}
-                  onSelect={select}
-                  watermark={watermark}
-                  disabled={submitting}
-                />
-              )}
-            </>
-          )}
-          {suspicious && (
-            <p className="text-red-600 text-sm">Session flagged for leaving the page.</p>
-          )}
-        </div>
-      </AppShell>
-    </PageTransition>
-  );
-};
 
 // Survey component moved to SurveyPage.jsx
 
@@ -325,8 +151,10 @@ export default function App() {
         <Route path="/" element={<HomeEntry />} />
         <Route path="/select-set" element={<RequireAuth><SelectSet /></RequireAuth>} />
         <Route path="/demographics" element={<RequireAuth><DemographicsForm /></RequireAuth>} />
-        <Route path="/quiz" element={<RequireAuth><TestPage /></RequireAuth>} />
-        <Route path="/test" element={<RequireAuth><TestPage /></RequireAuth>} />
+        <Route path="/quiz/start" element={<RequireAuth><QuizStart /></RequireAuth>} />
+        <Route path="/quiz/play" element={<RequireAuth><QuizPlay /></RequireAuth>} />
+        <Route path="/quiz" element={<Navigate to="/quiz/start" replace />} />
+        <Route path="/test" element={<Navigate to="/quiz/start" replace />} />
         <Route path="/survey" element={<RequireAuth><Survey /></RequireAuth>} />
         <Route path="/daily-survey" element={<RequireAuth><DailySurvey /></RequireAuth>} />
         <Route path="/pricing" element={<Pricing />} />

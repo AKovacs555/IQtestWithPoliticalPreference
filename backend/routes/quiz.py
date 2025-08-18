@@ -32,6 +32,11 @@ from backend.db import (  # noqa: E402
     spend_points,
 )
 from backend.utils.settings import get_setting
+from backend.schemas.quiz import (
+    AttemptStartResponse,
+    AttemptQuestionsResponse,
+    QuestionDTO,
+)
 
 router = APIRouter(prefix="/quiz", tags=["quiz"])
 logger = logging.getLogger(__name__)
@@ -43,17 +48,10 @@ _dist_path = Path(__file__).resolve().parents[1] / "data" / "normative_distribut
 with _dist_path.open() as f:
     NORMATIVE_DIST = json.load(f)
 
-class QuizQuestion(BaseModel):
-    id: str
-    question: str
-    options: List[str]
-    image: str | None = None
-    option_images: List[str] | None = None
 
-class QuizStartResponse(BaseModel):
-    attempt_id: str
-    questions: List[QuizQuestion]
-    pending_surveys: Optional[List[dict]] = None
+def _generate_set_id(length: int = 12) -> str:
+    alphabet = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+    return "".join(random.choice(alphabet) for _ in range(length))
 
 class QuizAnswer(BaseModel):
     id: str | int
@@ -65,19 +63,19 @@ class SurveyAnswer(BaseModel):
 
 
 class QuizSubmitRequest(BaseModel):
-    session_id: str
+    attempt_id: str
     answers: List[QuizAnswer]
     surveys: Optional[List[SurveyAnswer]] = None
 
 
 class QuizAbandonRequest(BaseModel):
-    session_id: str
+    attempt_id: str
 
 @router.get("/sets")
 async def quiz_sets():
     return {"sets": get_question_sets()}
 
-@router.get("/start", response_model=QuizStartResponse)
+@router.get("/start", response_model=AttemptStartResponse)
 async def start_quiz(
     request: Request,
     set_id: str | None = None,
@@ -116,9 +114,6 @@ async def start_quiz(
                 "message": "Please complete the survey before taking the IQ test.",
             },
         )
-    pending_surveys = get_random_pending_surveys(
-        user["hashed_id"], user.get("nationality"), user.get("gender"), lang=lang, limit=3
-    )
     # Determine subscription status
     pro_active = False
     pro_until = user.get("pro_active_until")
@@ -148,7 +143,7 @@ async def start_quiz(
     logger.info("quiz_start_allowed")
     if set_id:
         try:
-            questions = get_balanced_random_questions_by_set(NUM_QUESTIONS, set_id)
+            questions = get_balanced_random_questions_by_set(NUM_QUESTIONS, set_id, lang)
         except ValueError as e:
             raise HTTPException(status_code=404, detail=str(e))
     else:
@@ -170,7 +165,6 @@ async def start_quiz(
                     query = query.gte("irt_b", lower)
                 if upper is not None:
                     query = query.lt("irt_b", upper)
-                # Fetch all matching questions and randomize on the client side
                 rows = query.execute().data or []
                 random.shuffle(rows)
                 unique = []
@@ -221,9 +215,17 @@ async def start_quiz(
             logging.getLogger(__name__).error("No questions available for language %s", lang)
             raise HTTPException(status_code=500, detail="No questions available")
 
-    session_id = str(uuid.uuid4())
+    question_ids = [q["id"] for q in questions]
+    set_id = set_id or _generate_set_id()
+    supabase = get_supabase_client()
+    try:
+        supabase.table("question_sets").insert({"id": set_id, "question_ids": question_ids}).execute()
+    except Exception:
+        pass
+
+    attempt_id = str(uuid.uuid4())
     expires_at = datetime.utcnow() + timedelta(minutes=QUIZ_DURATION_MINUTES or 10)
-    request.app.state.sessions[session_id] = {
+    request.app.state.sessions[attempt_id] = {
         str(q["id"]): {"answer": q["answer"], "a": q.get("irt_a"), "b": q.get("irt_b")}
         for q in questions
     }
@@ -231,13 +233,12 @@ async def start_quiz(
         request.app.state.session_expires = {}
     if not hasattr(request.app.state, "session_started"):
         request.app.state.session_started = {}
-    request.app.state.session_expires[session_id] = expires_at
-    request.app.state.session_started[session_id] = datetime.utcnow()
-    supabase = get_supabase_client()
+    request.app.state.session_expires[attempt_id] = expires_at
+    request.app.state.session_started[attempt_id] = datetime.utcnow()
     try:
         supabase.table("quiz_attempts").insert(
             {
-                "id": session_id,
+                "id": attempt_id,
                 "user_id": user.get("hashed_id"),
                 "set_id": set_id,
                 "status": "started",
@@ -245,46 +246,69 @@ async def start_quiz(
         ).execute()
     except Exception as e:  # pragma: no cover - best effort only
         logging.getLogger(__name__).warning("Could not create session record: %s", e)
-    models = []
-    for q in questions:
-        models.append(
-            QuizQuestion(
-                id=str(q["id"]),
-                question=q.get("question") or q.get("prompt", ""),
-                options=[str(o.get("id")) for o in q.get("options", [])] if q.get("options") and isinstance(q.get("options")[0], dict) else q.get("options", []),
-                image=q.get("image"),
-                option_images=[o.get("image") for o in q.get("options", [])] if q.get("options") and isinstance(q.get("options")[0], dict) else q.get("option_images"),
-            )
-        )
-    return {
-        "attempt_id": session_id,
-        "expires_at": expires_at.isoformat(),
-        "questions": models,
-        "pending_surveys": pending_surveys or [],
-    }
+
+    return {"attempt_id": attempt_id, "set_id": set_id}
+
+
+@router.get("/attempts/{attempt_id}/questions", response_model=AttemptQuestionsResponse)
+async def attempt_questions(attempt_id: str, user: dict = Depends(get_current_user)):
+    supabase = get_supabase_client()
+    attempt = (
+        supabase.table("quiz_attempts")
+        .select("set_id")
+        .eq("id", attempt_id)
+        .single()
+        .execute()
+    )
+    if not attempt.data:
+        raise HTTPException(status_code=404, detail={"code": "attempt_not_found", "message": "Attempt not found"})
+    set_id = attempt.data.get("set_id")
+    qs = (
+        supabase.table("question_sets")
+        .select("question_ids")
+        .eq("id", set_id)
+        .single()
+        .execute()
+    )
+    question_ids: List[int] = qs.data.get("question_ids") if qs.data else []
+    if not question_ids:
+        raise HTTPException(status_code=404, detail={"code": "questions_not_found", "message": "Questions not found"})
+    rows = (
+        supabase.table("questions")
+        .select("id, question, options, option_images, irt_a, irt_b, image, lang")
+        .in_("id", question_ids)
+        .execute()
+        .data
+        or []
+    )
+    if not rows:
+        raise HTTPException(status_code=404, detail={"code": "questions_not_found", "message": "Questions not found"})
+    by_id = {r["id"]: r for r in rows}
+    items = [QuestionDTO(**by_id[qid]) for qid in question_ids if qid in by_id]
+    return {"attempt_id": attempt_id, "set_id": set_id, "items": items}
 
 @router.post("/submit")
 async def submit_quiz(
     payload: QuizSubmitRequest, request: Request, user: dict = Depends(get_current_user)
 ):
     supabase = get_supabase_client()
-    session = request.app.state.sessions.get(payload.session_id)
+    session = request.app.state.sessions.get(payload.attempt_id)
     if not session:
         raise HTTPException(status_code=400, detail="Invalid session")
-    expires_at = getattr(request.app.state, "session_expires", {}).get(payload.session_id)
+    expires_at = getattr(request.app.state, "session_expires", {}).get(payload.attempt_id)
     if not expires_at:
-        request.app.state.sessions.pop(payload.session_id, None)
+        request.app.state.sessions.pop(payload.attempt_id, None)
         raise HTTPException(status_code=400, detail="Invalid session")
     if datetime.utcnow() > expires_at:
         try:
             supabase.table("quiz_attempts").update({"status": "timeout"}).eq(
-                "id", payload.session_id
+                "id", payload.attempt_id
             ).execute()
         except Exception:
             pass
-        request.app.state.sessions.pop(payload.session_id, None)
-        getattr(request.app.state, "session_expires", {}).pop(payload.session_id, None)
-        getattr(request.app.state, "session_started", {}).pop(payload.session_id, None)
+        request.app.state.sessions.pop(payload.attempt_id, None)
+        getattr(request.app.state, "session_expires", {}).pop(payload.attempt_id, None)
+        getattr(request.app.state, "session_started", {}).pop(payload.attempt_id, None)
         raise HTTPException(status_code=400, detail="Session expired")
     if len(payload.answers) != len(session):
         raise HTTPException(status_code=400, detail="Expected all answers")
@@ -305,14 +329,14 @@ async def submit_quiz(
         supabase.from_("user_scores").insert(
             {
                 "user_id": user["hashed_id"],
-                "session_id": payload.session_id,
+                "session_id": payload.attempt_id,
                 "iq": iq,
                 "percentile": pct,
             }
         ).execute()
     except Exception as e:  # pragma: no cover - best effort only
         logging.getLogger(__name__).warning("Could not store user score: %s", e)
-    start_time = getattr(request.app.state, "session_started", {}).get(payload.session_id)
+    start_time = getattr(request.app.state, "session_started", {}).get(payload.attempt_id)
     duration = None
     if start_time:
         duration = int((datetime.utcnow() - start_time).total_seconds())
@@ -325,7 +349,7 @@ async def submit_quiz(
         if duration is not None:
             update_data["duration"] = duration
         supabase.table("quiz_attempts").update(update_data).eq(
-            "id", payload.session_id
+            "id", payload.attempt_id
         ).execute()
     except Exception:  # pragma: no cover - best effort only
         pass
@@ -360,9 +384,9 @@ async def submit_quiz(
         await credit_referral_if_applicable(user["hashed_id"])
     except Exception:
         pass
-    request.app.state.sessions.pop(payload.session_id, None)
-    getattr(request.app.state, "session_expires", {}).pop(payload.session_id, None)
-    getattr(request.app.state, "session_started", {}).pop(payload.session_id, None)
+    request.app.state.sessions.pop(payload.attempt_id, None)
+    getattr(request.app.state, "session_expires", {}).pop(payload.attempt_id, None)
+    getattr(request.app.state, "session_started", {}).pop(payload.attempt_id, None)
     return {
         "theta": theta,
         "iq": iq,
@@ -380,13 +404,13 @@ async def abandon_quiz(
     supabase = get_supabase_client()
     try:
         supabase.table("quiz_attempts").update({"status": "abandoned"}).eq(
-            "id", payload.session_id
+            "id", payload.attempt_id
         ).eq("status", "started").execute()
     except Exception:
         pass
-    request.app.state.sessions.pop(payload.session_id, None)
-    getattr(request.app.state, "session_expires", {}).pop(payload.session_id, None)
-    getattr(request.app.state, "session_started", {}).pop(payload.session_id, None)
+    request.app.state.sessions.pop(payload.attempt_id, None)
+    getattr(request.app.state, "session_expires", {}).pop(payload.attempt_id, None)
+    getattr(request.app.state, "session_started", {}).pop(payload.attempt_id, None)
     return {"status": "abandoned"}
 
 
@@ -457,3 +481,27 @@ def get_random_pending_surveys(
         )
     random.shuffle(eligible)
     return eligible[:limit]
+
+
+CAT_ENABLED = bool(int(os.getenv("CAT_ENABLED", "0")))
+
+
+@router.post("/answer")
+async def cat_answer():  # pragma: no cover - skeleton
+    if not CAT_ENABLED:
+        raise HTTPException(status_code=503, detail={"code": "cat_disabled", "message": "CAT disabled"})
+    raise HTTPException(status_code=501, detail={"code": "not_implemented", "message": "CAT answer not implemented"})
+
+
+@router.get("/next")
+async def cat_next():  # pragma: no cover - skeleton
+    if not CAT_ENABLED:
+        raise HTTPException(status_code=503, detail={"code": "cat_disabled", "message": "CAT disabled"})
+    raise HTTPException(status_code=501, detail={"code": "not_implemented", "message": "CAT next not implemented"})
+
+
+@router.post("/finish")
+async def cat_finish():  # pragma: no cover - skeleton
+    if not CAT_ENABLED:
+        raise HTTPException(status_code=503, detail={"code": "cat_disabled", "message": "CAT disabled"})
+    raise HTTPException(status_code=501, detail={"code": "not_implemented", "message": "CAT finish not implemented"})

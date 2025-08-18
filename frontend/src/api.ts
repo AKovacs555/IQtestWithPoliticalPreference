@@ -57,22 +57,26 @@ export async function updateProfile(data: unknown) {
   return apiPost('/user/profile', data);
 }
 
-export async function getQuizStart(setId?: string | null, lang?: string | null) {
+export async function getQuizStart(lang?: string | null, setId?: string | null) {
   let url = '/quiz/start';
   const params = new URLSearchParams();
-  if (setId) params.set('set_id', setId);
   if (lang) params.set('lang', lang);
+  if (setId) params.set('set_id', setId);
   if (Array.from(params).length) url += `?${params.toString()}`;
   return apiGet(url);
 }
 
-export async function submitQuiz(sessionId: string, answers: unknown, surveys?: unknown) {
-  return apiPost('/quiz/submit', { session_id: sessionId, answers, surveys });
+export async function getAttemptQuestions(attemptId: string) {
+  return apiGet(`/quiz/attempts/${attemptId}/questions`);
 }
 
-export async function abandonQuiz(sessionId: string) {
+export async function submitQuiz(attemptId: string, answers: unknown, surveys?: unknown) {
+  return apiPost('/quiz/submit', { attempt_id: attemptId, answers, surveys });
+}
+
+export async function abandonQuiz(attemptId: string) {
   try {
-    await apiPost('/quiz/abandon', { session_id: sessionId });
+    await apiPost('/quiz/abandon', { attempt_id: attemptId });
   } catch {
     // fire and forget
   }

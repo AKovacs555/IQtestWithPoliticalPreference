@@ -54,7 +54,7 @@ def test_submit_quiz_handles_missing_user_scores(monkeypatch):
     monkeypatch.setattr(quiz, "generate_share_image", lambda uid, iq, pct: "")
 
     client = TestClient(app)
-    payload = {"session_id": "sess1", "answers": [{"id": 1, "answer": 0}]}
+    payload = {"attempt_id": "sess1", "answers": [{"id": 1, "answer": 0}]}
     resp = client.post("/quiz/submit", json=payload)
     assert resp.status_code == 200
     data = resp.json()

@@ -16,6 +16,8 @@ def make_app(monkeypatch, supa, duration=25):
     app = FastAPI()
     app.include_router(router)
     app.state.sessions = {}
+    app.state.session_expires = {}
+    app.state.session_started = {}
     app.dependency_overrides[get_current_user] = lambda: {
         "hashed_id": str(uuid.uuid4()),
         "nationality": "JP",
@@ -45,7 +47,7 @@ def test_session_timeout(monkeypatch, fake_supabase):
         app.state.session_expires[sid] = datetime.utcnow() - timedelta(seconds=1)
         resp = client.post(
             "/quiz/submit",
-            json={"session_id": sid, "answers": [{"id": 1, "answer": 0}]},
+            json={"attempt_id": sid, "answers": [{"id": 1, "answer": 0}]},
         )
         assert resp.status_code == 400
         assert resp.json()["detail"] == "Session expired"
@@ -67,9 +69,9 @@ def test_double_submit(monkeypatch, fake_supabase):
         start = client.get("/quiz/start?set_id=x").json()
         sid = start["attempt_id"]
         answers = [{"id": 1, "answer": 0}]
-        first = client.post("/quiz/submit", json={"session_id": sid, "answers": answers})
+        first = client.post("/quiz/submit", json={"attempt_id": sid, "answers": answers})
         assert first.status_code == 200
-        second = client.post("/quiz/submit", json={"session_id": sid, "answers": answers})
+        second = client.post("/quiz/submit", json={"attempt_id": sid, "answers": answers})
         assert second.status_code == 400
         row = (
             quiz.get_supabase_client()
