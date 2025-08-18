@@ -4,8 +4,10 @@ import uuid
 from datetime import datetime, timedelta
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
+
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
+
 import backend.routes.quiz as quiz
 from backend.routes.quiz import router, get_current_user
 
@@ -40,16 +42,22 @@ def test_session_timeout(monkeypatch, fake_supabase):
     with TestClient(app) as client:
         start = client.get("/quiz/start?set_id=x").json()
         sid = start["session_id"]
-        fake_supabase.table("quiz_sessions").update(
-            {"expires_at": (datetime.utcnow() - timedelta(seconds=1)).isoformat()}
-        ).eq("id", sid).execute()
+        app.state.session_expires[sid] = datetime.utcnow() - timedelta(seconds=1)
         resp = client.post(
             "/quiz/submit",
             json={"session_id": sid, "answers": [{"id": 1, "answer": 0}]},
         )
         assert resp.status_code == 400
         assert resp.json()["detail"] == "Session expired"
-        row = quiz.get_supabase_client().table("quiz_sessions").select("*").eq("id", sid).single().execute().data
+        row = (
+            quiz.get_supabase_client()
+            .table("quiz_attempts")
+            .select("*")
+            .eq("id", sid)
+            .single()
+            .execute()
+            .data
+        )
         assert row["status"] == "timeout"
 
 
@@ -63,5 +71,13 @@ def test_double_submit(monkeypatch, fake_supabase):
         assert first.status_code == 200
         second = client.post("/quiz/submit", json={"session_id": sid, "answers": answers})
         assert second.status_code == 400
-        row = quiz.get_supabase_client().table("quiz_sessions").select("*").eq("id", sid).single().execute().data
+        row = (
+            quiz.get_supabase_client()
+            .table("quiz_attempts")
+            .select("*")
+            .eq("id", sid)
+            .single()
+            .execute()
+            .data
+        )
         assert row["status"] == "submitted"
