@@ -98,3 +98,9 @@ export async function getSurveyStats(surveyId: string) {
   if (!res.ok) throw new Error(String(res.status));
   return res.json();
 }
+
+export async function getAttemptQuestions(attemptId: string) {
+  const res = await fetchWithAuth(`/quiz/attempts/${attemptId}/questions`);
+  if (!res.ok) throw new Error(String(res.status));
+  return res.json();
+}

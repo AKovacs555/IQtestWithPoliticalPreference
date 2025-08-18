@@ -56,13 +56,16 @@ class DummyTable:
         return self
 
     def eq(self, column, value):
-        self._filters.append((column, value))
+        self._filters.append(("eq", column, value))
         return self
 
     def contains(self, column, value):
         """Naive array containment check used in tests."""
-        self._filters.append((column, tuple(value)))
-        self._contains = True
+        self._filters.append(("contains", column, tuple(value)))
+        return self
+
+    def in_(self, column, values):
+        self._filters.append(("in", column, tuple(values)))
         return self
 
     def limit(self, n):
@@ -74,6 +77,18 @@ class DummyTable:
         return self
 
     def execute(self):
+        def _matches(row):
+            for op, col, val in self._filters:
+                field = row.get(col)
+                if op == "eq" and field != val:
+                    return False
+                if op == "contains":
+                    if not isinstance(field, list) or val[0] not in field:
+                        return False
+                if op == "in" and field not in val:
+                    return False
+            return True
+
         if getattr(self, '_insert', None) is not None:
             data = self._insert
             if isinstance(data, list):
@@ -85,29 +100,17 @@ class DummyTable:
             self._reset()
             return DummyResponse(result)
         if getattr(self, '_delete', False):
-            self.rows[:] = [r for r in self.rows if not all(r.get(c) == v for c, v in self._filters)]
+            self.rows[:] = [r for r in self.rows if not _matches(r)]
             self._reset()
             return DummyResponse(None)
         if getattr(self, '_update', None) is not None:
             for r in self.rows:
-                if all(r.get(col) == val for col, val in self._filters):
+                if _matches(r):
                     r.update(self._update)
             self._reset()
             return DummyResponse(None)
         if self._select:
-            res = []
-            for r in self.rows:
-                match = True
-                for col, val in self._filters:
-                    if getattr(self, '_contains', False) and isinstance(r.get(col), list):
-                        if val[0] not in r.get(col, []):
-                            match = False
-                            break
-                    elif r.get(col) != val:
-                        match = False
-                        break
-                if match:
-                    res.append(r)
+            res = [r for r in self.rows if _matches(r)]
             if self._single:
                 res = res[0] if res else None
             if self._limit is not None and isinstance(res, list):
@@ -123,7 +126,6 @@ class DummyTable:
         self._update = None
         self._delete = False
         self._filters = []
-        self._contains = False
         self._single = False
         self._limit = None
 
