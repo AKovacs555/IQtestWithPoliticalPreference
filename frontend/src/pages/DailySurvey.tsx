@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import SurveyCard from '../components/survey/SurveyCard';
 import { useSession } from '../hooks/useSession';
+import { useNavigate } from 'react-router-dom';
 
 // minimal toast shim
 const toast = {
@@ -23,6 +24,7 @@ export default function DailySurvey() {
   const apiBase = import.meta.env.VITE_API_BASE || '';
   const { session } = useSession();
   const headers = session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {};
+  const navigate = useNavigate();
 
   const load = async () => {
     try {
@@ -45,8 +47,13 @@ export default function DailySurvey() {
   };
 
   useEffect(() => {
+    const nat = localStorage.getItem('nationality');
+    if (!nat) {
+      navigate('/select-nationality');
+      return;
+    }
     if (session) load();
-  }, [session]);
+  }, [session, navigate]);
 
   const handleAnswer = async (idx: number) => {
     const item = items[current];
