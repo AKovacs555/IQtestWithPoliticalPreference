@@ -157,7 +157,8 @@ def test_need_payment_when_zero(monkeypatch, fake_supabase, caplog):
     with TestClient(app) as client, caplog.at_level("ERROR"):
         res = client.get("/quiz/start?set_id=s1")
     assert res.status_code == 400
-    assert res.json().get("error") == "survey_required" or res.json().get("detail", {}).get("error") == "survey_required"
+    err = res.json()
+    assert err.get("error") == "insufficient_points" or err.get("detail", {}).get("error") == "insufficient_points"
     assert "points_insufficient" in caplog.text
 
 

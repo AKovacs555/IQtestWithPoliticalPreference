@@ -110,6 +110,13 @@ export default function Home() {
           return;
         }
         if (
+          err?.detail?.error === 'insufficient_points' ||
+          err?.error === 'insufficient_points'
+        ) {
+          alert('ポイントが不足しています。');
+          return;
+        }
+        if (
           err?.detail?.error === 'survey_required' ||
           err?.error === 'survey_required'
         ) {

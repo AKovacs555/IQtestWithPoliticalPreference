@@ -11,8 +11,10 @@ try:
 except Exception:  # pragma: no cover - fallback when client init fails
     supabase = None
 
-async def get_setting(key: str, default=None):
-    """Fetch a setting value by key from the settings table."""
+
+def get_setting_sync(key: str, default=None):
+    """Synchronously fetch ``key`` from the ``settings`` table."""
+
     if supabase is None:
         return default
     try:
@@ -22,3 +24,9 @@ async def get_setting(key: str, default=None):
     except Exception:
         return default
     return default
+
+
+async def get_setting(key: str, default=None):
+    """Async wrapper around :func:`get_setting_sync`.``"""
+
+    return get_setting_sync(key, default)

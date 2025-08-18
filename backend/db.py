@@ -7,6 +7,7 @@ import random
 from zoneinfo import ZoneInfo
 from supabase import create_client, Client
 from postgrest.exceptions import APIError
+from backend.utils.settings import get_setting_sync
 
 _processed_payments: set[str] = set()
 
@@ -141,7 +142,9 @@ def create_user(user_data: Dict[str, Any]) -> Dict[str, Any]:
     resp = supabase.from_("app_users").insert(data).execute()
     row = resp.data[0]
     uid = row.get("hashed_id") or row.get("id")
-    insert_point_ledger(uid, 1, "signup")
+    reward = int(get_setting_sync("signup_reward_points", 1))
+    if reward:
+        insert_point_ledger(uid, reward, "signup")
     return row
 
 
@@ -171,7 +174,9 @@ def upsert_user(user_id: str, username: str | None = None) -> None:
     if username is not None:
         payload["username"] = username
     supabase.table("app_users").upsert(payload).execute()
-    insert_point_ledger(user_id, 1, "signup")
+    reward = int(get_setting_sync("signup_reward_points", 1))
+    if reward:
+        insert_point_ledger(user_id, reward, "signup")
 
 
 def get_or_create_user_id_from_hashed(
@@ -200,7 +205,9 @@ def get_or_create_user_id_from_hashed(
     supabase.table("app_users").upsert(
         {"id": hashed_id, "hashed_id": hashed_id, "username": hashed_id}
     ).execute()
-    insert_point_ledger(hashed_id, 1, "signup")
+    reward = int(get_setting_sync("signup_reward_points", 1))
+    if reward:
+        insert_point_ledger(hashed_id, reward, "signup")
 
     res = (
         supabase.table("app_users")
@@ -287,6 +294,8 @@ def get_free_attempts(user_id: str) -> int:  # pragma: no cover - compat
 def spend_points(user_id: str, amount: int = 1, reason: str = "consume") -> Optional[int]:
     """Spend ``amount`` points. Returns remaining points or ``None`` if insufficient."""
 
+    if amount <= 0:
+        return get_points(user_id)
     if get_user(user_id) is None:
         upsert_user(user_id)
     available = get_points(user_id)
