@@ -31,6 +31,7 @@ from backend.db import (  # noqa: E402
     get_daily_answer_count,
     spend_points,
 )
+from backend.utils.settings import get_setting
 
 router = APIRouter(prefix="/quiz", tags=["quiz"])
 logger = logging.getLogger(__name__)
@@ -106,8 +107,15 @@ async def start_quiz(
             raise HTTPException(status_code=404, detail=str(e))
     daily_count = get_daily_answer_count(user["hashed_id"])
     points = int(user.get("points", 0))
-    if points <= 0 and daily_count < 3:
-        return RedirectResponse(url=f"/survey/start?lang={lang}", status_code=303)
+    cost = int(await get_setting("attempt_cost_points", 1))
+    if points < cost and daily_count < 3:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "error": "survey_required",
+                "message": "Please complete the survey before taking the IQ test.",
+            },
+        )
     pending_surveys = get_random_pending_surveys(
         user["hashed_id"], user.get("nationality"), user.get("gender"), lang=lang, limit=3
     )
@@ -123,14 +131,14 @@ async def start_quiz(
 
     remaining = None
     if not pro_active:
-        remaining = spend_points(user["hashed_id"])
+        remaining = spend_points(user["hashed_id"], cost)
         if remaining is None:
             logger.error("points_insufficient", extra={"user_id": user["hashed_id"]})
             raise HTTPException(
                 status_code=400,
                 detail={
-                    "error": "survey_required",
-                    "message": "Please complete the survey before taking the IQ test.",
+                    "error": "insufficient_points",
+                    "message": "ポイントが不足しています。",
                 },
             )
 

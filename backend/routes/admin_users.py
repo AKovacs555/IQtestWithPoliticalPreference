@@ -25,3 +25,43 @@ async def update_points(payload: dict):
     if delta:
         insert_point_ledger(user_id, delta, "admin")
     return {"status": "ok"}
+
+
+@router.get("/users/search", dependencies=[Depends(require_admin)])
+async def search_users(query: str = "", limit: int = 20, offset: int = 0):
+    """Search users by email, display name or hashed_id."""
+
+    if not query:
+        return {"users": []}
+    supabase = get_supabase()
+    like = f"%{query}%"
+    try:
+        resp = (
+            supabase.table("app_users")
+            .select("hashed_id, display_name, email, points")
+            .or_(
+                f"email.ilike.{like},display_name.ilike.{like},hashed_id.ilike.{like}"
+            )
+            .limit(limit)
+            .offset(offset)
+            .execute()
+        )
+        rows = resp.data or []
+    except Exception:
+        rows = []
+    return {"users": rows}
+
+
+@router.post("/users/{hashed_id}/points/add", dependencies=[Depends(require_admin)])
+async def add_points(hashed_id: str, payload: dict):
+    """Add or subtract points from a user."""
+
+    delta = payload.get("delta")
+    reason = payload.get("reason", "manual")
+    if not isinstance(delta, int) or delta == 0:
+        raise HTTPException(status_code=400, detail="delta must be non-zero integer")
+    current = get_points(hashed_id)
+    if delta < 0 and current + delta < 0:
+        raise HTTPException(status_code=400, detail="insufficient_points")
+    insert_point_ledger(hashed_id, delta, reason)
+    return {"points": get_points(hashed_id)}

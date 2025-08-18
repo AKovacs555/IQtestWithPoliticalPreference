@@ -14,6 +14,8 @@ export default function AdminLayout() {
     { to: '/admin/settings', label: t('settings', { defaultValue: 'Settings' }) },
     { to: '/admin/pricing', label: 'Pricing' },
     { to: '/admin/referral', label: 'Referral' },
+    { to: '/admin/points/settings', label: 'Point Settings' },
+    { to: '/admin/points/grant', label: 'Grant Points' },
   ];
 
   return (

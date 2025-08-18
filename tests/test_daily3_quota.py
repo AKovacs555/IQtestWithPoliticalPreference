@@ -89,8 +89,12 @@ def _setup(monkeypatch):
     monkeypatch.setattr("backend.routes.daily.get_supabase_client", lambda: DummySupabase())
     monkeypatch.setattr("backend.routes.daily.insert_point_ledger", lambda *a, **k: None)
     monkeypatch.setattr("backend.routes.daily.update_user", lambda *a, **k: None)
-    monkeypatch.setattr("backend.db.spend_points", lambda uid: 0, raising=False)
-    monkeypatch.setattr("backend.routes.quiz.spend_points", lambda uid: 0, raising=False)
+    monkeypatch.setattr(
+        "backend.db.spend_points", lambda uid, amt=1, reason="consume": 0, raising=False
+    )
+    monkeypatch.setattr(
+        "backend.routes.quiz.spend_points", lambda uid, amt=1, reason="consume": 0, raising=False
+    )
 
     # reduce number of questions
     monkeypatch.setattr("backend.routes.quiz.NUM_QUESTIONS", 1, raising=False)
@@ -111,8 +115,8 @@ def test_quiz_start_blocked_until_three(monkeypatch, caplog):
         client.post("/daily/answer", json={"question_id": str(i), "answer": {}})
 
     res = client.get("/quiz/start?set_id=s1", follow_redirects=False)
-    assert res.status_code == 303
-    assert res.headers["location"].startswith("/survey/start")
+    assert res.status_code == 400
+    assert res.json().get("detail", {}).get("error") == "survey_required"
 
 
 def test_quiz_start_allows_after_three(monkeypatch, caplog):

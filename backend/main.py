@@ -10,7 +10,7 @@ from typing import List, Optional
 
 import sys
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -63,6 +63,7 @@ from routes.admin_import_questions import router as admin_import_router
 from routes.admin_surveys import router as admin_surveys_router
 from routes.admin_users import router as admin_users_router
 from routes.admin_pricing import router as admin_pricing_router
+from routes.admin_points import router as admin_points_router
 from routes.settings import router as settings_router
 from routes.quiz import router as quiz_router
 from routes.daily import router as daily_router
@@ -107,6 +108,7 @@ app.include_router(admin_import_router)
 app.include_router(admin_surveys_router)
 app.include_router(admin_users_router)
 app.include_router(admin_pricing_router)
+app.include_router(admin_points_router)
 app.include_router(settings_router)
 app.include_router(diagnostics.router)
 
@@ -428,7 +430,7 @@ async def nowpayments_callback(request: Request):
 
 @app.post("/play/record")
 async def record_play(action: UserAction):
-    cost = int(await get_setting("point_cost_per_attempt", RETRY_POINT_COST))
+    cost = int(await get_setting("attempt_cost_points", RETRY_POINT_COST))
     user = get_user(action.user_id)
     if not user:
         user = db_create_user({"hashed_id": action.user_id})
@@ -475,6 +477,24 @@ async def ads_complete(action: UserAction):
     if not user:
         user = db_create_user({"hashed_id": action.user_id})
     reward = int(await get_setting("ad_reward_points", AD_REWARD_POINTS))
+    supabase = get_supabase()
+    today = datetime.utcnow().date()
+    tomorrow = today + timedelta(days=1)
+    try:
+        resp = (
+            supabase.table("point_ledger")
+            .select("id")
+            .eq("user_id", action.user_id)
+            .eq("reason", "ad")
+            .gte("created_at", today.isoformat())
+            .lt("created_at", tomorrow.isoformat())
+            .execute()
+        )
+        if resp.data:
+            updated = get_user(action.user_id) or {}
+            return {"points": updated.get("points", 0)}
+    except Exception:
+        pass
     insert_point_ledger(action.user_id, reward, "ad")
     updated = get_user(action.user_id) or {}
     new_points = updated.get("points", 0)
