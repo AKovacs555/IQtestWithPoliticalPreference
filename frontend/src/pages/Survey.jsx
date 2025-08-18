@@ -95,7 +95,8 @@ export default function Survey() {
     navigate('/');
   };
 
-  const titleString = survey?.title || t('survey.title', { defaultValue: 'Survey' });
+  const titleString =
+    survey?.question_text || survey?.title || t('survey.title', { defaultValue: 'Survey' });
 
   return (
     <div className="max-w-4xl mx-auto px-4 md:px-8 py-6 md:py-10 space-y-6">
