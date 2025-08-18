@@ -80,6 +80,7 @@ from routes.leaderboard import router as leaderboard_router
 from routes.nowpayments import router as nowpayments_router
 from routes.points import router as points_router
 from routes.arena import router as arena_router
+from routes.stats import router as stats_router
 from backend.routes import user_profile_bootstrap
 from api import diagnostics
 import json
@@ -124,6 +125,7 @@ app.include_router(nowpayments_router)
 app.include_router(referral_router)
 app.include_router(points_router)
 app.include_router(arena_router)
+app.include_router(stats_router)
 app.include_router(
     user_profile_bootstrap.router, prefix="/user", tags=["user"]
 )
