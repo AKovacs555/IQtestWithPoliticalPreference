@@ -165,6 +165,7 @@ export default function App() {
         <Route path="/profile" element={<RequireAuth><Profile /></RequireAuth>} />
         <Route path="/history/:userId" element={<RequireAuth><History /></RequireAuth>} />
         <Route path="/select-nationality" element={<RequireAuth><SelectNationality /></RequireAuth>} />
+        <Route path="/country" element={<RequireAuth><SelectNationality /></RequireAuth>} />
         <Route path="/login" element={<Login />} />
         <Route path="/welcome" element={<Welcome />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
