@@ -30,6 +30,55 @@ ALLOWED_USER_UPDATE_FIELDS = {
     "referred_by",
 }
 
+_ADJECTIVES = [
+    "Silly",
+    "Lazy",
+    "Clumsy",
+    "Noisy",
+    "Sleepy",
+    "Fuzzy",
+    "Dizzy",
+    "Wobbly",
+    "Goofy",
+    "Kooky",
+    "Bumpy",
+    "Grumpy",
+    "Dozy",
+    "Odd",
+    "Weird",
+    "Numb",
+    "Witty",
+    "Cheeky",
+    "Quirky",
+    "Zany",
+]
+_DUMB_ANIMALS = [
+    "Donkey",
+    "Goose",
+    "Dodo",
+    "Sloth",
+    "Panda",
+    "Turkey",
+    "Lemur",
+    "Marmot",
+    "Yak",
+    "Pufferfish",
+    "Warthog",
+    "Hamster",
+    "Pigeon",
+    "Capybara",
+    "Mole",
+    "GoblinShark",
+    "Blobfish",
+    "Turtle",
+    "Cow",
+    "Sheep",
+]
+
+
+def _random_username() -> str:
+    return f"{random.choice(_ADJECTIVES)} {random.choice(_DUMB_ANIMALS)}"
+
 DEFAULT_RETRY_PRICE = {"currency": "JPY", "amount_minor": 0, "product": "retry"}
 DEFAULT_PRO_PRICE = {"currency": "JPY", "amount_minor": 0, "product": "pro_pass"}
 
@@ -152,14 +201,16 @@ def upsert_user(user_id: str, username: str | None = None) -> None:
     """Ensure a user row exists for ``user_id``.
 
     Inserts a new record if the given ``id`` is missing. Existing rows are left
-    untouched. When ``username`` is provided it is stored or updated.
+    untouched. When ``username`` is provided it is stored or updated. When
+    absent, a whimsical name is generated.
     """
 
     supabase = get_supabase()
     res = supabase.table("app_users").select("id").eq("id", user_id).execute()
+    name = username.strip() if username else _random_username()
     if res.data:
         if username:
-            update_user(supabase, user_id, {"username": username})
+            update_user(supabase, user_id, {"username": name})
         return
     payload = {
         "id": user_id,
@@ -170,9 +221,8 @@ def upsert_user(user_id: str, username: str | None = None) -> None:
         "party_log": [],
         "scores": [],
         "invite_code": _generate_invite_code(),
+        "username": name,
     }
-    if username is not None:
-        payload["username"] = username
     supabase.table("app_users").upsert(payload).execute()
     reward = get_setting_int(supabase, "signup_reward_points", 1)
     if reward:
@@ -202,8 +252,9 @@ def get_or_create_user_id_from_hashed(
         return data[0]["id"]
 
     # Create the user when missing.
+    default_name = _random_username()
     supabase.table("app_users").upsert(
-        {"id": hashed_id, "hashed_id": hashed_id, "username": hashed_id}
+        {"id": hashed_id, "hashed_id": hashed_id, "username": default_name}
     ).execute()
     reward = get_setting_int(supabase, "signup_reward_points", 1)
     if reward:

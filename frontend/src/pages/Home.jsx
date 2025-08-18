@@ -9,7 +9,7 @@ import Daily3Banner from '../components/home/Daily3Banner';
 import TestStartBanner from '../components/home/TestStartBanner';
 import UpgradeTeaser from '../components/home/UpgradeTeaser';
 import HeroTop from '../components/layout/HeroTop';
-import ArenaBanner from '../components/home/ArenaBanner';
+import StatisticsBanner from '../components/StatisticsBanner';
 import { supabase } from '../lib/supabaseClient';
 
 export default function Home() {
@@ -155,6 +155,7 @@ export default function Home() {
         {/* 上部ロゴ＋小ピル群（B と同仕様） */} {/* data-b-spec: hero-top */}
         <HeroTop />
 
+        <StatisticsBanner />
         <Daily3Banner
           progress={dailyProgressPct}
           onNext={handleAnswerNext}
@@ -165,7 +166,6 @@ export default function Home() {
           onStart={handleStartQuiz}
           statRight={{ value: String(points), label: 'ポイント' }}
         />
-        <ArenaBanner />
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <CurrentIQCard score={currentIQ} inviteCode={inviteCode} />
           <GlobalRankCard rank={globalRank ?? '-'} />

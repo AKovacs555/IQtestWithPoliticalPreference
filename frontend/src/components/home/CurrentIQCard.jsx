@@ -16,7 +16,7 @@ export default function CurrentIQCard({ score, inviteCode }) {
           {t('home.current_iq', { defaultValue: '現在のIQ' })}
         </span>
       </div>
-      <div className="text-4xl md:text-5xl font-extrabold text-white">{score}</div>
+      <div className="text-4xl md:text-5xl font-extrabold text-white">{Number(score ?? 0).toFixed(2)}</div>
       <p className="text-sm text-[var(--text-muted)]">
         {t('home.current_iq_sub', { defaultValue: '最新のIQスコア' })}
       </p>
@@ -27,8 +27,7 @@ export default function CurrentIQCard({ score, inviteCode }) {
             label={t('share.button')}
             url={`${location.origin}?code=${inviteCode}`}
             title={t('home.share_title', { defaultValue: '結果を共有' })}
-            text={t('home.share_text', { defaultValue: `現在のIQは${score}です！` })}
-            hashtags={['IQClash', 'IQクラッシュ']}
+            text={t('home.share_text', { defaultValue: `私のIQは${Number(score ?? 0).toFixed(2)}でした。` })}
           />
         </div>
       )}
