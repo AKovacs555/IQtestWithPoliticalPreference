@@ -102,7 +102,7 @@ export default function Home() {
       if (res.ok) {
         const payload = await res.json();
         await fetchCredits();
-        navigate(`/quiz/play?attempt_id=${payload.attempt_id}`);
+        navigate(`/quiz?attempt_id=${payload.attempt_id}`, { state: payload });
       } else {
         const err = await res.json().catch(() => ({}));
         if (err?.detail?.code === 'DAILY3_REQUIRED') {

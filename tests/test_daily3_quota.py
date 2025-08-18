@@ -133,7 +133,7 @@ def test_quiz_start_allows_after_three(monkeypatch, caplog):
     with caplog.at_level("INFO"):
         res = client.get("/quiz/start?set_id=s1")
     assert res.status_code == 200
-    assert res.json()["session_id"]
+    assert res.json()["attempt_id"]
     assert "quiz_start_allowed" in caplog.text
 
 

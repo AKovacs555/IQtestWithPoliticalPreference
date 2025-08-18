@@ -116,7 +116,7 @@ const Quiz = () => {
     async function load() {
       try {
         const data = await getQuizStart(setId, undefined);
-        setSession(data.session_id);
+        setSession(data.attempt_id || data.session_id);
         setQuestions(data.questions);
         setCurrent(0);
       } catch (err) {
