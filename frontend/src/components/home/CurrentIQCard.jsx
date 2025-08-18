@@ -2,6 +2,7 @@ import React from 'react';
 import { Trophy } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import ShareButton from '../share/ShareButton';
+import { formatIQ } from '../../utils/num';
 
 export default function CurrentIQCard({ score, inviteCode }) {
   const { t } = useTranslation();
@@ -16,7 +17,7 @@ export default function CurrentIQCard({ score, inviteCode }) {
           {t('home.current_iq', { defaultValue: '現在のIQ' })}
         </span>
       </div>
-      <div className="text-4xl md:text-5xl font-extrabold text-white">{Number(score ?? 0).toFixed(2)}</div>
+      <div className="text-4xl md:text-5xl font-extrabold text-white">{formatIQ(score)}</div>
       <p className="text-sm text-[var(--text-muted)]">
         {t('home.current_iq_sub', { defaultValue: '最新のIQスコア' })}
       </p>
@@ -27,7 +28,7 @@ export default function CurrentIQCard({ score, inviteCode }) {
             label={t('share.button')}
             url={`${location.origin}?code=${inviteCode}`}
             title={t('home.share_title', { defaultValue: '結果を共有' })}
-            text={t('home.share_text', { defaultValue: `私のIQは${Number(score ?? 0).toFixed(2)}でした。` })}
+            text={t('home.share_text', { defaultValue: `私のIQは${formatIQ(score)}でした。` })}
           />
         </div>
       )}
