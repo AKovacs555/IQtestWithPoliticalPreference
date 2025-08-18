@@ -115,21 +115,16 @@ export default function Home() {
         navigate(`/quiz?attempt_id=${payload.attempt_id}`, { state: payload });
       } else {
         const err = await res.json().catch(() => ({}));
-        if (err?.detail?.code === 'DAILY3_REQUIRED') {
+        const code = err?.detail?.code || err?.detail?.error || err?.error;
+        if (code === 'DAILY3_REQUIRED') {
           await handleAnswerNext();
           return;
         }
-        if (
-          err?.detail?.error === 'insufficient_points' ||
-          err?.error === 'insufficient_points'
-        ) {
+        if (code === 'insufficient_points') {
           alert('ポイントが不足しています。');
           return;
         }
-        if (
-          err?.detail?.error === 'survey_required' ||
-          err?.error === 'survey_required'
-        ) {
+        if (code === 'survey_required') {
           const s = await fetch(
             `${apiBase}/survey/start?lang=${i18n.language}`,
             { headers: authHeaders, credentials: 'include' },
@@ -139,6 +134,14 @@ export default function Home() {
             navigate(`/survey?sid=${p.survey.id}`);
             return;
           }
+        }
+        if (code === 'nationality_required') {
+          navigate('/country');
+          return;
+        }
+        if (code === 'demographic_required') {
+          navigate('/demographics');
+          return;
         }
       }
     } catch {}

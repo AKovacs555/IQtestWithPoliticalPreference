@@ -1,6 +1,9 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
 from backend.db import get_supabase
+import math
 
 router = APIRouter(prefix="/stats", tags=["stats"])
 
@@ -32,22 +35,23 @@ def survey_iq_by_option(survey_id: str):
         raise HTTPException(404, "survey_not_found")
     survey = sres.data[0]
 
-    best = (
-        supabase.table("quiz_attempts")
-        .select("user_id,iq_score")
-        .neq("iq_score", None)
-        .execute()
-        .data
-    )
+    best_table = supabase.table("quiz_attempts").select("user_id,iq_score")
+    if hasattr(best_table, "not_"):
+        best_table = best_table.not_.is_("iq_score", "null")
+    best = best_table.execute().data
     best_map: dict[str, float] = {}
     for row in best:
-        uid = row["user_id"]
+        uid = row.get("user_id")
         sc = row.get("iq_score")
-        if sc is None:
+        try:
+            scf = float(sc)
+        except (TypeError, ValueError):
+            continue
+        if not math.isfinite(scf):
             continue
         prev = best_map.get(uid)
-        if prev is None or sc > prev:
-            best_map[uid] = sc
+        if prev is None or scf > prev:
+            best_map[uid] = scf
 
     items = (
         supabase.table("survey_items")
@@ -59,18 +63,23 @@ def survey_iq_by_option(survey_id: str):
     )
     idx_to_text = {it["idx"]: it["text"] for it in items}
 
-    ans = (
+    ans_table = (
         supabase.table("survey_answers")
         .select("user_id, survey_id, selected_index")
         .eq("survey_id", survey_id)
-        .execute()
-        .data
     )
+    if hasattr(ans_table, "not_"):
+        ans_table = ans_table.not_.is_("selected_index", "null")
+    ans = ans_table.execute().data
 
     buckets: dict[int, list[float]] = {}
     for a in ans:
-        idx = a["selected_index"]
-        uid = a["user_id"]
+        uid = a.get("user_id")
+        raw_idx = a.get("selected_index")
+        try:
+            idx = int(raw_idx)
+        except (TypeError, ValueError):
+            continue
         if uid in best_map:
             buckets.setdefault(idx, []).append(best_map[uid])
 

@@ -1,8 +1,10 @@
 from fastapi import APIRouter, Depends, Header, Query
+from fastapi import APIRouter, Depends, Header, Query
 from fastapi import HTTPException
 from backend.deps.supabase_client import get_supabase_client
 from backend.deps.auth import get_current_user as _get_current_user, User
 from backend.utils.num import safe_float, to_2f
+import math
 
 router = APIRouter(tags=["leaderboard"])
 
@@ -21,16 +23,17 @@ async def maybe_user(authorization: str = Header(None)) -> User | None:
 @router.get("/leaderboard")
 async def get_leaderboard(limit: int = Query(100), user: User | None = Depends(maybe_user)):
     supabase = get_supabase_client()
-    attempts = (
-        supabase.table("quiz_attempts").select("user_id, iq_score, status").execute().data or []
-    )
+    table = supabase.table("quiz_attempts").select("user_id, iq_score, status")
+    if hasattr(table, "not_"):
+        table = table.not_.is_("iq_score", "null")
+    attempts = (table.execute().data or [])
     best: dict[str, float] = {}
     for row in attempts:
         if row.get("status") not in VALID_STATUSES:
             continue
         uid = row.get("user_id")
         iq = safe_float(row.get("iq_score"))
-        if iq is None:
+        if iq is None or not math.isfinite(iq):
             continue
         prev = best.get(uid)
         if prev is None or iq > prev:

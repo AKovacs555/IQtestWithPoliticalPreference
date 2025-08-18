@@ -2,17 +2,32 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import SurveyStatsCard from './SurveyStatsCard';
 import { apiGet } from '../api';
+import { supabase } from '../lib/supabaseClient';
 
 export default function StatisticsBanner() {
   const [card, setCard] = useState(null);
 
   useEffect(() => {
-    apiGet('/stats/surveys/with_data').then(async (list) => {
+    (async () => {
+      let list = [];
+      try {
+        list = await apiGet('/stats/surveys/with_data');
+      } catch {
+        const { data } = await supabase
+          .from('survey_answers')
+          .select('survey_id');
+        const ids = Array.from(new Set((data || []).map(r => r.survey_id).filter(Boolean)));
+        list = ids.map(id => ({ id }));
+      }
       if (!list?.length) return;
       const pick = list[Math.floor(Math.random() * list.length)];
-      const st = await apiGet(`/stats/surveys/${pick.id}/iq_by_option`);
-      setCard({ id: pick.id, title: st.survey_title, items: st.items });
-    });
+      try {
+        const st = await apiGet(`/stats/surveys/${pick.id}/iq_by_option`);
+        setCard({ id: pick.id, title: st.survey_title, items: st.items });
+      } catch {
+        /* ignore */
+      }
+    })();
   }, []);
 
   return (
