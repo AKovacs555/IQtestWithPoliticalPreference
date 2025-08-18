@@ -77,14 +77,11 @@ const PageTransition = ({ children }) => {
 
 const Result = () => {
   const location = useLocation();
-  console.log('location.search:', location.search);
   const params = new URLSearchParams(location.search);
-  console.log('params:', Array.from(params.entries()));
   const iqParam = params.get('iq');
   const percentileParam = params.get('percentile');
   const shareParam = params.get('share_url');
-  const share =
-    shareParam && shareParam !== 'null' && shareParam !== 'undefined' ? shareParam : null;
+  const share = shareParam && shareParam !== 'null' ? shareParam : null;
   const score = iqParam ? Number(iqParam) : NaN;
   const percentile = percentileParam ? Number(percentileParam) : NaN;
   const { t } = useTranslation();
@@ -101,7 +98,7 @@ const Result = () => {
 
 
   const shareText = t('result.share_text', {
-    score: Number(score).toFixed(1),
+    score: Number(score).toFixed(2),
     percentile: Number(percentile).toFixed(1)
   });
 
@@ -111,7 +108,7 @@ const Result = () => {
         <section data-b-spec="result-v1" className="max-w-md mx-auto space-y-8 text-center">
           <Card className="space-y-4">
             <div>
-              <div className="text-5xl font-bold">{Number.isFinite(score) ? score.toFixed(1) : 'N/A'}</div>
+              <div className="text-5xl font-bold">{Number.isFinite(score) ? score.toFixed(2) : 'N/A'}</div>
               <p className="text-sm text-[var(--text-muted)]">IQ score</p>
             </div>
             <div className="space-y-1">

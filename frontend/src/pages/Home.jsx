@@ -10,6 +10,7 @@ import TestStartBanner from '../components/home/TestStartBanner';
 import UpgradeTeaser from '../components/home/UpgradeTeaser';
 import HeroTop from '../components/layout/HeroTop';
 import ArenaBanner from '../components/home/ArenaBanner';
+import { supabase } from '../lib/supabaseClient';
 
 export default function Home() {
   const { t, i18n } = useTranslation();
@@ -30,42 +31,51 @@ export default function Home() {
     if (!session?.access_token) return;
     try {
       const headers = { Authorization: `Bearer ${session.access_token}` };
-      const [credRes, codeRes, histRes] = await Promise.all([
+      // Fetch points and referral code
+      const [credRes, codeRes] = await Promise.all([
         fetch(`${apiBase}/user/credits`, { headers, credentials: 'include' }),
-        fetch(`${apiBase}/referral/code`, { headers, credentials: 'include' }),
-        userId
-          ? fetch(`${apiBase}/stats/iq_histogram?user_id=${userId}`)
-          : Promise.resolve(null),
+        fetch(`${apiBase}/referral/code`, { headers, credentials: 'include' })
       ]);
-      if (credRes?.ok) {
+      if (credRes.ok) {
         const d = await credRes.json();
         setPoints(d.points ?? 0);
       }
-      if (codeRes?.ok) {
+      if (codeRes.ok) {
         const d = await codeRes.json();
         setInviteCode(d.invite_code || '');
       }
-      if (histRes && histRes.ok) {
-        const h = await histRes.json();
-        setCurrentIQ(h.user_score || 0);
+      // Fetch latest IQ score and global rank using hashed user ID
+      if (userId) {
+        const { data: userData } = await supabase
+          .from('app_users')
+          .select('hashed_id')
+          .eq('id', userId)
+          .single();
+        const hashedId = userData?.hashed_id;
+        if (hashedId) {
+          const histRes = await fetch(
+            `${apiBase}/stats/iq_histogram?user_id=${hashedId}`
+          );
+          if (histRes.ok) {
+            const h = await histRes.json();
+            setCurrentIQ(h.user_score || 0);
+          }
+          const lbRes = await fetch(`${apiBase}/leaderboard?limit=1000`);
+          if (lbRes.ok) {
+            const d = await lbRes.json();
+            const idx = d.leaderboard?.findIndex((x) => x.user_id === hashedId);
+            setGlobalRank(idx != null && idx >= 0 ? idx + 1 : null);
+          }
+        }
       }
-    } catch {}
+    } catch {
+      /* handle errors if needed */
+    }
   };
 
   useEffect(() => {
     fetchCredits();
   }, [session, userId]);
-
-  useEffect(() => {
-    if (!userId) return;
-    fetch(`${apiBase}/leaderboard?limit=1000`)
-      .then((r) => r.json())
-      .then((d) => {
-        const idx = d.leaderboard?.findIndex((x) => x.user_id === userId);
-        if (idx != null && idx >= 0) setGlobalRank(idx + 1);
-      })
-      .catch(() => {});
-  }, [userId, apiBase]);
 
   const handleAnswerNext = async () => {
     if (loading) return;
