@@ -11,7 +11,9 @@ export default function QuizStart() {
   React.useEffect(() => {
     async function start() {
       try {
+        // Start a new quiz attempt
         const res = await getQuizStart(i18n.language);
+        // Navigate to the play screen with the attempt ID
         navigate(`/quiz/play?attempt_id=${res.attempt_id}`);
       } catch (e) {
         setError(e.message);
@@ -20,6 +22,6 @@ export default function QuizStart() {
     start();
   }, [navigate, i18n.language]);
 
-  if (error) return <div>{error}</div>;
-  return <div>Loading...</div>;
+  if (error) return <div className="p-4 text-center text-red-600">{error}</div>;
+  return <div className="p-4 text-center">Loading...</div>;
 }
