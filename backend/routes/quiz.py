@@ -51,7 +51,7 @@ class QuizQuestion(BaseModel):
     option_images: List[str] | None = None
 
 class QuizStartResponse(BaseModel):
-    session_id: str
+    attempt_id: str
     questions: List[QuizQuestion]
     pending_surveys: Optional[List[dict]] = None
 
@@ -257,7 +257,7 @@ async def start_quiz(
             )
         )
     return {
-        "session_id": session_id,
+        "attempt_id": session_id,
         "expires_at": expires_at.isoformat(),
         "questions": models,
         "pending_surveys": pending_surveys or [],

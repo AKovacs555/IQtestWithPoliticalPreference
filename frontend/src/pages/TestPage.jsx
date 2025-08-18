@@ -4,7 +4,7 @@ import AppShell from '../components/AppShell';
 import { getQuizStart, submitQuiz, abandonQuiz } from '../api';
 import { AnimatePresence, motion, MotionConfig } from 'framer-motion';
 import QuestionCard from '../components/QuestionCard';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Clock } from 'lucide-react';
 import Card from '../components/ui/Card';
 import Badge from '../components/ui/Badge';
@@ -29,6 +29,8 @@ export default function TestPage() {
   const [submitting, setSubmitting] = React.useState(false);
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
+  const location = useLocation();
+  const params = React.useMemo(() => new URLSearchParams(location.search), [location.search]);
   const isMobile = /Mobi|Android/i.test(navigator.userAgent);
   const watermark = React.useMemo(() => `${session?.slice(0,6) || ''}-${Date.now()}`,[session]);
 
@@ -58,13 +60,32 @@ export default function TestPage() {
       return;
     }
     async function load() {
+      const state = location.state;
+      const paramAttempt = params.get('attempt_id');
+      if (state && (state.attempt_id || state.session_id)) {
+        const sid = state.attempt_id || state.session_id || paramAttempt;
+        setSession(sid);
+        setQuestions(state.questions || []);
+        setPendingSurveys(state.pending_surveys || []);
+        setCurrent(0);
+        sessionStorage.setItem('quiz_session', sid);
+        if (state.expires_at) {
+          sessionStorage.setItem('quiz_expires', state.expires_at);
+          const secs = Math.floor((new Date(state.expires_at) - Date.now()) / 1000);
+          setTimeLeft(secs > 0 ? secs : 0);
+        }
+        sessionStorage.setItem('quiz_status', 'started');
+        setLoading(false);
+        return;
+      }
       try {
         const data = await getQuizStart(undefined, i18n.language);
-        setSession(data.session_id);
+        const sid = data.attempt_id || data.session_id || paramAttempt;
+        setSession(sid);
         setQuestions(data.questions);
         setPendingSurveys(data.pending_surveys || []);
         setCurrent(0);
-        sessionStorage.setItem('quiz_session', data.session_id);
+        sessionStorage.setItem('quiz_session', sid);
         if (data.expires_at) {
           sessionStorage.setItem('quiz_expires', data.expires_at);
           const secs = Math.floor((new Date(data.expires_at) - Date.now()) / 1000);
@@ -94,7 +115,7 @@ export default function TestPage() {
       }
     }
     load();
-  }, [i18n.language, navigate]);
+  }, [i18n.language, navigate, location.state, location.search]);
 
   React.useEffect(() => {
     if (

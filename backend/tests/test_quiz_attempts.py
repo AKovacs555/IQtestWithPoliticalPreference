@@ -41,7 +41,7 @@ def test_session_timeout(monkeypatch, fake_supabase):
     app = make_app(monkeypatch, fake_supabase, duration=25)
     with TestClient(app) as client:
         start = client.get("/quiz/start?set_id=x").json()
-        sid = start["session_id"]
+        sid = start["attempt_id"]
         app.state.session_expires[sid] = datetime.utcnow() - timedelta(seconds=1)
         resp = client.post(
             "/quiz/submit",
@@ -65,7 +65,7 @@ def test_double_submit(monkeypatch, fake_supabase):
     app = make_app(monkeypatch, fake_supabase, duration=25)
     with TestClient(app) as client:
         start = client.get("/quiz/start?set_id=x").json()
-        sid = start["session_id"]
+        sid = start["attempt_id"]
         answers = [{"id": 1, "answer": 0}]
         first = client.post("/quiz/submit", json={"session_id": sid, "answers": answers})
         assert first.status_code == 200
