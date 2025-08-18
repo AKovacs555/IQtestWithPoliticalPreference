@@ -42,7 +42,8 @@ router = APIRouter(prefix="/quiz", tags=["quiz"])
 logger = logging.getLogger(__name__)
 
 NUM_QUESTIONS = int(os.getenv("NUM_QUESTIONS", "20"))
-QUIZ_DURATION_MINUTES = int(os.getenv("QUIZ_DURATION_MINUTES", "25"))
+# Default quiz duration: 5 minutes unless overridden via env var
+QUIZ_DURATION_MINUTES = int(os.getenv("QUIZ_DURATION_MINUTES", "5"))
 
 _dist_path = Path(__file__).resolve().parents[1] / "data" / "normative_distribution.json"
 with _dist_path.open() as f:
@@ -98,8 +99,10 @@ async def start_quiz(
                 "message": "Please complete the demographics form before taking the IQ test.",
             },
         )
+    # Validate static set_id if provided
     if set_id:
         try:
+            get_question_sets()  # ensure sets loaded
             get_balanced_random_questions_by_set(1, set_id)
         except ValueError as e:
             raise HTTPException(status_code=404, detail=str(e))
@@ -148,9 +151,9 @@ async def start_quiz(
         except ValueError as e:
             raise HTTPException(status_code=404, detail=str(e))
     else:
-        easy = int(round(NUM_QUESTIONS * 0.3))
-        med = int(round(NUM_QUESTIONS * 0.4))
-        hard = NUM_QUESTIONS - easy - med
+        easy_count = int(round(NUM_QUESTIONS * 0.3))
+        med_count = int(round(NUM_QUESTIONS * 0.4))
+        hard_count = NUM_QUESTIONS - easy_count - med_count
 
         if lang:
             def fetch_subset(lower, upper, limit, seen_groups=None):
@@ -192,9 +195,9 @@ async def start_quiz(
                 return unique
 
             seen_groups: set[str] = set()
-            easy_qs = fetch_subset(None, -0.33, easy, seen_groups)
-            med_qs = fetch_subset(-0.33, 0.33, med, seen_groups)
-            hard_qs = fetch_subset(0.33, None, hard, seen_groups)
+            easy_qs = fetch_subset(None, -0.33, easy_count, seen_groups)
+            med_qs = fetch_subset(-0.33, 0.33, med_count, seen_groups)
+            hard_qs = fetch_subset(0.33, None, hard_count, seen_groups)
             questions = easy_qs + med_qs + hard_qs
             if len(questions) < NUM_QUESTIONS:
                 questions += fetch_subset(None, None, NUM_QUESTIONS - len(questions), seen_groups)
@@ -202,7 +205,7 @@ async def start_quiz(
         else:
             resp = supabase.rpc(
                 "fetch_exam",
-                {"_easy": easy, "_med": med, "_hard": hard},
+                {"_easy": easy_count, "_med": med_count, "_hard": hard_count},
             ).execute()
             if resp.error:
                 raise HTTPException(status_code=500, detail=resp.error.message)
@@ -219,8 +222,13 @@ async def start_quiz(
     set_id = set_id or _generate_set_id()
     supabase = get_supabase_client()
     try:
-        supabase.table("question_sets").insert({"id": set_id, "question_ids": question_ids}).execute()
+        supabase.table("question_sets").insert({
+            "id": set_id,
+            "question_ids": question_ids,
+            "created_at": datetime.utcnow().isoformat(),
+        }).execute()
     except Exception:
+        # If insertion fails (e.g., duplicate set_id), ignore and proceed
         pass
 
     attempt_id = str(uuid.uuid4())
@@ -299,25 +307,19 @@ async def submit_quiz(
     if not expires_at:
         request.app.state.sessions.pop(payload.attempt_id, None)
         raise HTTPException(status_code=400, detail="Invalid session")
+
+    # If time is up, mark as timeout but still proceed to score answered questions
+    expired = False
     if datetime.utcnow() > expires_at:
-        try:
-            supabase.table("quiz_attempts").update({"status": "timeout"}).eq(
-                "id", payload.attempt_id
-            ).execute()
-        except Exception:
-            pass
-        request.app.state.sessions.pop(payload.attempt_id, None)
-        getattr(request.app.state, "session_expires", {}).pop(payload.attempt_id, None)
-        getattr(request.app.state, "session_started", {}).pop(payload.attempt_id, None)
-        raise HTTPException(status_code=400, detail="Session expired")
-    if len(payload.answers) != len(session):
-        raise HTTPException(status_code=400, detail="Expected all answers")
+        expired = True
+        logger.info("quiz_timeout", extra={"attempt_id": payload.attempt_id})
+
+    # Do NOT require all answers – unanswered questions count as incorrect
+    answers_map = {str(item.id): item.answer for item in payload.answers}
     responses = []
-    for item in payload.answers:
-        info = session.get(str(item.id)) or (session.get(int(item.id)) if isinstance(item.id, (int, str)) and str(item.id).isdigit() else None)
-        if not info:
-            continue
-        correct = item.answer == info["answer"]
+    for qid, info in session.items():
+        ans = answers_map.get(str(qid))
+        correct = ans == info["answer"]
         responses.append({"a": info.get("a", 1.0), "b": info.get("b", 0.0), "correct": correct})
     theta = estimate_theta(responses)
     iq = iq_score(theta)
@@ -342,7 +344,7 @@ async def submit_quiz(
         duration = int((datetime.utcnow() - start_time).total_seconds())
     try:
         update_data = {
-            "status": "submitted",
+            "status": "timeout" if expired else "submitted",
             "iq_score": iq,
             "percentile": pct,
         }

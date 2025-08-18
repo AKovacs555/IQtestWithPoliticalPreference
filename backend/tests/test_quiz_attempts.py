@@ -49,8 +49,9 @@ def test_session_timeout(monkeypatch, fake_supabase):
             "/quiz/submit",
             json={"attempt_id": sid, "answers": [{"id": 1, "answer": 0}]},
         )
-        assert resp.status_code == 400
-        assert resp.json()["detail"] == "Session expired"
+        assert resp.status_code == 200
+        # even when timed out, we still return a result payload
+        assert "iq" in resp.json()
         row = (
             quiz.get_supabase_client()
             .table("quiz_attempts")
