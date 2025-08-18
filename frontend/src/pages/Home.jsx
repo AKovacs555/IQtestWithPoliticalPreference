@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import AppShell from '../components/AppShell';
 import { useSession } from '../hooks/useSession';
 import { useTranslation } from 'react-i18next';
-import StreakCard from '../components/home/StreakCard';
 import CurrentIQCard from '../components/home/CurrentIQCard';
 import GlobalRankCard from '../components/home/GlobalRankCard';
 import Daily3Banner from '../components/home/Daily3Banner';
@@ -134,7 +133,6 @@ export default function Home() {
     } catch {}
   };
 
-  const streakDays = 7;
   const dailyProgressPct = 0;
   const dailyResetText = '';
   const handleWatchAd = async () => {
@@ -158,8 +156,7 @@ export default function Home() {
           statRight={{ value: String(points), label: 'ポイント' }}
         />
         <ArenaBanner />
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          <StreakCard days={streakDays} />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <CurrentIQCard score={currentIQ} inviteCode={inviteCode} />
           <GlobalRankCard rank={globalRank ?? '-'} />
         </div>
