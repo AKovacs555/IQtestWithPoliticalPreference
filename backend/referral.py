@@ -2,7 +2,7 @@ import os
 from datetime import datetime
 from backend.deps.supabase_client import get_supabase_client
 from backend.db import insert_point_ledger
-from backend.utils.settings import get_setting
+from backend.utils.settings import get_setting_int
 
 
 async def credit_referral_if_applicable(user_id: str) -> None:
@@ -48,7 +48,7 @@ async def credit_referral_if_applicable(user_id: str) -> None:
         )
         credited_count = len(getattr(count_resp, "data", []) or [])
         if credited_count < max_credits:
-            reward = int(await get_setting("invite_reward_points", 5))
+            reward = get_setting_int(supabase, "invite_reward_points", 5)
             insert_point_ledger(inviter["hashed_id"], reward, "referral")
         supabase.table("referrals").update(
             {"credited": True, "credited_at": datetime.utcnow().isoformat()}
