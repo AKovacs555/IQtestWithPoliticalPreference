@@ -87,10 +87,10 @@ def _setup(monkeypatch):
 
     monkeypatch.setattr("backend.routes.quiz.get_supabase_client", lambda: DummySupabase())
     monkeypatch.setattr("backend.routes.daily.get_supabase_client", lambda: DummySupabase())
-    monkeypatch.setattr("backend.routes.daily.increment_free_attempts", lambda *a, **k: None)
+    monkeypatch.setattr("backend.routes.daily.insert_point_ledger", lambda *a, **k: None)
     monkeypatch.setattr("backend.routes.daily.update_user", lambda *a, **k: None)
-    monkeypatch.setattr("backend.db.consume_free_attempt", lambda uid: 0, raising=False)
-    monkeypatch.setattr("backend.routes.quiz.consume_free_attempt", lambda uid: 0, raising=False)
+    monkeypatch.setattr("backend.db.spend_points", lambda uid: 0, raising=False)
+    monkeypatch.setattr("backend.routes.quiz.spend_points", lambda uid: 0, raising=False)
 
     # reduce number of questions
     monkeypatch.setattr("backend.routes.quiz.NUM_QUESTIONS", 1, raising=False)
@@ -161,8 +161,8 @@ def test_grants_attempt_after_three(monkeypatch):
 
     calls = []
     monkeypatch.setattr(
-        "backend.routes.daily.increment_free_attempts",
-        lambda uid, delta=1, reason="": calls.append((uid, delta, reason)),
+        "backend.routes.daily.insert_point_ledger",
+        lambda uid, pts, reason="": calls.append((uid, pts, reason)),
     )
     updated: dict = {}
 

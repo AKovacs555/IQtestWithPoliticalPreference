@@ -62,7 +62,7 @@ async def nowpayments_ipn(request: Request):
     status = payload.get("payment_status")
     credited = False
     if status in TERMINAL_STATUSES and user_id:
-        db.increment_free_attempts(user_id, 1)
+        db.insert_point_ledger(user_id, 1, "nowpayments")
         credited = True
         db.mark_payment_processed(payment_id)
         logger.info("NOWPayments IPN ok", extra={"event": "ipn_ok", **log_extra})

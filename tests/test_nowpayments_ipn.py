@@ -30,7 +30,7 @@ def test_rejects_bad_signature(monkeypatch, caplog):
     credited = []
     monkeypatch.setattr(nowp.db, "record_payment_event", lambda *a, **k: True)
     monkeypatch.setattr(
-        nowp.db, "increment_free_attempts", lambda uid, delta=1: credited.append((uid, delta))
+        nowp.db, "insert_point_ledger", lambda uid, delta, reason='': credited.append((uid, delta))
     )
     client = _client()
     payload = {"payment_id": "p1", "payment_status": "finished", "order_id": "u1"}
@@ -59,7 +59,7 @@ def test_credits_on_finished_once(monkeypatch, caplog):
     monkeypatch.setattr(nowp.db, "record_payment_event", record)
     monkeypatch.setattr(nowp.db, "mark_payment_processed", lambda pid: None)
     monkeypatch.setattr(
-        nowp.db, "increment_free_attempts", lambda uid, delta=1: credited.append((uid, delta))
+        nowp.db, "insert_point_ledger", lambda uid, delta, reason='': credited.append((uid, delta))
     )
     client = _client()
     payload = {"payment_id": "p2", "payment_status": "finished", "order_id": "u2"}
@@ -92,7 +92,7 @@ def test_idempotent_on_replay(monkeypatch, caplog):
     monkeypatch.setattr(nowp.db, "record_payment_event", record)
     monkeypatch.setattr(nowp.db, "mark_payment_processed", lambda pid: None)
     monkeypatch.setattr(
-        nowp.db, "increment_free_attempts", lambda uid, delta=1: credited.append((uid, delta))
+        nowp.db, "insert_point_ledger", lambda uid, delta, reason='': credited.append((uid, delta))
     )
     client = _client()
     payload = {"payment_id": "p3", "payment_status": "finished", "order_id": "u3"}

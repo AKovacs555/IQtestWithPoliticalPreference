@@ -150,7 +150,8 @@ from db import (
     log_event,
     DEFAULT_RETRY_PRICE,
     DEFAULT_PRO_PRICE,
-    increment_free_attempts,
+    insert_point_ledger,
+    spend_points,
     mark_payment_processed,
     is_payment_processed,
 )
@@ -307,7 +308,7 @@ class PricingResponse(BaseModel):
     price: int
     retry_price: int
     plays: int
-    free_attempts: int
+    points: int
     processor: str
     pro_price: int
     variant: int
@@ -326,7 +327,7 @@ class UserStats(BaseModel):
     referrals: int
     scores: list[ScoreEntry]
     party_log: list
-    free_attempts: int
+    points: int
 
 
 class HistoryResponse(BaseModel):
@@ -418,7 +419,7 @@ async def nowpayments_callback(request: Request):
         else:
             user_id = payload.get("order_id") or payload.get("user_id")
             if user_id:
-                increment_free_attempts(user_id, 1)
+                insert_point_ledger(user_id, 1, "nowpayments")
             mark_payment_processed(payment_id)
             track_event({"event": "nowpayments_finished", "payment_id": payment_id})
 
@@ -427,40 +428,25 @@ async def nowpayments_callback(request: Request):
 
 @app.post("/play/record")
 async def record_play(action: UserAction):
-    max_free_attempts = await get_setting("max_free_attempts", 1)
+    cost = int(await get_setting("point_cost_per_attempt", RETRY_POINT_COST))
     user = get_user(action.user_id)
     if not user:
-        user = db_create_user(
-            {"hashed_id": action.user_id, "free_attempts": max_free_attempts}
+        user = db_create_user({"hashed_id": action.user_id})
+    if user.get("points", 0) < cost:
+        raise HTTPException(
+            status_code=402,
+            detail={"error": "insufficient_points", "message": "ポイントが不足しています。"},
         )
-    paid = False
-    remaining = min(user.get("free_attempts", max_free_attempts), max_free_attempts)
-    if user.get("free_attempts", max_free_attempts) != remaining:
-        user["free_attempts"] = remaining
-    if remaining > 0:
-        user["free_attempts"] = remaining - 1
-    else:
-        if user.get("points", 0) >= RETRY_POINT_COST:
-            user["points"] -= RETRY_POINT_COST
-            paid = True
-        else:
-            raise HTTPException(
-                status_code=402,
-                detail={"error": "max_free_attempts_reached", "message": "Please upgrade"},
-            )
+    remaining = spend_points(action.user_id, cost)
     user["plays"] = user.get("plays", 0) + 1
     supabase = get_supabase()
     db_update_user(
         supabase,
         action.user_id,
-        {
-            "plays": user["plays"],
-            "points": user.get("points", 0),
-            "free_attempts": user.get("free_attempts", 0),
-        },
+        {"plays": user["plays"], "points": remaining or 0},
     )
-    track_event({"event": "play_record", "user_id": action.user_id, "paid": paid})
-    return {"plays": user["plays"], "points": user.get("points", 0), "free_attempts": user.get("free_attempts", 0)}
+    track_event({"event": "play_record", "user_id": action.user_id})
+    return {"plays": user["plays"], "points": remaining or 0}
 
 
 @app.post("/referral")
@@ -488,11 +474,12 @@ async def ads_complete(action: UserAction):
     user = get_user(action.user_id)
     if not user:
         user = db_create_user({"hashed_id": action.user_id})
-    user["points"] = user.get("points", 0) + AD_REWARD_POINTS
-    supabase = get_supabase()
-    db_update_user(supabase, action.user_id, {"points": user["points"]})
+    reward = int(await get_setting("ad_reward_points", AD_REWARD_POINTS))
+    insert_point_ledger(action.user_id, reward, "ad")
+    updated = get_user(action.user_id) or {}
+    new_points = updated.get("points", 0)
     track_event({"event": "ad_complete", "user_id": action.user_id})
-    return {"points": user["points"]}
+    return {"points": new_points}
 
 
 @app.get("/ping")
@@ -773,7 +760,6 @@ async def user_demographics(info: DemographicInfo):
 @app.get("/user/stats/{user_id}", response_model=UserStats)
 async def user_stats(user_id: str):
     """Return play counts and history for a user."""
-    max_free_attempts = await get_setting("max_free_attempts", 1)
     user = get_user(user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -782,7 +768,7 @@ async def user_stats(user_id: str):
         "referrals": user.get("referrals", 0),
         "scores": user.get("scores") or [],
         "party_log": user.get("party_log") or [],
-        "free_attempts": min(user.get("free_attempts", max_free_attempts), max_free_attempts),
+        "points": user.get("points", 0),
     }
 
 

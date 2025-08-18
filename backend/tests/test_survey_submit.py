@@ -22,7 +22,6 @@ def test_survey_submit_persists_answers_and_marks_completion():
         'party_log': [],
         'demographic': {},
         'demographic_completed': False,
-        'free_attempts': 0,
         'survey_completed': False,
     })
 

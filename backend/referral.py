@@ -1,17 +1,17 @@
 import os
 from datetime import datetime
 from backend.deps.supabase_client import get_supabase_client
-from backend.db import insert_attempt_ledger
+from backend.db import insert_point_ledger
+from backend.utils.settings import get_setting
 
 
-def credit_referral_if_applicable(user_id: str) -> None:
-    """Credit the referrer with a free attempt if applicable.
+async def credit_referral_if_applicable(user_id: str) -> None:
+    """Credit the referrer with points if applicable.
 
     Looks for an uncredited row in the ``referrals`` table where
-    ``invitee_user`` matches ``user_id``.  If found, the corresponding
-    inviter's ``free_attempts`` is incremented (up to the limit defined by
-    the ``REFERRAL_MAX_CREDITS`` environment variable) and the referral row
-    is marked as credited.
+    ``invitee_user`` matches ``user_id``. If found, the corresponding inviter's
+    points are increased (up to the limit defined by the ``REFERRAL_MAX_CREDITS``
+    environment variable) and the referral row is marked as credited.
     """
     supabase = get_supabase_client()
     if not hasattr(supabase, "table"):
@@ -30,7 +30,7 @@ def credit_referral_if_applicable(user_id: str) -> None:
         inviter_code = row.get("inviter_code")
         inviter_resp = (
             supabase.table("app_users")
-            .select("hashed_id, free_attempts")
+            .select("hashed_id")
             .eq("invite_code", inviter_code)
             .single()
             .execute()
@@ -48,7 +48,8 @@ def credit_referral_if_applicable(user_id: str) -> None:
         )
         credited_count = len(getattr(count_resp, "data", []) or [])
         if credited_count < max_credits:
-            insert_attempt_ledger(inviter["hashed_id"], 1, "referral")
+            reward = int(await get_setting("invite_reward_points", 5))
+            insert_point_ledger(inviter["hashed_id"], reward, "referral")
         supabase.table("referrals").update(
             {"credited": True, "credited_at": datetime.utcnow().isoformat()}
         ).eq("invitee_user", user_id).execute()

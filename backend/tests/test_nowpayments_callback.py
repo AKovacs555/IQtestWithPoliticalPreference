@@ -26,7 +26,7 @@ def test_nowpayments_callback_valid(monkeypatch):
     monkeypatch.setattr(main, "is_payment_processed", lambda pid: pid in processed)
     monkeypatch.setattr(main, "mark_payment_processed", lambda pid: processed.add(pid))
     monkeypatch.setattr(
-        main, "increment_free_attempts", lambda uid, delta=1: calls.append((uid, delta))
+        main, "insert_point_ledger", lambda uid, pts, reason="": calls.append((uid, pts))
     )
 
     client = TestClient(main.app)
@@ -57,7 +57,7 @@ def test_nowpayments_callback_invalid_signature(monkeypatch):
     monkeypatch.setenv("NOWPAYMENTS_IPN_SECRET", secret)
 
     calls = []
-    monkeypatch.setattr(main, "increment_free_attempts", lambda uid, delta=1: calls.append((uid, delta)))
+    monkeypatch.setattr(main, "insert_point_ledger", lambda uid, pts, reason="": calls.append((uid, pts)))
     monkeypatch.setattr(main, "is_payment_processed", lambda pid: False)
     monkeypatch.setattr(main, "mark_payment_processed", lambda pid: None)
 

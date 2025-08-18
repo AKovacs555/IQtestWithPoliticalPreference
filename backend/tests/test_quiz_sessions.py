@@ -31,7 +31,7 @@ def make_app(monkeypatch, supa, duration=25):
     )
     monkeypatch.setattr(quiz, "get_supabase_client", lambda: supa)
     monkeypatch.setattr(quiz, "get_daily_answer_count", lambda uid, day=None: 3)
-    monkeypatch.setattr(quiz, "consume_free_attempt", lambda uid: 0, raising=False)
+    monkeypatch.setattr(quiz, "spend_points", lambda uid: 0, raising=False)
     return app
 
 
