@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import AppShell from '../components/AppShell';
+import { formatIQ } from '../utils/num';
 
 const API_BASE = import.meta.env.VITE_API_BASE || '';
 
@@ -7,8 +8,8 @@ export default function Leaderboard() {
   const [rows, setRows] = useState([]);
   useEffect(() => {
     fetch(`${API_BASE}/leaderboard?limit=100`)
-      .then(r => r.json())
-      .then(d => setRows(d.leaderboard || []));
+      .then((r) => r.json())
+      .then((d) => setRows(d.items || []));
   }, []);
   return (
     <AppShell>
@@ -22,16 +23,14 @@ export default function Leaderboard() {
                   <th>Rank</th>
                   <th>Name</th>
                   <th>Score</th>
-                  <th>Percentile</th>
                 </tr>
               </thead>
               <tbody>
-                {rows.map((r, idx) => (
-                  <tr key={r.user_id || idx}>
-                    <td>{idx + 1}</td>
+                {rows.map((r) => (
+                  <tr key={r.user_id}>
+                    <td>{r.rank}</td>
                     <td>{r.display_name}</td>
-                    <td>{r.best_iq}</td>
-                    <td>{r.best_percentile}</td>
+                    <td>{formatIQ(r.best_iq)}</td>
                   </tr>
                 ))}
               </tbody>

@@ -44,7 +44,6 @@ export default function Home() {
         const d = await codeRes.json();
         setInviteCode(d.invite_code || '');
       }
-      // Fetch latest IQ score and global rank using hashed user ID
       if (userId) {
         const { data: userData } = await supabase
           .from('app_users')
@@ -60,13 +59,15 @@ export default function Home() {
             const h = await histRes.json();
             setCurrentIQ(h.user_score || 0);
           }
-          const lbRes = await fetch(`${apiBase}/leaderboard?limit=1000`);
-          if (lbRes.ok) {
-            const d = await lbRes.json();
-            const idx = d.leaderboard?.findIndex((x) => x.user_id === hashedId);
-            setGlobalRank(idx != null && idx >= 0 ? idx + 1 : null);
-          }
         }
+      }
+      const lbRes = await fetch(`${apiBase}/leaderboard?limit=1`, {
+        headers: authHeaders,
+        credentials: 'include',
+      });
+      if (lbRes.ok) {
+        const d = await lbRes.json();
+        setGlobalRank(d.my_rank ?? null);
       }
     } catch {
       /* handle errors if needed */

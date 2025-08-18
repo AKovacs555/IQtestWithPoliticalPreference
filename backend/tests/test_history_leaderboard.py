@@ -7,7 +7,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 
 from backend.routes.user import router as user_router, get_current_user
-from backend.routes.leaderboard import router as leaderboard_router
+from backend.routes.leaderboard import router as leaderboard_router, maybe_user
 
 
 def make_app(monkeypatch, supa, user_id="u1"):
@@ -15,6 +15,7 @@ def make_app(monkeypatch, supa, user_id="u1"):
     app.include_router(user_router)
     app.include_router(leaderboard_router)
     app.dependency_overrides[get_current_user] = lambda: {"hashed_id": user_id}
+    app.dependency_overrides[maybe_user] = lambda: {"hashed_id": user_id}
     monkeypatch.setattr("backend.routes.user.get_supabase_client", lambda: supa)
     monkeypatch.setattr("backend.routes.leaderboard.get_supabase_client", lambda: supa)
     return app
@@ -35,10 +36,12 @@ def test_leaderboard_aggregation_and_anonymous(monkeypatch, fake_supabase):
     ]).execute()
     with TestClient(app) as client:
         resp = client.get("/leaderboard?limit=10")
-        data = resp.json()["leaderboard"]
+        payload = resp.json()
+        data = payload["items"]
+        assert payload["total_users"] == 2
+        assert payload["my_rank"] == 1
         assert data[0]["display_name"] == "Alice"
         assert data[0]["best_iq"] == 120
-        assert data[0]["best_percentile"] == 70
         assert data[1]["display_name"] == f"Guest-{'u2'[:4]}"
         assert data[1]["best_iq"] == 90
 

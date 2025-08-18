@@ -5,7 +5,7 @@ export interface ShareParams {
   hashtags?: string[];
 }
 
-const DEFAULT_HASHTAGS = (import.meta.env.VITE_SOCIAL_HASHTAGS || 'IQArena,IQアリーナ')
+const DEFAULT_HASHTAGS = (import.meta.env.VITE_SOCIAL_HASHTAGS || 'IQ2.0')
   .split(',')
   .map((h) => h.trim().replace(/^#/, ''))
   .filter(Boolean);
