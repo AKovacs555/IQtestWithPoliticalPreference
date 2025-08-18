@@ -31,7 +31,7 @@ from backend.db import (  # noqa: E402
     get_daily_answer_count,
     spend_points,
 )
-from backend.utils.settings import get_setting
+from backend.utils.settings import get_setting_int, get_setting_bool
 from backend.schemas.quiz import (
     AttemptStartResponse,
     AttemptQuestionsResponse,
@@ -103,9 +103,10 @@ async def start_quiz(
             get_balanced_random_questions_by_set(1, set_id)
         except ValueError as e:
             raise HTTPException(status_code=404, detail=str(e))
+    supabase = get_supabase_client()
     daily_count = get_daily_answer_count(user["hashed_id"])
     points = int(user.get("points", 0))
-    cost = int(await get_setting("attempt_cost_points", 1))
+    cost = get_setting_int(supabase, "attempt_cost_points", 1)
     if points < cost and daily_count < 3:
         raise HTTPException(
             status_code=400,
@@ -147,7 +148,6 @@ async def start_quiz(
         except ValueError as e:
             raise HTTPException(status_code=404, detail=str(e))
     else:
-        supabase = get_supabase_client()
         easy = int(round(NUM_QUESTIONS * 0.3))
         med = int(round(NUM_QUESTIONS * 0.4))
         hard = NUM_QUESTIONS - easy - med
@@ -483,25 +483,25 @@ def get_random_pending_surveys(
     return eligible[:limit]
 
 
-CAT_ENABLED = bool(int(os.getenv("CAT_ENABLED", "0")))
-
-
 @router.post("/answer")
 async def cat_answer():  # pragma: no cover - skeleton
-    if not CAT_ENABLED:
+    supabase = get_supabase_client()
+    if not get_setting_bool(supabase, "cat_enabled", False):
         raise HTTPException(status_code=503, detail={"code": "cat_disabled", "message": "CAT disabled"})
     raise HTTPException(status_code=501, detail={"code": "not_implemented", "message": "CAT answer not implemented"})
 
 
 @router.get("/next")
 async def cat_next():  # pragma: no cover - skeleton
-    if not CAT_ENABLED:
+    supabase = get_supabase_client()
+    if not get_setting_bool(supabase, "cat_enabled", False):
         raise HTTPException(status_code=503, detail={"code": "cat_disabled", "message": "CAT disabled"})
     raise HTTPException(status_code=501, detail={"code": "not_implemented", "message": "CAT next not implemented"})
 
 
 @router.post("/finish")
 async def cat_finish():  # pragma: no cover - skeleton
-    if not CAT_ENABLED:
+    supabase = get_supabase_client()
+    if not get_setting_bool(supabase, "cat_enabled", False):
         raise HTTPException(status_code=503, detail={"code": "cat_disabled", "message": "CAT disabled"})
     raise HTTPException(status_code=501, detail={"code": "not_implemented", "message": "CAT finish not implemented"})

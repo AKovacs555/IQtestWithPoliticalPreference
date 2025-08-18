@@ -83,7 +83,7 @@ from routes.arena import router as arena_router
 from backend.routes import user_profile_bootstrap
 from api import diagnostics
 import json
-from utils.settings import get_setting
+from utils.settings import get_setting_int
 
 app = FastAPI()
 app.state.sessions = {}
@@ -430,7 +430,8 @@ async def nowpayments_callback(request: Request):
 
 @app.post("/play/record")
 async def record_play(action: UserAction):
-    cost = int(await get_setting("attempt_cost_points", RETRY_POINT_COST))
+    supabase = get_supabase()
+    cost = get_setting_int(supabase, "attempt_cost_points", RETRY_POINT_COST)
     user = get_user(action.user_id)
     if not user:
         user = db_create_user({"hashed_id": action.user_id})
@@ -441,7 +442,6 @@ async def record_play(action: UserAction):
         )
     remaining = spend_points(action.user_id, cost)
     user["plays"] = user.get("plays", 0) + 1
-    supabase = get_supabase()
     db_update_user(
         supabase,
         action.user_id,
@@ -476,8 +476,8 @@ async def ads_complete(action: UserAction):
     user = get_user(action.user_id)
     if not user:
         user = db_create_user({"hashed_id": action.user_id})
-    reward = int(await get_setting("ad_reward_points", AD_REWARD_POINTS))
     supabase = get_supabase()
+    reward = get_setting_int(supabase, "ad_reward_points", AD_REWARD_POINTS)
     today = datetime.utcnow().date()
     tomorrow = today + timedelta(days=1)
     try:

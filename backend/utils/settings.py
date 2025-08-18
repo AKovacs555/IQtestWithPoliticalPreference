@@ -1,32 +1,35 @@
-from supabase import create_client
-import os
-
-SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
-try:
-    if SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY:
-        supabase = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
-    else:
-        supabase = None
-except Exception:  # pragma: no cover - fallback when client init fails
-    supabase = None
+import logging
+from typing import Any
 
 
-def get_setting_sync(key: str, default=None):
-    """Synchronously fetch ``key`` from the ``settings`` table."""
+logger = logging.getLogger(__name__)
 
-    if supabase is None:
-        return default
+
+def _fetch_setting(client: Any, key: str) -> Any | None:
     try:
-        result = supabase.table("settings").select("value").eq("key", key).execute()
-        if result.data:
-            return result.data[0].get("value")
-    except Exception:
-        return default
+        resp = (
+            client.table("settings").select("value").eq("key", key).single().execute()
+        )
+        data = getattr(resp, "data", None)
+        if data and data.get("value") is not None:
+            return data["value"]
+        logger.warning("Setting %s not found", key)
+    except Exception as exc:  # pragma: no cover - network/db failures
+        logger.warning("Error fetching setting %s: %s", key, exc)
+    return None
+
+
+def get_setting_int(client: Any, key: str, default: int) -> int:
+    value = _fetch_setting(client, key)
+    if value is not None:
+        try:
+            return int(value)
+        except (TypeError, ValueError):
+            logger.warning("Setting %s has non-int value %r", key, value)
     return default
 
 
-async def get_setting(key: str, default=None):
-    """Async wrapper around :func:`get_setting_sync`.``"""
+def get_setting_bool(client: Any, key: str, default: bool) -> bool:
+    v = get_setting_int(client, key, 1 if default else 0)
+    return v != 0
 
-    return get_setting_sync(key, default)
