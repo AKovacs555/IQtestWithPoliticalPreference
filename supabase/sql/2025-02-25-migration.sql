@@ -10,19 +10,6 @@ alter table public.survey_daily_progress enable row level security;
 create policy "own daily progress" on public.survey_daily_progress
   for all to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
 
--- 2) Quiz sessions (owner-only)
-create table if not exists public.quiz_sessions(
-  id uuid primary key default gen_random_uuid(),
-  user_id text not null references public.app_users(hashed_id) on delete cascade,
-  started_at timestamptz not null default now(),
-  ended_at timestamptz,
-  status text not null default 'active' check (status in ('active','submitted','abandoned','timeout')),
-  fingerprint text
-);
-alter table public.quiz_sessions enable row level security;
-create policy "own sessions" on public.quiz_sessions
-  for all to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
-
 -- 3) Pro pass & pricing rules
 alter table public.app_users add column if not exists pro_active_until timestamptz;
 create table if not exists public.pricing_rules(

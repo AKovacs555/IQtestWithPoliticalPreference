@@ -7,10 +7,6 @@ alter table public.survey_daily_progress
   add constraint survey_daily_progress_user_id_fkey
     foreign key (user_id) references public.app_users(hashed_id) on delete cascade;
 
-alter table public.quiz_sessions
-  drop constraint if exists quiz_sessions_user_id_fkey,
-  add constraint quiz_sessions_user_id_fkey
-    foreign key (user_id) references public.app_users(hashed_id) on delete cascade;
 
 alter table public.referral_rewards
   drop constraint if exists referral_rewards_referrer_id_fkey,

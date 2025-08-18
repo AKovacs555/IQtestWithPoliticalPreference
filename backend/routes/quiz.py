@@ -222,20 +222,25 @@ async def start_quiz(
             raise HTTPException(status_code=500, detail="No questions available")
 
     session_id = str(uuid.uuid4())
-    expires_at = datetime.utcnow() + timedelta(minutes=QUIZ_DURATION_MINUTES)
+    expires_at = datetime.utcnow() + timedelta(minutes=QUIZ_DURATION_MINUTES or 10)
     request.app.state.sessions[session_id] = {
         str(q["id"]): {"answer": q["answer"], "a": q.get("irt_a"), "b": q.get("irt_b")}
         for q in questions
     }
+    if not hasattr(request.app.state, "session_expires"):
+        request.app.state.session_expires = {}
+    if not hasattr(request.app.state, "session_started"):
+        request.app.state.session_started = {}
+    request.app.state.session_expires[session_id] = expires_at
+    request.app.state.session_started[session_id] = datetime.utcnow()
     supabase = get_supabase_client()
     try:
-        supabase.table("quiz_sessions").insert(
+        supabase.table("quiz_attempts").insert(
             {
                 "id": session_id,
                 "user_id": user.get("hashed_id"),
-                "status": "started",
-                "expires_at": expires_at.isoformat(),
                 "set_id": set_id,
+                "status": "started",
             }
         ).execute()
     except Exception as e:  # pragma: no cover - best effort only
@@ -263,32 +268,24 @@ async def submit_quiz(
     payload: QuizSubmitRequest, request: Request, user: dict = Depends(get_current_user)
 ):
     supabase = get_supabase_client()
-    row = (
-        supabase.table("quiz_sessions")
-        .select("status,expires_at,set_id")
-        .eq("id", payload.session_id)
-        .single()
-        .execute()
-        .data
-    )
-    if not row or row.get("status") != "started":
+    session = request.app.state.sessions.get(payload.session_id)
+    if not session:
         raise HTTPException(status_code=400, detail="Invalid session")
-    try:
-        exp = datetime.fromisoformat(row["expires_at"])
-    except Exception:
-        exp = datetime.utcnow()
-    if datetime.utcnow() > exp:
+    expires_at = getattr(request.app.state, "session_expires", {}).get(payload.session_id)
+    if not expires_at:
+        request.app.state.sessions.pop(payload.session_id, None)
+        raise HTTPException(status_code=400, detail="Invalid session")
+    if datetime.utcnow() > expires_at:
         try:
-            supabase.table("quiz_sessions").update({"status": "timeout"}).eq(
+            supabase.table("quiz_attempts").update({"status": "timeout"}).eq(
                 "id", payload.session_id
             ).execute()
         except Exception:
             pass
         request.app.state.sessions.pop(payload.session_id, None)
+        getattr(request.app.state, "session_expires", {}).pop(payload.session_id, None)
+        getattr(request.app.state, "session_started", {}).pop(payload.session_id, None)
         raise HTTPException(status_code=400, detail="Session expired")
-    session = request.app.state.sessions.get(payload.session_id)
-    if not session:
-        raise HTTPException(status_code=400, detail="Invalid session")
     if len(payload.answers) != len(session):
         raise HTTPException(status_code=400, detail="Expected all answers")
     responses = []
@@ -315,15 +312,20 @@ async def submit_quiz(
         ).execute()
     except Exception as e:  # pragma: no cover - best effort only
         logging.getLogger(__name__).warning("Could not store user score: %s", e)
+    start_time = getattr(request.app.state, "session_started", {}).get(payload.session_id)
+    duration = None
+    if start_time:
+        duration = int((datetime.utcnow() - start_time).total_seconds())
     try:
-        supabase.table("quiz_attempts").insert(
-            {
-                "user_id": user["hashed_id"],
-                "set_id": row.get("set_id"),
-                "status": "submitted",
-                "iq_score": iq,
-                "percentile": pct,
-            }
+        update_data = {
+            "status": "submitted",
+            "iq_score": iq,
+            "percentile": pct,
+        }
+        if duration is not None:
+            update_data["duration"] = duration
+        supabase.table("quiz_attempts").update(update_data).eq(
+            "id", payload.session_id
         ).execute()
     except Exception:  # pragma: no cover - best effort only
         pass
@@ -358,13 +360,9 @@ async def submit_quiz(
         await credit_referral_if_applicable(user["hashed_id"])
     except Exception:
         pass
-    try:
-        supabase.table("quiz_sessions").update(
-            {"status": "submitted", "score": iq, "percentile": pct}
-        ).eq("id", payload.session_id).execute()
-    except Exception:
-        pass
     request.app.state.sessions.pop(payload.session_id, None)
+    getattr(request.app.state, "session_expires", {}).pop(payload.session_id, None)
+    getattr(request.app.state, "session_started", {}).pop(payload.session_id, None)
     return {
         "theta": theta,
         "iq": iq,
@@ -381,12 +379,14 @@ async def abandon_quiz(
 ):
     supabase = get_supabase_client()
     try:
-        supabase.table("quiz_sessions").update({"status": "abandoned"}).eq("id", payload.session_id).eq(
-            "status", "started"
-        ).execute()
+        supabase.table("quiz_attempts").update({"status": "abandoned"}).eq(
+            "id", payload.session_id
+        ).eq("status", "started").execute()
     except Exception:
         pass
     request.app.state.sessions.pop(payload.session_id, None)
+    getattr(request.app.state, "session_expires", {}).pop(payload.session_id, None)
+    getattr(request.app.state, "session_started", {}).pop(payload.session_id, None)
     return {"status": "abandoned"}
 
 

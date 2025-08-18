@@ -16,6 +16,8 @@ def test_submit_quiz_handles_missing_user_scores(monkeypatch):
     app = FastAPI()
     app.include_router(router)
     app.state.sessions = {"sess1": {1: {"answer": 0, "a": 1.0, "b": 0.0}}}
+    app.state.session_expires = {"sess1": datetime.utcnow() + timedelta(minutes=5)}
+    app.state.session_started = {"sess1": datetime.utcnow()}
     app.dependency_overrides[get_current_user] = lambda: {"hashed_id": "u1"}
 
     class DummyTable:
@@ -40,8 +42,6 @@ def test_submit_quiz_handles_missing_user_scores(monkeypatch):
         def execute(self):
             if self.name == "user_scores":
                 raise Exception("missing table")
-            if self.name == "quiz_sessions":
-                return SimpleNamespace(data={"status": "started", "expires_at": (datetime.utcnow() + timedelta(minutes=5)).isoformat()})
             return SimpleNamespace(data=None)
 
     class DummySupabase:
