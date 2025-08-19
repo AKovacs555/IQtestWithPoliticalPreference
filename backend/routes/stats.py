@@ -55,13 +55,13 @@ def survey_iq_by_option(survey_id: str):
 
     items = (
         supabase.table("survey_items")
-        .select("survey_id, idx, text")
+        .select("survey_id, position, body")
         .eq("survey_id", survey_id)
-        .order("idx")
+        .order("position")
         .execute()
         .data
     )
-    idx_to_text = {it["idx"]: it["text"] for it in items}
+    idx_to_text = {it["position"]: it["body"] for it in items}
 
     ans_table = (
         supabase.table("survey_answers")
@@ -86,7 +86,7 @@ def survey_iq_by_option(survey_id: str):
     resp_items: list[SurveyOptionAvg] = []
     for idx, text in idx_to_text.items():
         values = buckets.get(idx, [])
-        avg = sum(values) / len(values) if values else None
+        avg = round(sum(values) / len(values), 2) if values else None
         resp_items.append(
             SurveyOptionAvg(
                 option_index=idx,
