@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import AppShell from '../components/AppShell';
 import { useSession } from '../hooks/useSession';
+import { useTranslation } from 'react-i18next';
 
 const API_BASE = import.meta.env.VITE_API_BASE || "";
 
@@ -14,11 +15,12 @@ export default function DemographicsForm() {
   const [gender, setGender] = useState('other');
   const [income, setIncome] = useState('0-3m');
   const [occupation, setOccupation] = useState('student');
-  const { userId } = useSession();
+  const { userId, session } = useSession();
+  const { i18n } = useTranslation();
 
-  const save = () => {
+  const save = async () => {
     const uid = userId || 'testuser';
-    fetch(`${API_BASE}/user/demographics`, {
+    await fetch(`${API_BASE}/user/demographics`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -28,11 +30,29 @@ export default function DemographicsForm() {
         income_band: income,
         occupation,
       })
-    }).then(() => {
-      localStorage.setItem('demographic_completed', 'true');
-      const path = setId ? `/survey?set=${setId}` : '/survey';
-      navigate(path);
     });
+    localStorage.setItem('demographic_completed', 'true');
+
+    // Attempt to fetch the next survey and navigate
+    try {
+      const headers = session?.access_token
+        ? { Authorization: `Bearer ${session.access_token}` }
+        : {};
+      const res = await fetch(
+        `${API_BASE}/survey/start?lang=${i18n.language}`,
+        { headers, credentials: 'include' }
+      );
+      if (res.ok) {
+        const payload = await res.json();
+        navigate(`/survey?sid=${payload.survey.id}`, { state: payload });
+        return;
+      }
+    } catch {
+      // ignore and fallback below
+    }
+
+    const path = setId ? `/survey?set=${setId}` : '/survey';
+    navigate(path);
   };
 
   return (
