@@ -13,7 +13,7 @@ def test_survey_iq_by_option(fake_supabase):
     app = FastAPI()
     app.include_router(stats_router)
     supa = fake_supabase
-    supa.table("surveys").insert({"id": "s1", "title": "S1"}).execute()
+    supa.table("surveys").insert({"id": "s1", "title": "S1", "question_text": "Q?"}).execute()
     supa.table("survey_items").insert([
         {"id": "i1", "survey_id": "s1", "position": 0, "body": "A"},
         {"id": "i2", "survey_id": "s1", "position": 1, "body": "B"},
@@ -33,6 +33,7 @@ def test_survey_iq_by_option(fake_supabase):
         assert resp.status_code == 200
         data = resp.json()
         assert data["survey_id"] == "s1"
+        assert data["survey_question_text"] == "Q?"
         items = {i["option_index"]: i for i in data["items"]}
         assert items[0]["count"] == 2
         assert abs(items[0]["avg_iq"] - 90.0) < 0.01

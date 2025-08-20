@@ -24,7 +24,7 @@ export default function Arena() {
       for (const s of list) {
         try {
           const st = await apiGet(`/stats/surveys/${s.id}/iq_by_option`);
-          arr.push({ id: s.id, title: st.survey_title, items: st.items });
+          arr.push({ id: s.id, title: st.survey_title, questionText: st.survey_question_text, items: st.items });
         } catch (err) {
           console.error('Failed to fetch survey stats', err);
         }
@@ -43,7 +43,7 @@ export default function Arena() {
           <div className="flex overflow-x-auto gap-4 snap-x snap-mandatory">
             {cards.map((c) => (
               <div key={c.id} className="snap-start">
-                <SurveyStatsCard surveyId={c.id} surveyTitle={c.title} data={c.items} />
+                <SurveyStatsCard surveyId={c.id} surveyTitle={c.title} surveyQuestion={c.questionText} data={c.items} />
               </div>
             ))}
           </div>

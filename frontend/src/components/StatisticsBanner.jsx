@@ -23,7 +23,7 @@ export default function StatisticsBanner() {
       const pick = list[Math.floor(Math.random() * list.length)];
       try {
         const st = await apiGet(`/stats/surveys/${pick.id}/iq_by_option`);
-        setCard({ id: pick.id, title: st.survey_title, items: st.items });
+        setCard({ id: pick.id, title: st.survey_title, questionText: st.survey_question_text, items: st.items });
       } catch {
         /* ignore */
       }
@@ -40,7 +40,7 @@ export default function StatisticsBanner() {
       </div>
       {card && (
         <div className="mt-3">
-          <SurveyStatsCard surveyId={card.id} surveyTitle={card.title} data={card.items} />
+          <SurveyStatsCard surveyId={card.id} surveyTitle={card.title} surveyQuestion={card.questionText} data={card.items} />
         </div>
       )}
     </div>
