@@ -28,12 +28,12 @@ def test_leaderboard_aggregation_and_anonymous(monkeypatch, fake_supabase):
         {"hashed_id": "u1", "display_name": "Alice"},
         {"hashed_id": "u2", "display_name": ""},
     ]).execute()
-    supa.table("quiz_attempts").insert([
-        {"user_id": "u1", "iq_score": 100, "percentile": 50, "status": "submitted"},
-        {"user_id": "u1", "iq_score": 120, "percentile": 70, "status": "submitted"},
-        {"user_id": "u2", "iq_score": 90, "percentile": 40, "status": "submitted"},
-        {"user_id": "u2", "iq_score": 95, "percentile": 45, "status": "started"},
-    ]).execute()
+    supa.table("user_best_iq").insert(
+        [
+            {"user_id": "u1", "best_iq": 120},
+            {"user_id": "u2", "best_iq": 90},
+        ]
+    ).execute()
     with TestClient(app) as client:
         resp = client.get("/leaderboard?limit=10")
         payload = resp.json()
