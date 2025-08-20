@@ -12,7 +12,8 @@ export default function Arena() {
       let list = [];
       try {
         list = await apiGet('/stats/surveys/with_data');
-      } catch {
+      } catch (err) {
+        console.error('Failed to fetch surveys with data', err);
         const { data } = await supabase
           .from('survey_answers')
           .select('survey_id');
@@ -24,8 +25,8 @@ export default function Arena() {
         try {
           const st = await apiGet(`/stats/surveys/${s.id}/iq_by_option`);
           arr.push({ id: s.id, title: st.survey_title, items: st.items });
-        } catch {
-          /* ignore */
+        } catch (err) {
+          console.error('Failed to fetch survey stats', err);
         }
       }
       setCards(arr);
@@ -36,13 +37,17 @@ export default function Arena() {
     <AppShell>
       <div className="px-4 py-6">
         <h1 className="text-2xl font-bold mb-4">統計</h1>
-        <div className="flex overflow-x-auto gap-4 snap-x snap-mandatory">
-          {cards.map((c) => (
-            <div key={c.id} className="snap-start">
-              <SurveyStatsCard surveyId={c.id} surveyTitle={c.title} data={c.items} />
-            </div>
-          ))}
-        </div>
+        {cards.length === 0 ? (
+          <p className="text-gray-500">統計データが見つかりません</p>
+        ) : (
+          <div className="flex overflow-x-auto gap-4 snap-x snap-mandatory">
+            {cards.map((c) => (
+              <div key={c.id} className="snap-start">
+                <SurveyStatsCard surveyId={c.id} surveyTitle={c.title} data={c.items} />
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </AppShell>
   );

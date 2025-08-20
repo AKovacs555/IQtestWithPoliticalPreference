@@ -17,7 +17,7 @@ create table if not exists attempts (
 
 -- Highest IQ ranking view
 create view if not exists user_best_iq as
-  select user_id, max(score) as best_score
+  select user_id, max(score) as best_iq
   from attempts
   where score is not null
   group by user_id;
