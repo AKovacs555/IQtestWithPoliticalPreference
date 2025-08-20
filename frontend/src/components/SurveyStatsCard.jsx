@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import Chart from 'chart.js/auto';
 
-export default function SurveyStatsCard({ surveyId, surveyTitle, data }) {
+export default function SurveyStatsCard({ surveyId, surveyTitle, surveyQuestion, data }) {
   const canvasRef = useRef(null);
 
   useEffect(() => {
@@ -52,7 +52,12 @@ export default function SurveyStatsCard({ surveyId, surveyTitle, data }) {
 
   return (
     <div className="min-w-[320px] max-w-[480px] shrink-0 p-4 rounded-xl bg-white/5">
-      <div className="mb-2 font-semibold">{surveyTitle}</div>
+      <div className="mb-2 font-semibold">
+        {surveyTitle}
+        {surveyQuestion && (
+          <div className="mt-1 text-sm font-normal">{surveyQuestion}</div>
+        )}
+      </div>
       <canvas ref={canvasRef} height="200" />
     </div>
   );

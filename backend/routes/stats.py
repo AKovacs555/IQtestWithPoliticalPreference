@@ -16,6 +16,7 @@ class SurveyOptionAvg(BaseModel):
 class SurveyStatsResponse(BaseModel):
     survey_id: str
     survey_title: str
+    survey_question_text: str | None = None
     items: list[SurveyOptionAvg]
 
 
@@ -24,7 +25,7 @@ def survey_iq_by_option(survey_id: str):
     supabase = get_supabase()
     sres = (
         supabase.table("surveys")
-        .select("id,title")
+        .select("id,title,question_text")
         .eq("id", survey_id)
         .limit(1)
         .execute()
@@ -97,6 +98,7 @@ def survey_iq_by_option(survey_id: str):
     return SurveyStatsResponse(
         survey_id=survey["id"],
         survey_title=survey["title"],
+        survey_question_text=survey.get("question_text"),
         items=resp_items,
     )
 
