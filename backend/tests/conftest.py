@@ -22,6 +22,7 @@ class DummyTable:
         self._filters = []
         self._single = False
         self._limit = None
+        self._or_filters = []
 
     def select(self, *columns):
         self._select = True
@@ -59,6 +60,19 @@ class DummyTable:
         self._filters.append(("eq", column, value))
         return self
 
+    def or_(self, expression):
+        """Support simple OR conditions like ``"a.eq.1,b.eq.2"``."""
+        parts = []
+        for cond in expression.split(","):
+            try:
+                column, op, value = cond.split(".", 2)
+            except ValueError:
+                continue
+            parts.append((op, column, value))
+        if parts:
+            self._or_filters.append(parts)
+        return self
+
     def contains(self, column, value):
         """Naive array containment check used in tests."""
         self._filters.append(("contains", column, tuple(value)))
@@ -90,6 +104,9 @@ class DummyTable:
                     if not isinstance(field, list) or val[0] not in field:
                         return False
                 if op == "in" and field not in val:
+                    return False
+            for group in self._or_filters:
+                if not any(row.get(col) == value for op, col, value in group if op == "eq"):
                     return False
             return True
 
@@ -136,6 +153,7 @@ class DummyTable:
         self._single = False
         self._limit = None
         self._order = None
+        self._or_filters = []
 
 class DummySupabase:
     def __init__(self):
