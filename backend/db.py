@@ -1,7 +1,7 @@
 import os
 import logging
 import uuid
-from datetime import datetime, timedelta, date
+from datetime import datetime, date
 from typing import Any, Dict, Optional, List, Iterable
 import random
 from zoneinfo import ZoneInfo
@@ -687,11 +687,18 @@ def get_daily_answer_count(user_hashed_id: str, _day: date | None = None) -> int
 
 
 def insert_daily_answer(
-    user_id: str, question_id: str, answer: Dict[str, Any] | None = None
+    user_hashed_id: str, question_id: str, answer: Dict[str, Any] | None = None
 ) -> None:
-    """Insert a single poll answer for ``user_id``."""
+    """Insert a single poll answer for ``user_hashed_id``."""
 
     supabase = get_supabase()
+    # Resolve the hashed identifier to the internal UUID so that counting
+    # queries operate on the same ``user_id`` field.
+    user_id = get_or_create_user_id_from_hashed(supabase, user_hashed_id)
+    if not user_id:
+        return
+
+    tokyo_today = datetime.now(ZoneInfo("Asia/Tokyo")).date().isoformat()
     row = {
         "id": str(uuid.uuid4()),
         "user_id": user_id,
@@ -700,6 +707,7 @@ def insert_daily_answer(
         "survey_item_id": question_id,
         "answer": answer or {},
         "created_at": datetime.utcnow().isoformat() + "Z",
+        "answered_on": tokyo_today,
     }
     supabase.table("survey_answers").insert(row).execute()
 
