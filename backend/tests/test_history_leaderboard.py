@@ -25,8 +25,8 @@ def test_leaderboard_aggregation_and_anonymous(monkeypatch, fake_supabase):
     app = make_app(monkeypatch, fake_supabase)
     supa = fake_supabase
     supa.table("app_users").insert([
-        {"hashed_id": "u1", "display_name": "Alice"},
-        {"hashed_id": "u2", "display_name": ""},
+        {"hashed_id": "u1", "username": "Alice"},
+        {"hashed_id": "u2", "username": ""},
     ]).execute()
     supa.table("user_best_iq").insert(
         [

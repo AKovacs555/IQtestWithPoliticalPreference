@@ -43,14 +43,14 @@ async def get_leaderboard(limit: int = Query(100), user: User | None = Depends(m
     if user_ids:
         users = (
             supabase.table("app_users")
-            .select("hashed_id,display_name")
+            .select("hashed_id,username")
             .in_("hashed_id", user_ids)
             .execute()
             .data
             or []
         )
         name_map = {
-            u.get("hashed_id"): (u.get("display_name") or None)
+            u.get("hashed_id"): (u.get("username") or None)
             for u in users
         }
 
