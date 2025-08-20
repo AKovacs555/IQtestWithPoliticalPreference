@@ -1,6 +1,7 @@
 import os
 import sys
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 
 sys.path.insert(0, os.path.abspath("."))
 sys.path.insert(0, os.path.abspath("backend"))
@@ -50,12 +51,19 @@ def _setup(monkeypatch):
         def utcnow(cls):
             return _State.now
 
+        @classmethod
+        def now(cls, tz=None):
+            return _State.now if tz is None else _State.now.replace(tzinfo=tz)
+
     monkeypatch.setattr("backend.routes.daily.datetime", FakeDateTime)
     monkeypatch.setattr("backend.routes.quiz.datetime", FakeDateTime)
 
     # patch DB helpers
     def fake_count(user_id, day=None):
-        return sum(1 for r in _State.answers if r["user_id"] == user_id and (day is None or r["day"] == day))
+        day = day or _State.now.date()
+        return sum(
+            1 for r in _State.answers if r["user_id"] == user_id and r["day"] == day
+        )
 
     def fake_insert(user_id, qid, answer):
         _State.answers.append({"user_id": user_id, "qid": qid, "day": _State.now.date()})
@@ -152,9 +160,11 @@ def test_quota_resets_next_day(monkeypatch, caplog):
     data = resp.json()
     assert data["answered"] == 0
     assert "daily3_reset_detected" in caplog.text
+    tokyo_today = _State.now.astimezone(ZoneInfo("Asia/Tokyo")).date()
     expected_reset = (
-        datetime.combine(_State.now.date(), datetime.min.time()) + timedelta(days=1)
-    ).isoformat() + "Z"
+        datetime.combine(tokyo_today, datetime.min.time(), tzinfo=ZoneInfo("Asia/Tokyo"))
+        + timedelta(days=1)
+    ).astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
     assert data["reset_at"] == expected_reset
 
 
