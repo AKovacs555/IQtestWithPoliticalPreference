@@ -4,11 +4,14 @@ from __future__ import annotations
 
 from typing import Dict, List
 from uuid import uuid4
+from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Response
 from pydantic import BaseModel, Field
 
 from backend.deps.auth import get_current_user
+from backend.deps.supabase_client import get_supabase_client
+from backend.utils.settings import get_setting_int
 from backend import db
 
 
@@ -18,6 +21,11 @@ router = APIRouter(prefix="/surveys", tags=["surveys"])
 class SubmitPayload(BaseModel):
     option_ids: List[str]
     other_texts: Dict[str, str] = Field(default_factory=dict)
+
+
+class AnswerPayload(BaseModel):
+    item_id: str
+    answer_index: int
 
 
 @router.get("/available")
@@ -88,6 +96,20 @@ def available(lang: str, country: str, user: dict = Depends(get_current_user)):
             }
         )
     return out
+
+
+@router.post("/answer")
+def daily_answer(payload: AnswerPayload, user: dict = Depends(get_current_user)):
+    """Record a daily survey answer and grant points after three responses."""
+
+    db.insert_daily_answer(user["hashed_id"], payload.item_id, {"index": payload.answer_index})
+    answered_count = db.get_daily_answer_count(user["hashed_id"], datetime.utcnow().date())
+    if answered_count >= 3:
+        supabase = get_supabase_client()
+        reward = get_setting_int(supabase, "daily_reward_points", 1)
+        db.insert_point_ledger(user["hashed_id"], reward, reason="daily3")
+        db.update_user(supabase, user["hashed_id"], {"survey_completed": True})
+    return {"answered": answered_count, "required": 3}
 
 
 @router.post("/{survey_id}/respond", status_code=201)
