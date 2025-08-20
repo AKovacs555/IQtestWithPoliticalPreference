@@ -77,6 +77,12 @@ class DummyTable:
         self._filters = []
         self._single = False
 
+    def or_(self, *args, **kwargs):  # minimal compatibility stub
+        return self
+
+    def limit(self, *args, **kwargs):  # minimal compatibility stub
+        return self
+
 
 class DummySupabase:
     def __init__(self):
