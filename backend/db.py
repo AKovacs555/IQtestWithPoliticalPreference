@@ -120,22 +120,13 @@ def get_user(user_id: str) -> Optional[Dict[str, Any]]:
     """
 
     supabase = get_supabase()
-    # Primary lookup by id for Supabase-authenticated users
-    resp = (
-        supabase.from_("app_users")
-        .select("*")
-        .eq("id", user_id)
-        .execute()
-    )
-    data = resp.data or []
-    if data:
-        return data[0]
 
-    # Fallback to hashed_id for legacy callers
+    # Primary lookup against ``app_users`` by id or hashed_id in a single call
     resp = (
         supabase.from_("app_users")
         .select("*")
-        .eq("hashed_id", user_id)
+        .or_(f"id.eq.{user_id},hashed_id.eq.{user_id}")
+        .limit(1)
         .execute()
     )
     data = resp.data or []
@@ -146,17 +137,8 @@ def get_user(user_id: str) -> Optional[Dict[str, Any]]:
     resp = (
         supabase.from_("users")
         .select("*")
-        .eq("hashed_id", user_id)
-        .execute()
-    )
-    data = resp.data or []
-    if data:
-        return data[0]
-
-    resp = (
-        supabase.from_("users")
-        .select("*")
-        .eq("id", user_id)
+        .or_(f"id.eq.{user_id},hashed_id.eq.{user_id}")
+        .limit(1)
         .execute()
     )
     data = resp.data or []
