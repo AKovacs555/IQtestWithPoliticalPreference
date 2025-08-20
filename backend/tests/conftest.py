@@ -72,6 +72,10 @@ class DummyTable:
         self._limit = n
         return self
 
+    def order(self, column, desc=False):
+        self._order = (column, desc)
+        return self
+
     def single(self):
         self._single = True
         return self
@@ -111,6 +115,9 @@ class DummyTable:
             return DummyResponse(None)
         if self._select:
             res = [r for r in self.rows if _matches(r)]
+            if getattr(self, '_order', None) and isinstance(res, list):
+                col, desc = self._order
+                res = sorted(res, key=lambda x: x.get(col), reverse=desc)
             if self._single:
                 res = res[0] if res else None
             if self._limit is not None and isinstance(res, list):
@@ -128,6 +135,7 @@ class DummyTable:
         self._filters = []
         self._single = False
         self._limit = None
+        self._order = None
 
 class DummySupabase:
     def __init__(self):
@@ -153,4 +161,5 @@ def fake_supabase(monkeypatch):
     monkeypatch.setattr("main.supabase_admin", supa, raising=False)
     monkeypatch.setattr("backend.routes.admin_surveys.supabase_admin", supa, raising=False)
     monkeypatch.setattr("routes.admin_surveys.supabase_admin", supa, raising=False)
+    monkeypatch.setattr("backend.routes.stats.get_supabase", lambda: supa, raising=False)
     return supa
