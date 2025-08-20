@@ -184,12 +184,13 @@ def detect_country(request: Request) -> str:
 
 class UpsertUserIn(BaseModel):
     user_id: str
-    username: str | None = None
+    email: str | None = None
+    username: str | None = None  # backward compatibility
 
 
 @router.post("/auth/upsert_user")
 def upsert_user_api(payload: UpsertUserIn):
-    upsert_user(payload.user_id, payload.username)
+    upsert_user(payload.user_id, email=payload.email or payload.username)
     return {"ok": True}
 
 
