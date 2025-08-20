@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Header, HTTPException
 from backend.deps.supabase_jwt import decode_supabase_jwt
 from backend.core.supabase_admin import supabase_admin  # service role client
+from backend.db import upsert_user
 
 router = APIRouter()
 
@@ -29,14 +30,8 @@ def ensure_profile(authorization: str = Header(None)):
     if not user_id:
         raise HTTPException(status_code=401, detail="no sub")
 
-    data = {"id": str(user_id), "hashed_id": str(user_id)}
     email = payload.get("email")
-    if email:
-        data["email"] = email
-
-    res = supabase_admin.table("app_users").upsert(data).execute()
-    if getattr(res, "error", None):
-        raise HTTPException(status_code=500, detail=str(res.error))
+    upsert_user(str(user_id), email=email)
 
     # Fetch is_admin flag for the user
     res = (

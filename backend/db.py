@@ -197,20 +197,19 @@ def create_user(user_data: Dict[str, Any]) -> Dict[str, Any]:
     return row
 
 
-def upsert_user(user_id: str, username: str | None = None) -> None:
+def upsert_user(user_id: str, email: str | None = None) -> None:
     """Ensure a user row exists for ``user_id``.
 
     Inserts a new record if the given ``id`` is missing. Existing rows are left
-    untouched. When ``username`` is provided it is stored or updated. When
-    absent, a whimsical name is generated.
+    untouched. A whimsical username is generated for new users. When an
+    ``email`` is supplied it is stored on the profile.
     """
 
     supabase = get_supabase()
     res = supabase.table("app_users").select("id").eq("id", user_id).execute()
-    name = username.strip() if username else _random_username()
     if res.data:
-        if username:
-            update_user(supabase, user_id, {"username": name})
+        if email:
+            supabase.table("app_users").update({"email": email}).eq("id", user_id).execute()
         return
     payload = {
         "id": user_id,
@@ -221,8 +220,10 @@ def upsert_user(user_id: str, username: str | None = None) -> None:
         "party_log": [],
         "scores": [],
         "invite_code": _generate_invite_code(),
-        "username": name,
+        "username": _random_username(),
     }
+    if email:
+        payload["email"] = email
     supabase.table("app_users").upsert(payload).execute()
     reward = get_setting_int(supabase, "signup_reward_points", 1)
     if reward:
