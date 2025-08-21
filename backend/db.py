@@ -53,6 +53,26 @@ _ADJECTIVES = [
     "Cheeky",
     "Quirky",
     "Zany",
+    "Giggly",
+    "Bashful",
+    "Jumpy",
+    "Muddled",
+    "Loopy",
+    "Nifty",
+    "Nerdy",
+    "Jazzy",
+    "Wacky",
+    "Spunky",
+    "Chilly",
+    "Snarky",
+    "Zesty",
+    "Plucky",
+    "Snoozy",
+    "Peppy",
+    "Frothy",
+    "Chirpy",
+    "Perky",
+    "Wimpy",
 ]
 _DUMB_ANIMALS = [
     "Donkey",
@@ -75,11 +95,54 @@ _DUMB_ANIMALS = [
     "Turtle",
     "Cow",
     "Sheep",
+    "Ferret",
+    "Hedgehog",
+    "Otter",
+    "Aardvark",
+    "Iguana",
+    "Koala",
+    "Platypus",
+    "Raccoon",
+    "Sardine",
+    "Giraffe",
+    "Manatee",
+    "Narwhal",
+    "Pelican",
+    "Quokka",
+    "Raven",
+    "Salamander",
+    "Tapir",
+    "Vulture",
+    "Walrus",
+    "Zebra",
 ]
 
 
 def _random_username() -> str:
     return f"{random.choice(_ADJECTIVES)} {random.choice(_DUMB_ANIMALS)}"
+
+
+def _username_exists(supabase: Client, username: str) -> bool:
+    """Return True if a username already exists."""
+
+    resp = (
+        supabase.table("app_users")
+        .select("id")
+        .eq("username", username)
+        .limit(1)
+        .execute()
+    )
+    return bool(resp.data)
+
+
+def _is_unique_error(exc: Exception) -> bool:
+    """Detect uniqueness constraint violations from the API."""
+
+    if not isinstance(exc, APIError):
+        return False
+    code = getattr(exc, "code", "")
+    msg = str(exc).lower()
+    return code == "23505" or "duplicate" in msg or "already exists" in msg or "unique" in msg
 
 DEFAULT_RETRY_PRICE = {"currency": "JPY", "amount_minor": 0, "product": "retry"}
 DEFAULT_PRO_PRICE = {"currency": "JPY", "amount_minor": 0, "product": "pro_pass"}
@@ -236,7 +299,22 @@ def upsert_user(user_id: str, email: str | None = None) -> None:
         ):
             updates["username"] = _random_username()
         if updates:
-            supabase.table("app_users").update(updates).eq("id", user_id).execute()
+            if "username" in updates:
+                while True:
+                    candidate = updates["username"]
+                    if _username_exists(supabase, candidate):
+                        updates["username"] = _random_username()
+                        continue
+                    try:
+                        supabase.table("app_users").update(updates).eq("id", user_id).execute()
+                        break
+                    except Exception as exc:  # pragma: no cover - network errors
+                        if _is_unique_error(exc):
+                            updates["username"] = _random_username()
+                            continue
+                        raise
+            else:
+                supabase.table("app_users").update(updates).eq("id", user_id).execute()
         return
     payload = {
         "id": user_id,
@@ -251,7 +329,19 @@ def upsert_user(user_id: str, email: str | None = None) -> None:
     }
     if email:
         payload["email"] = email
-    supabase.table("app_users").upsert(payload).execute()
+    while True:
+        candidate = payload["username"]
+        if _username_exists(supabase, candidate):
+            payload["username"] = _random_username()
+            continue
+        try:
+            supabase.table("app_users").upsert(payload).execute()
+            break
+        except Exception as exc:  # pragma: no cover - network errors
+            if _is_unique_error(exc):
+                payload["username"] = _random_username()
+                continue
+            raise
     reward = get_setting_int(supabase, "signup_reward_points", 1)
     if reward:
         insert_point_ledger(user_id, reward, "signup")
