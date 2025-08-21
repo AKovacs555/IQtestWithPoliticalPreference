@@ -46,10 +46,15 @@ export default function AuthCallback() {
             headers: { Authorization: `Bearer ${token}` },
             credentials: 'include',
           });
-          if (!resp.ok) console.error('[AuthCallback] /user/ensure failed', await resp.text());
+          if (!resp.ok) {
+            const msg = await resp.text();
+            console.error('[AuthCallback] /user/ensure failed', msg);
+            alert('Failed to ensure user profile');
+          }
         }
       } catch (e) {
         console.warn('[AuthCallback] /user/ensure error', e);
+        alert('Failed to ensure user profile');
       }
 
       // 3) JWT を更新して app_metadata.is_admin を確実に反映
