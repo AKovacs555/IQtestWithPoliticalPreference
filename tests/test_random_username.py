@@ -113,3 +113,14 @@ def test_upsert_user_generates_random_username(fake_supabase):
     assert rows[0]["email"] == email
     assert rows[0]["username"] != email
     assert "@" not in rows[0]["username"]
+
+
+def test_upsert_user_replaces_username_with_at(fake_supabase):
+    user_id = "u2"
+    email = "user2@example.com"
+    db.upsert_user(user_id, email=email)
+    row = fake_supabase.tables["app_users"][0]
+    row["username"] = "bad@name"
+    db.upsert_user(user_id, email=email)
+    assert "@" not in row["username"]
+    assert row["username"] != "bad@name"
