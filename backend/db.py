@@ -4,9 +4,12 @@ import uuid
 from datetime import datetime, date
 from typing import Any, Dict, Optional, List, Iterable
 import random
-from supabase import create_client, Client
+from supabase import create_client, Client, ClientOptions
 from postgrest.exceptions import APIError
 from backend.utils.settings import get_setting_int
+from backend.http_client import get_client
+from tenacity import retry, stop_after_attempt, wait_random_exponential, retry_if_exception
+import httpx
 
 _processed_payments: set[str] = set()
 
@@ -105,8 +108,34 @@ def get_supabase() -> Client:
     )
     if not supabase_api_key:
         raise KeyError("SUPABASE_API_KEY")
-    _supabase = create_client(supabase_url, supabase_api_key)
+    options = ClientOptions(httpx_client=get_client())
+    _supabase = create_client(supabase_url, supabase_api_key, options)
     return _supabase
+
+
+def _should_retry(exc: Exception) -> bool:
+    if isinstance(exc, (httpx.ReadError, httpx.ConnectError, httpx.PoolTimeout)):
+        return True
+    if isinstance(exc, httpx.HTTPStatusError):
+        status = exc.response.status_code
+        return status == 429 or 500 <= status < 600
+    return False
+
+
+_retry_call = retry(
+    reraise=True,
+    stop=stop_after_attempt(3),
+    wait=wait_random_exponential(min=0.5, max=5.0),
+    retry=retry_if_exception(_should_retry),
+)
+
+
+def with_retries(func, *, idempotent: bool = True):
+    """Execute ``func`` with retry logic when ``idempotent`` is True."""
+
+    if not idempotent:
+        return func()
+    return _retry_call(func)()
 
 
 def get_user(user_id: str) -> Optional[Dict[str, Any]]:

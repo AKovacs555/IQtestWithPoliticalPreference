@@ -11,11 +11,11 @@ def is_admin(user: User) -> bool:
     return bool(user.is_admin)
 
 
-def get_current_user(authorization: str = Header(None)) -> User:
-    return _get_current_user(authorization)
+async def get_current_user(authorization: str = Header(None)) -> User:
+    return await _get_current_user(authorization)
 
 
-def require_admin(user: User = Depends(get_current_user)):
+async def require_admin(user: User = Depends(get_current_user)):
     """Ensure the request is from an admin."""
     if not user.is_admin:
         raise HTTPException(status_code=403, detail="Admin privileges required")

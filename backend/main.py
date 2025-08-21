@@ -11,6 +11,7 @@ from typing import List, Optional
 import sys
 import logging
 from datetime import datetime, timezone, timedelta
+from contextlib import asynccontextmanager
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -21,7 +22,7 @@ repo_root = os.path.join(backend_dir, "..")
 sys.path.extend([backend_dir, repo_root])
 
 from fastapi import FastAPI, HTTPException, Depends, Request, APIRouter
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 import io
 import contextlib
 from fastapi.middleware.cors import CORSMiddleware
@@ -31,6 +32,7 @@ import tempfile
 from tools.generate_questions import import_dir
 
 from backend.routes.dependencies import require_admin
+from backend.http_client import get_client, close_client, warmup_supabase
 from features import (
     generate_share_image,
     update_normative_distribution,
@@ -86,9 +88,27 @@ from api import diagnostics
 import json
 from utils.settings import get_setting_int
 
-app = FastAPI()
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    get_client()
+    warmup_supabase()
+    yield
+    close_client()
+
+
+app = FastAPI(lifespan=lifespan)
 app.state.sessions = {}
 app.state.otps = {}
+
+@app.get("/favicon.ico", include_in_schema=False)
+async def favicon() -> Response:
+    return Response(status_code=204)
+
+
+@app.head("/", include_in_schema=False)
+async def root_head() -> Response:
+    return Response(status_code=204)
 
 app.add_middleware(
     CORSMiddleware,

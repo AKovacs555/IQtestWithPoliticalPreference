@@ -125,6 +125,31 @@ The backslashes (``\``) allow you to split the command across lines; ensure each
 When running the project locally, copy `.env.example` to `.env` and fill in the
 required keys before starting the backend or frontend.
 
+## Ops notes
+
+The backend reuses a single `httpx.Client` with connection pooling. The
+following environment variables tune its behaviour (defaults in brackets):
+
+- `EXTERNAL_HTTP2` (`false`) – enable HTTP/2 for Supabase calls.
+- `HTTPX_CONNECT_TIMEOUT` (`3`), `READ_TIMEOUT` (`10`), `WRITE_TIMEOUT` (`10`),
+  `POOL_TIMEOUT` (`5`) – per‑phase timeout settings.
+- `MAX_CONNECTIONS` (`20`), `MAX_KEEPALIVE` (`20`) – pool limits.
+- `WARMUP_SUPABASE` (`0`) – fire a non‑blocking OPTIONS request on startup.
+- `HTTPX_DEBUG` (`0`) – set to `1` to log all request/response details.
+
+To see request logs locally:
+
+```bash
+HTTPX_DEBUG=1 uvicorn backend.main:app --reload --log-level=info
+```
+
+On small Render/Vercel instances run Uvicorn with a single worker and a slightly
+extended keep-alive:
+
+```bash
+uvicorn backend.main:app --workers=1 --timeout-keep-alive=65
+```
+
 ## 環境設定
 
 Supabase、NOWPayments、AWS SNS、Google AdMob のアカウントを作成し、それぞれのダッシュボードから API キーを取得してください。取得したキーは Vercel または Render の環境変数に設定します。
