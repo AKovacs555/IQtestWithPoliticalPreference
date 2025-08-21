@@ -4,6 +4,7 @@ from typing import Optional
 
 import jwt
 from fastapi import HTTPException, Header
+from starlette.concurrency import run_in_threadpool
 from backend.db import get_user
 from backend.deps.supabase_jwt import decode_supabase_jwt
 
@@ -29,7 +30,7 @@ def create_token(user_id: str, is_admin: bool = False) -> str:
     return jwt.encode(payload, JWT_SECRET, algorithm=ALGORITHM)
 
 
-def get_current_user(authorization: Optional[str] = Header(None)) -> User:
+async def get_current_user(authorization: Optional[str] = Header(None)) -> User:
     """Resolve the current user from the Authorization header."""
 
     if not authorization or not authorization.startswith("Bearer "):
@@ -42,7 +43,7 @@ def get_current_user(authorization: Optional[str] = Header(None)) -> User:
     user_id = payload.get("sub") or payload.get("user_id")
     if not user_id:
         raise HTTPException(status_code=401, detail="User id missing")
-    user_data = get_user(user_id)
+    user_data = await run_in_threadpool(get_user, user_id)
     if not user_data:
         raise HTTPException(status_code=401, detail="User not found")
     return User(user_data)

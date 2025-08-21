@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from backend.db import get_supabase
+from backend.db import get_supabase, with_retries
 import math
 
 router = APIRouter(prefix="/stats", tags=["stats"])
@@ -23,12 +23,14 @@ class SurveyStatsResponse(BaseModel):
 @router.get("/surveys/{survey_id}/iq_by_option", response_model=SurveyStatsResponse)
 def survey_iq_by_option(survey_id: str):
     supabase = get_supabase()
-    sres = (
-        supabase.table("surveys")
-        .select("id,title,question_text")
-        .eq("id", survey_id)
-        .limit(1)
-        .execute()
+    sres = with_retries(
+        lambda: (
+            supabase.table("surveys")
+            .select("id,title,question_text")
+            .eq("id", survey_id)
+            .limit(1)
+            .execute()
+        )
     )
     if not sres.data:
         raise HTTPException(404, "survey_not_found")
@@ -53,24 +55,28 @@ def survey_iq_by_option(survey_id: str):
             continue
         best_map[uid] = scf
 
-    items = (
-        supabase.table("survey_items")
-        .select("id,position,body")
-        .eq("survey_id", survey_id)
-        .order("position")
-        .execute()
-        .data
+    items = with_retries(
+        lambda: (
+            supabase.table("survey_items")
+            .select("id,position,body")
+            .eq("survey_id", survey_id)
+            .order("position")
+            .execute()
+            .data
+        )
     )
     id_to_pos = {it["id"]: it["position"] for it in items}
     idx_to_text = {it["position"]: it["body"] for it in items}
 
-    ans = (
-        supabase.table("survey_answers")
-        .select("user_id,survey_item_id")
-        .eq("survey_id", survey_id)
-        .execute()
-        .data
-        or []
+    ans = with_retries(
+        lambda: (
+            supabase.table("survey_answers")
+            .select("user_id,survey_item_id")
+            .eq("survey_id", survey_id)
+            .execute()
+            .data
+            or []
+        )
     )
 
     buckets: dict[int, list[float]] = {}
@@ -107,15 +113,17 @@ def survey_iq_by_option(survey_id: str):
 def surveys_with_any_answers():
     supabase = get_supabase()
     try:
-        q = supabase.rpc("surveys_with_any_answers").execute()
+        q = with_retries(lambda: supabase.rpc("surveys_with_any_answers").execute())
         return q.data
     except Exception:
-        rows = (
-            supabase.table("survey_answers")
-            .select("survey_id")
-            .execute()
-            .data
-            or []
+        rows = with_retries(
+            lambda: (
+                supabase.table("survey_answers")
+                .select("survey_id")
+                .execute()
+                .data
+                or []
+            )
         )
         seen: set[str] = set()
         result = []
