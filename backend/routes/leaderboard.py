@@ -11,7 +11,7 @@ async def maybe_user(authorization: str = Header(None)) -> User | None:
     if not authorization:
         return None
     try:
-        return _get_current_user(authorization)
+        return await _get_current_user(authorization)
     except HTTPException:
         return None
 
