@@ -18,6 +18,7 @@ def test_ensure_profile_sets_username_and_email(fake_supabase, monkeypatch):
 
     row = fake_supabase.tables["app_users"][0]
     assert row["email"] == "u42@example.com"
-    adj, animal = row["username"].split(" ", 1)
+    adj, animal, digits = row["username"].split(" ")
     assert adj in db._ADJECTIVES
     assert animal in db._DUMB_ANIMALS
+    assert digits.isdigit() and len(digits) == 5
