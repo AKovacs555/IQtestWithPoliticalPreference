@@ -4,7 +4,6 @@ import uuid
 from datetime import datetime, date
 from typing import Any, Dict, Optional, List, Iterable
 import random
-from zoneinfo import ZoneInfo
 from supabase import create_client, Client
 from postgrest.exceptions import APIError
 from backend.utils.settings import get_setting_int
@@ -654,7 +653,7 @@ def get_survey_answers(group_id: str) -> List[Dict[str, Any]]:
 
 
 def get_daily_answer_count(user_hashed_id: str, _day: date | None = None) -> int:
-    """Return the number of survey answers submitted on the given Tokyo day."""
+    """Return the number of survey answers submitted on the given UTC day."""
 
     supabase = get_supabase()
     # Resolve hashed_id to UUID. Missing users simply have zero answers.
@@ -669,10 +668,8 @@ def get_daily_answer_count(user_hashed_id: str, _day: date | None = None) -> int
         return 0
     user_id = ures.data["id"]
 
-    tokyo_today = (
-        datetime.now(ZoneInfo("Asia/Tokyo")).date() if _day is None else _day
-    )
-    day_str = tokyo_today.isoformat()
+    utc_today = datetime.utcnow().date() if _day is None else _day
+    day_str = utc_today.isoformat()
 
     resp = (
         supabase.table("survey_answers")
@@ -697,7 +694,7 @@ def insert_daily_answer(
     if not user_id:
         return
 
-    tokyo_today = datetime.now(ZoneInfo("Asia/Tokyo")).date().isoformat()
+    utc_today = datetime.utcnow().date().isoformat()
     row = {
         "id": str(uuid.uuid4()),
         "user_id": user_id,
@@ -706,7 +703,7 @@ def insert_daily_answer(
         "survey_item_id": question_id,
         "answer": answer or {},
         "created_at": datetime.utcnow().isoformat() + "Z",
-        "answered_on": tokyo_today,
+        "answered_on": utc_today,
     }
     supabase.table("survey_answers").insert(row).execute()
 

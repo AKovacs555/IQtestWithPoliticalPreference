@@ -24,7 +24,7 @@ create table if not exists survey_responses (
   user_id uuid not null,
   item_id uuid not null references survey_items(id) on delete cascade,
   answer_index int not null,
-  answered_on date generated always as (created_at at time zone 'Asia/Tokyo') stored,
+  answered_on date generated always as (created_at at time zone 'UTC') stored,
   created_at timestamptz not null default now()
 );
 
