@@ -10,9 +10,9 @@ def test_upsert_user_assigns_random_username(fake_supabase):
     first_username = users[0]["username"]
     assert first_username and first_username != email
 
-    users[0]["username"] = email
+    users[0]["username"] = "bad@name"
     upsert_user(user_id, email=email)
     second_username = users[0]["username"]
-    assert second_username and second_username != email
+    assert second_username and second_username != "bad@name"
     assert second_username != first_username
 

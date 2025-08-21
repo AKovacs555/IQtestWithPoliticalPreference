@@ -201,7 +201,11 @@ def upsert_user(user_id: str, email: str | None = None) -> None:
         if email and row.get("email") != email:
             updates["email"] = email
         existing_username = row.get("username")
-        if not existing_username or existing_username == email:
+        if (
+            not existing_username
+            or existing_username == email
+            or "@" in existing_username
+        ):
             updates["username"] = _random_username()
         if updates:
             supabase.table("app_users").update(updates).eq("id", user_id).execute()
