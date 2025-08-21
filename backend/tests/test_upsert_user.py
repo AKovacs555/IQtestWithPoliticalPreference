@@ -16,3 +16,18 @@ def test_upsert_user_assigns_random_username(fake_supabase):
     assert second_username and second_username != "bad@name"
     assert second_username != first_username
 
+
+def test_upsert_user_retries_on_duplicate(monkeypatch, fake_supabase):
+    import backend.db as db
+
+    fake_supabase.table("app_users").insert(
+        {"id": "e1", "hashed_id": "e1", "username": "Silly Donkey"}
+    ).execute()
+
+    names = iter(["Silly Donkey", "Silly Donkey", "Chilly Ferret"])
+    monkeypatch.setattr(db, "_random_username", lambda: next(names))
+
+    upsert_user("u2")
+    users = [r for r in fake_supabase.tables["app_users"] if r["id"] == "u2"]
+    assert users and users[0]["username"] == "Chilly Ferret"
+
