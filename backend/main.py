@@ -175,6 +175,8 @@ from db import (
     DEFAULT_RETRY_PRICE,
     DEFAULT_PRO_PRICE,
     insert_point_ledger,
+    insert_daily_answer,
+    get_daily_answer_count,
     spend_points,
     mark_payment_processed,
     is_payment_processed,
@@ -771,6 +773,13 @@ async def survey_submit(payload: SurveySubmit):
         supabase_admin.table("app_users").update({"survey_completed": True}).eq(
             "id", str(payload.user_id)
         ).execute()
+        insert_daily_answer(str(payload.user_id), str(payload.survey_group_id), {})
+        answered_count = get_daily_answer_count(
+            str(payload.user_id), datetime.utcnow().date()
+        )
+        if answered_count >= 3:
+            reward = get_setting_int(supabase_admin, "daily_reward_points", 1)
+            insert_point_ledger(str(payload.user_id), reward, reason="daily3")
 
     return {"status": "ok"}
 
