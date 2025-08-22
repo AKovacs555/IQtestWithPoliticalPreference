@@ -5,7 +5,7 @@ from typing import Optional
 import jwt
 from fastapi import HTTPException, Header
 from starlette.concurrency import run_in_threadpool
-from backend.db import get_user
+from backend.db import get_user, get_points
 from backend.deps.supabase_jwt import decode_supabase_jwt
 
 JWT_SECRET = os.getenv("SUPABASE_JWT_SECRET") or os.getenv("JWT_SECRET")
@@ -46,4 +46,6 @@ async def get_current_user(authorization: Optional[str] = Header(None)) -> User:
     user_data = await run_in_threadpool(get_user, user_id)
     if not user_data:
         raise HTTPException(status_code=401, detail="User not found")
+    points = await run_in_threadpool(get_points, user_id)
+    user_data["points"] = points
     return User(user_data)
