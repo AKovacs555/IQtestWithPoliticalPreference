@@ -16,28 +16,25 @@ export default function AuthCallback() {
   useEffect(() => {
     let mounted = true;
     (async () => {
-      // 0) 既にセッションがあれば即ホーム
+      // 0) 既存セッションの有無に関わらず /user/ensure を実行する
       const first = await supabase.auth.getSession();
-      if (first.data.session) {
-        if (mounted) navigate('/', { replace: true });
-        return;
+      if (!first.data.session) {
+        // コードとコードベリファイアが揃っていれば交換
+        const code = getCodeFromUrl();
+        const verifierKey = `${supabase.auth.storageKey}-code-verifier`;
+        const codeVerifier = window.localStorage.getItem(verifierKey);
+        if (code && codeVerifier) {
+          const { error } = await (supabase.auth as any).exchangeCodeForSession({
+            authCode: code,
+            codeVerifier,
+          });
+          if (error) console.error('[AuthCallback] exchangeCodeForSession error', error);
+        } else {
+          console.error('[AuthCallback] missing auth code or code verifier');
+        }
       }
 
-      // 1) コードとコードベリファイアが揃っていれば交換
-      const code = getCodeFromUrl();
-      const verifierKey = `${supabase.auth.storageKey}-code-verifier`;
-      const codeVerifier = window.localStorage.getItem(verifierKey);
-      if (code && codeVerifier) {
-        const { error } = await (supabase.auth as any).exchangeCodeForSession({
-          authCode: code,
-          codeVerifier,
-        });
-        if (error) console.error('[AuthCallback] exchangeCodeForSession error', error);
-      } else {
-        console.error('[AuthCallback] missing auth code or code verifier');
-      }
-
-      // 2) ユーザープロフィールDB upsertを待つ
+      // 1) ユーザープロフィールDB upsertを待つ
       try {
         const token = (await supabase.auth.getSession()).data.session?.access_token;
         if (token) {
@@ -57,7 +54,7 @@ export default function AuthCallback() {
         alert('Failed to ensure user profile');
       }
 
-      // 3) JWT を更新して app_metadata.is_admin を確実に反映
+      // 2) JWT を更新して app_metadata.is_admin を確実に反映
       try {
         await supabase.auth.refreshSession();
       } catch (e) {

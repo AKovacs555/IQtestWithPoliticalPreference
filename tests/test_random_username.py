@@ -1,5 +1,6 @@
 import os
 import sys
+import re
 import pytest
 
 sys.path.insert(0, os.path.abspath("backend"))
@@ -111,8 +112,10 @@ def test_upsert_user_generates_random_username(fake_supabase):
     db.upsert_user(user_id, email=email)
     rows = fake_supabase.tables["app_users"]
     assert rows[0]["email"] == email
-    assert rows[0]["username"] != email
-    assert "@" not in rows[0]["username"]
+    username = rows[0]["username"]
+    assert username != email
+    assert "@" not in username
+    assert re.match(r"^[A-Za-z]+ [A-Za-z]+ \d{5}$", username)
 
 
 def test_upsert_user_replaces_username_with_at(fake_supabase):

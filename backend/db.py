@@ -119,7 +119,8 @@ _DUMB_ANIMALS = [
 
 
 def _random_username() -> str:
-    return f"{random.choice(_ADJECTIVES)} {random.choice(_DUMB_ANIMALS)}"
+    num = random.randint(0, 99_999)
+    return f"{random.choice(_ADJECTIVES)} {random.choice(_DUMB_ANIMALS)} {num:05d}"
 
 
 def _username_exists(supabase: Client, username: str) -> bool:
