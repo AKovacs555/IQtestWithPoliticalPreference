@@ -94,14 +94,21 @@ export default function Survey() {
 
     // After a successful submission, attempt to load the next available survey.
     try {
-      const next = await fetch(
-        `${apiBase}/survey/start?lang=${i18n.language}`,
-        {
-          headers: session?.access_token
-            ? { Authorization: `Bearer ${session.access_token}` }
-            : {},
-        },
-      );
+      const nat = localStorage.getItem('nationality') || '';
+      const params = new URLSearchParams({ lang: i18n.language });
+      if (user?.id) params.set('user_id', user.id);
+      if (nat) params.set('nationality', nat);
+
+      const next = await fetch(`${apiBase}/survey/start?${params.toString()}`, {
+        headers: session?.access_token
+          ? { Authorization: `Bearer ${session.access_token}` }
+          : {},
+      });
+
+      if (next.status === 204) {
+        throw new Error('no surveys');
+      }
+
       if (next.ok) {
         const data = await next.json();
         if (data.items && data.items.length) {
@@ -114,12 +121,11 @@ export default function Survey() {
         }
       }
     } catch {
-      /* fall back to completion */
+      /* no more surveys or fetch failed */
+      localStorage.setItem('survey_completed', 'true');
+      navigate('/');
+      return;
     }
-
-    // No more surveys available - mark completion and return to home.
-    localStorage.setItem('survey_completed', 'true');
-    navigate('/');
   };
 
   const titleString =
