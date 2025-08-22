@@ -143,7 +143,7 @@ def test_consume_ok(monkeypatch, fake_supabase, caplog):
     from backend.db import get_points
 
     remaining = get_points(uid)
-    assert remaining == 1
+    assert remaining == 2
     assert "points_consume_ok" in caplog.text
 
 
@@ -151,7 +151,7 @@ def test_fallback_to_profile_when_no_ledger(monkeypatch, fake_supabase, caplog):
     app, uid = _setup_app(monkeypatch, fake_supabase, 1, seed_ledger=False)
     from backend.db import get_points
 
-    assert get_points(uid) == 1
+    assert get_points(uid) == 2
     with TestClient(app) as client, caplog.at_level("INFO"):
         res = client.get("/quiz/start?set_id=s1")
     assert res.status_code == 200
@@ -160,6 +160,7 @@ def test_fallback_to_profile_when_no_ledger(monkeypatch, fake_supabase, caplog):
 
 def test_need_payment_when_zero(monkeypatch, fake_supabase, caplog):
     app, uid = _setup_app(monkeypatch, fake_supabase, 0)
+    fake_supabase.table("point_ledger").insert({"user_id": uid, "delta": 1, "reason": "signup"}).execute()
     with TestClient(app) as client, caplog.at_level("ERROR"):
         res = client.get("/quiz/start?set_id=s1")
     assert res.status_code == 400
