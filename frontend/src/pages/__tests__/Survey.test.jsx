@@ -44,3 +44,64 @@ test('does not navigate on submit failure', async () => {
   });
   expect(screen.getByText('err')).toBeTruthy();
 });
+
+test('navigates home when no more surveys', async () => {
+  global.fetch = vi
+    .fn()
+    .mockResolvedValueOnce({ ok: true })
+    .mockResolvedValueOnce({ ok: true, status: 204 });
+
+  localStorage.setItem('nationality', 'US');
+  const { container } = render(
+    <MemoryRouter>
+      <Survey />
+    </MemoryRouter>,
+  );
+
+  fireEvent.click(screen.getByText('A'));
+  fireEvent.click(container.querySelector('.btn-cta'));
+
+  await waitFor(() => {
+    expect(navigate).toHaveBeenCalledWith('/');
+  });
+});
+
+test('loads next survey when available', async () => {
+  global.fetch = vi
+    .fn()
+    .mockResolvedValueOnce({ ok: true })
+    .mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: () =>
+        Promise.resolve({
+          survey: { id: 's2', group_id: 'g2', lang: 'en', is_single_choice: true },
+          items: [{ id: 'i2', body: 'B', is_exclusive: false, position: 0 }],
+        }),
+    });
+
+  localStorage.setItem('nationality', 'US');
+  const { container } = render(
+    <MemoryRouter>
+      <Survey />
+    </MemoryRouter>,
+  );
+
+  fireEvent.click(screen.getByText('A'));
+  fireEvent.click(container.querySelector('.btn-cta'));
+
+  await waitFor(() => {
+    expect(navigate).toHaveBeenCalledWith('/survey?sid=s2', {
+      replace: true,
+      state: {
+        survey: {
+          id: 's2',
+          group_id: 'g2',
+          lang: 'en',
+          is_single_choice: true,
+        },
+        items: [{ id: 'i2', body: 'B', is_exclusive: false, position: 0 }],
+      },
+    });
+  });
+});
