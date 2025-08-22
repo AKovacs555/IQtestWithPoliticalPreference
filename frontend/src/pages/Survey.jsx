@@ -91,6 +91,33 @@ export default function Survey() {
       setError(msg);
       return;
     }
+
+    // After a successful submission, attempt to load the next available survey.
+    try {
+      const next = await fetch(
+        `${apiBase}/survey/start?lang=${i18n.language}`,
+        {
+          headers: session?.access_token
+            ? { Authorization: `Bearer ${session.access_token}` }
+            : {},
+        },
+      );
+      if (next.ok) {
+        const data = await next.json();
+        if (data.items && data.items.length) {
+          setSurvey(data.survey);
+          setItems(data.items);
+          setSelected(new Set());
+          // replace URL so refresh loads the current survey
+          navigate(`/survey?sid=${data.survey.id}`, { replace: true, state: data });
+          return;
+        }
+      }
+    } catch {
+      /* fall back to completion */
+    }
+
+    // No more surveys available - mark completion and return to home.
     localStorage.setItem('survey_completed', 'true');
     navigate('/');
   };
