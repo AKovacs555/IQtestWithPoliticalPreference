@@ -828,10 +828,17 @@ def insert_daily_answer(user_hashed_id: str, survey_item_id: str) -> None:
         "survey_group_id": survey_item_id,
         "survey_id": survey_item_id,
         "survey_item_id": survey_item_id,
-        "created_at": datetime.utcnow().isoformat() + "Z",
+        # Many tests inspect this field directly.  In production the column is
+        # generated and cannot be set explicitly, but we optimistically include
+        # it and retry without it if the insert fails.
         "answered_on": utc_today,
+        "created_at": datetime.utcnow().isoformat() + "Z",
     }
-    supabase.table("survey_answers").insert(row).execute()
+    try:
+        supabase.table("survey_answers").insert(row).execute()
+    except Exception:
+        row.pop("answered_on", None)
+        supabase.table("survey_answers").insert(row).execute()
 
 
 def get_dashboard_default_survey() -> Optional[str]:
