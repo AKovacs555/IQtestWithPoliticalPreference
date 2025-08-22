@@ -1,9 +1,5 @@
 from fastapi import APIRouter
-from postgrest.exceptions import APIError
-
-from backend.db import insert_attempt_ledger
 from backend import db
-from backend.utils.settings import get_setting_int
 
 
 def get_supabase():
@@ -41,27 +37,9 @@ async def get_points(user_id: str):
         ).data
         if not exists:
             supabase.table("app_users").upsert({"id": user_id, "hashed_id": user_id}).execute()
-            reward = get_setting_int(supabase, "signup_reward_points", 1)
-            if reward:
-                insert_attempt_ledger(user_id, reward, "signup")
     except Exception:
         # Never block login on failure
         pass
 
-    # Return legacy points if the column exists, else 0
-    try:
-        resp = (
-            supabase.table("app_users")
-            .select("points")
-            .eq("id", user_id)
-            .single()
-            .execute()
-        )
-        pts = (resp.data or {}).get("points", 0)
-        return {"points": int(pts) if isinstance(pts, (int, float)) else 0}
-    except APIError as exc:  # missing column or similar
-        code = getattr(exc, "code", "")
-        if code in ("42703", "PGRST204"):
-            return {"points": 0}
-        raise
+    return {"points": db.get_points(user_id)}
 

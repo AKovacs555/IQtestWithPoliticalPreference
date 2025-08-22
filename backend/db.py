@@ -448,8 +448,26 @@ def increment_free_attempts(user_id: str, delta: int = 1, reason: str = "manual"
 
 def get_points(user_id: str) -> int:
     """Return the current point balance for ``user_id``."""
-
     user_record = get_user(user_id) or {}
+    if user_record:
+        supabase = get_supabase()
+        try:
+            res = (
+                supabase.table("point_ledger")
+                .select("id")
+                .eq("user_id", user_id)
+                .eq("reason", "signup")
+                .limit(1)
+                .execute()
+            )
+            has_signup = bool(res.data)
+        except Exception:
+            has_signup = True
+        if not has_signup:
+            reward = get_setting_int(supabase, "signup_reward_points", 1)
+            if reward:
+                insert_point_ledger(user_id, reward, "signup")
+                user_record = get_user(user_id) or {}
     return int(user_record.get("points", 0))
 
 
