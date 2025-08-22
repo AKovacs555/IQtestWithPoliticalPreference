@@ -802,10 +802,14 @@ def get_daily_answer_count(user_hashed_id: str, _day: date | None = None) -> int
     return len(rows)
 
 
-def insert_daily_answer(
-    user_hashed_id: str, question_id: str, answer: Dict[str, Any] | None = None
-) -> None:
-    """Insert a single poll answer for ``user_hashed_id``."""
+def insert_daily_answer(user_hashed_id: str, survey_item_id: str) -> None:
+    """Insert a single poll answer for ``user_hashed_id``.
+
+    The previous schema stored an ``answer`` JSON blob, but the
+    ``survey_answers`` table no longer includes that column.  This helper now
+    records only the selected ``survey_item_id`` alongside the user so that
+    daily survey quotas can be tracked without requiring an answer payload.
+    """
 
     supabase = get_supabase()
     # Resolve the hashed identifier to the internal UUID so that counting
@@ -818,10 +822,12 @@ def insert_daily_answer(
     row = {
         "id": str(uuid.uuid4()),
         "user_id": user_id,
-        "survey_group_id": question_id,
-        "survey_id": question_id,
-        "survey_item_id": question_id,
-        "answer": answer or {},
+        # For legacy compatibility the survey and group identifiers mirror the
+        # item identifier.  Daily quota logic only relies on the existence of a
+        # row for the given day.
+        "survey_group_id": survey_item_id,
+        "survey_id": survey_item_id,
+        "survey_item_id": survey_item_id,
         "created_at": datetime.utcnow().isoformat() + "Z",
         "answered_on": utc_today,
     }

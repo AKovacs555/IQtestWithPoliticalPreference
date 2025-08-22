@@ -82,7 +82,7 @@ def test_insert_and_count(monkeypatch):
     supa.table("app_users").insert({"id": "uuid1", "hashed_id": "u1"}).execute()
 
     for i in range(3):
-        db.insert_daily_answer("u1", f"q{i}", {})
+        db.insert_daily_answer("u1", f"q{i}")
 
     assert all(row["user_id"] == "uuid1" for row in supa.tables["survey_answers"])
     assert db.get_daily_answer_count("u1") == 3

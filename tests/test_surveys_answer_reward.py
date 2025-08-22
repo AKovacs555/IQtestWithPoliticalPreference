@@ -45,7 +45,7 @@ def _setup(monkeypatch):
             if r["user_id"] == user_id and (day is None or r["day"] == day)
         )
 
-    def fake_insert(user_id, qid, answer):
+    def fake_insert(user_id, qid):
         _State.answers.append({"user_id": user_id, "qid": qid, "day": _State.now.date()})
 
     monkeypatch.setattr("backend.db.get_daily_answer_count", fake_count)

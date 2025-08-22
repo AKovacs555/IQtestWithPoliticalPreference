@@ -20,7 +20,6 @@ logger = logging.getLogger(__name__)
 
 class DailyAnswer(BaseModel):
     question_id: str
-    answer: dict | None = None
 
 
 def _quota(user_id: str, now: datetime) -> dict:
@@ -41,7 +40,7 @@ async def quota(user: dict = Depends(get_current_user)):
 
 @router.post("/answer")
 async def answer(payload: DailyAnswer, user: dict = Depends(get_current_user)):
-    insert_daily_answer(user["hashed_id"], payload.question_id, payload.answer)
+    insert_daily_answer(user["hashed_id"], payload.question_id)
     answered_count = get_daily_answer_count(user["hashed_id"], datetime.utcnow().date())
     if answered_count >= 3:
         supabase = get_supabase_client()
