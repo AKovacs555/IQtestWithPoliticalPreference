@@ -52,8 +52,10 @@ def test_survey_submit_persists_answers_and_marks_completion():
 
     answers = supa.tables.get('survey_answers', [])
     assert len(answers) == 1
-    row = answers[0]
-    assert row['survey_item_id'] == item_ids[1]
+    stored = [r for r in answers if r['survey_item_id'] == item_ids[1]]
+    assert len(stored) == 1
+    row = stored[0]
     assert row['survey_id'] == survey_id
     assert row['survey_group_id'] == group_id
     assert row['user_id'] == uid
+    assert row.get('answered_on')

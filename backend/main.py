@@ -175,6 +175,7 @@ from db import (
     DEFAULT_RETRY_PRICE,
     DEFAULT_PRO_PRICE,
     insert_point_ledger,
+    
     spend_points,
     mark_payment_processed,
     is_payment_processed,
@@ -759,6 +760,7 @@ async def survey_submit(payload: SurveySubmit):
             "survey_group_id": str(payload.survey_group_id),
             "survey_item_id": str(item_id),
             "user_id": str(payload.user_id) if payload.user_id else None,
+            "answered_on": datetime.utcnow().date().isoformat(),
         }
         for item_id in item_uuid_list
     ]
@@ -771,6 +773,19 @@ async def survey_submit(payload: SurveySubmit):
         supabase_admin.table("app_users").update({"survey_completed": True}).eq(
             "id", str(payload.user_id)
         ).execute()
+
+        today_str = datetime.utcnow().date().isoformat()
+        resp = (
+            supabase_admin.table("survey_answers")
+            .select("survey_group_id")
+            .eq("user_id", str(payload.user_id))
+            .eq("answered_on", today_str)
+            .execute()
+        )
+        answered_count = len({r["survey_group_id"] for r in (resp.data or [])})
+        if answered_count >= 3:
+            reward = get_setting_int(supabase_admin, "daily_reward_points", 1)
+            insert_point_ledger(str(payload.user_id), reward, reason="daily3")
 
     return {"status": "ok"}
 
