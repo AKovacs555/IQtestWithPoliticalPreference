@@ -773,13 +773,16 @@ async def survey_submit(payload: SurveySubmit):
         supabase_admin.table("app_users").update({"survey_completed": True}).eq(
             "id", str(payload.user_id)
         ).execute()
-        insert_daily_answer(str(payload.user_id), str(payload.survey_group_id), {})
-        answered_count = get_daily_answer_count(
-            str(payload.user_id), datetime.utcnow().date()
-        )
-        if answered_count >= 3:
-            reward = get_setting_int(supabase_admin, "daily_reward_points", 1)
-            insert_point_ledger(str(payload.user_id), reward, reason="daily3")
+        user = get_user(str(payload.user_id))
+        hashed_id = user.get("hashed_id") if user else None
+        if hashed_id:
+            insert_daily_answer(hashed_id, str(payload.survey_group_id), {})
+            answered_count = get_daily_answer_count(
+                hashed_id, datetime.utcnow().date()
+            )
+            if answered_count >= 3:
+                reward = get_setting_int(supabase_admin, "daily_reward_points", 1)
+                insert_point_ledger(str(payload.user_id), reward, reason="daily3")
 
     return {"status": "ok"}
 
