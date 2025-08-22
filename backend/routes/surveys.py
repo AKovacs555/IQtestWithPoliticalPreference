@@ -102,7 +102,7 @@ def available(lang: str, country: str, user: dict = Depends(get_current_user)):
 def daily_answer(payload: AnswerPayload, user: dict = Depends(get_current_user)):
     """Record a daily survey answer and grant points after three responses."""
 
-    db.insert_daily_answer(user["hashed_id"], payload.item_id, {"index": payload.answer_index})
+    db.insert_daily_answer(user["hashed_id"], payload.item_id)
     answered_count = db.get_daily_answer_count(user["hashed_id"], datetime.utcnow().date())
     if answered_count >= 3:
         supabase = get_supabase_client()

@@ -57,7 +57,7 @@ def _setup(monkeypatch):
     def fake_count(user_id, day=None):
         return sum(1 for r in _State.answers if r["user_id"] == user_id and (day is None or r["day"] == day))
 
-    def fake_insert(user_id, qid, answer):
+    def fake_insert(user_id, qid):
         _State.answers.append({"user_id": user_id, "qid": qid, "day": _State.now.date()})
 
     monkeypatch.setattr("backend.routes.daily.get_daily_answer_count", fake_count)
@@ -112,7 +112,7 @@ def test_quiz_start_blocked_until_three(monkeypatch, caplog):
     assert r.json()["answered"] == 0
 
     for i in range(2):
-        client.post("/daily/answer", json={"question_id": str(i), "answer": {}})
+        client.post("/daily/answer", json={"question_id": str(i)})
 
     res = client.get("/quiz/start?set_id=s1", follow_redirects=False)
     assert res.status_code == 400
@@ -125,7 +125,7 @@ def test_quiz_start_allows_after_three(monkeypatch, caplog):
     client = _setup(monkeypatch)
 
     for i in range(3):
-        client.post("/daily/answer", json={"question_id": str(i), "answer": {}})
+        client.post("/daily/answer", json={"question_id": str(i)})
 
     q = client.get("/daily/quota")
     assert q.json()["answered"] == 3
@@ -143,7 +143,7 @@ def test_quota_resets_next_day(monkeypatch, caplog):
     client = _setup(monkeypatch)
 
     for i in range(3):
-        client.post("/daily/answer", json={"question_id": str(i), "answer": {}})
+        client.post("/daily/answer", json={"question_id": str(i)})
 
     _State.now = _State.now + timedelta(days=1)
 
@@ -177,7 +177,7 @@ def test_grants_attempt_after_three(monkeypatch):
     monkeypatch.setattr("backend.routes.daily.get_supabase_client", lambda: object())
 
     for i in range(3):
-        client.post("/daily/answer", json={"question_id": str(i), "answer": {}})
+        client.post("/daily/answer", json={"question_id": str(i)})
 
     assert calls == [("u1", 1, "daily3")]
     assert updated.get("u1") == {"survey_completed": True}
