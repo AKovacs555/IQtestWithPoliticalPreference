@@ -26,6 +26,7 @@ def test_survey_submit_grants_daily_points():
     })
 
     supa = db.get_supabase()
+    initial_points = db.get_user(uid)['points']
 
     with TestClient(app) as client:
         for _ in range(3):
@@ -50,3 +51,6 @@ def test_survey_submit_grants_daily_points():
     ledger = supa.tables.get('point_ledger', [])
     entries = [r for r in ledger if r['user_id'] == uid and r['reason'] == 'daily3']
     assert len(entries) == 1
+    # Survey submissions should not deduct points; only a single reward is granted
+    user = db.get_user(uid)
+    assert user['points'] == initial_points + 1
