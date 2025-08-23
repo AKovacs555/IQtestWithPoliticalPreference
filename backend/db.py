@@ -791,7 +791,7 @@ def get_survey_answers(group_id: str) -> List[Dict[str, Any]]:
 
 
 def get_daily_answer_count(user_hashed_id: str, _day: date | None = None) -> int:
-    """Return the number of survey answers submitted on the given UTC day."""
+    """Return the number of distinct survey groups answered on the given UTC day."""
 
     supabase = get_supabase()
     # Resolve hashed_id to UUID. Missing users simply have zero answers.
@@ -811,22 +811,22 @@ def get_daily_answer_count(user_hashed_id: str, _day: date | None = None) -> int
 
     resp = (
         supabase.table("survey_answers")
-        .select("id")
+        .select("survey_group_id")
         .eq("user_id", user_id)
         .eq("answered_on", day_str)
         .execute()
     )
     rows = resp.data or []
-    return len(rows)
+    groups = {r.get("survey_group_id") for r in rows if r.get("survey_group_id")}
+    return len(groups)
 
 
 def insert_daily_answer(user_hashed_id: str, survey_item_id: str) -> None:
     """Insert a single poll answer for ``user_hashed_id``.
 
-    The previous schema stored an ``answer`` JSON blob, but the
-    ``survey_answers`` table no longer includes that column.  This helper now
-    records only the selected ``survey_item_id`` alongside the user so that
-    daily survey quotas can be tracked without requiring an answer payload.
+    Only the ``survey_item_id`` is provided by the caller.  This function
+    resolves the corresponding ``survey_id`` and ``survey_group_id`` so that the
+    inserted row satisfies the foreign key constraints of ``survey_answers``.
     """
 
     supabase = get_supabase()
@@ -836,27 +836,36 @@ def insert_daily_answer(user_hashed_id: str, survey_item_id: str) -> None:
     if not user_id:
         return
 
-    utc_today = datetime.utcnow().date().isoformat()
+    # Look up the survey and group identifiers for the provided item.
+    item_resp = (
+        supabase.table("survey_items")
+        .select("survey_id")
+        .eq("id", survey_item_id)
+        .single()
+        .execute()
+    )
+    survey_id = item_resp.data.get("survey_id") if item_resp.data else None
+    if not survey_id:
+        return
+
+    survey_resp = (
+        supabase.table("surveys")
+        .select("group_id")
+        .eq("id", survey_id)
+        .single()
+        .execute()
+    )
+    survey_group_id = survey_resp.data.get("group_id") if survey_resp.data else None
+
     row = {
         "id": str(uuid.uuid4()),
         "user_id": user_id,
-        # For legacy compatibility the survey and group identifiers mirror the
-        # item identifier.  Daily quota logic only relies on the existence of a
-        # row for the given day.
-        "survey_group_id": survey_item_id,
-        "survey_id": survey_item_id,
+        "survey_group_id": survey_group_id,
+        "survey_id": survey_id,
         "survey_item_id": survey_item_id,
-        # Many tests inspect this field directly.  In production the column is
-        # generated and cannot be set explicitly, but we optimistically include
-        # it and retry without it if the insert fails.
-        "answered_on": utc_today,
         "created_at": datetime.utcnow().isoformat() + "Z",
     }
-    try:
-        supabase.table("survey_answers").insert(row).execute()
-    except Exception:
-        row.pop("answered_on", None)
-        supabase.table("survey_answers").insert(row).execute()
+    supabase.table("survey_answers").insert(row).execute()
 
 
 def get_dashboard_default_survey() -> Optional[str]:

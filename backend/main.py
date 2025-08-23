@@ -776,7 +776,6 @@ async def survey_submit(payload: SurveySubmit):
         user = get_user(str(payload.user_id))
         hashed_id = user.get("hashed_id") if user else None
         if hashed_id:
-            insert_daily_answer(hashed_id, str(payload.survey_group_id))
             answered_count = get_daily_answer_count(
                 hashed_id, datetime.utcnow().date()
             )
