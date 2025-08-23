@@ -105,7 +105,7 @@ export default function Survey() {
           : {},
       });
 
-      if (next.status === 204) {
+      if (next.status === 204 || next.status === 404) {
         throw new Error('no surveys');
       }
 
