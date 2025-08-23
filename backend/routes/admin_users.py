@@ -1,4 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
+from urllib.parse import quote
+
 from db import get_supabase, get_points, insert_point_ledger
 from .dependencies import require_admin
 
@@ -34,7 +36,8 @@ async def search_users(query: str = "", limit: int = 20, offset: int = 0):
     if not query:
         return {"users": []}
     supabase = get_supabase()
-    like = f"%{query}%"
+    encoded = quote(query, safe="")
+    like = f"*{encoded}*"
     try:
         resp = (
             supabase.table("app_users")

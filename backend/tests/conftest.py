@@ -23,6 +23,7 @@ class DummyTable:
         self._filters = []
         self._single = False
         self._limit = None
+        self._offset = None
         self._or_filters = []
 
     def select(self, *columns):
@@ -93,6 +94,10 @@ class DummyTable:
         self._limit = n
         return self
 
+    def offset(self, n):
+        self._offset = n
+        return self
+
     def order(self, column, desc=False):
         self._order = (column, desc)
         return self
@@ -102,18 +107,28 @@ class DummyTable:
         return self
 
     def execute(self):
+        def _match_cond(field, op, val):
+            if op == "eq":
+                return field == val
+            if op == "ilike":
+                from urllib.parse import unquote
+                import re
+
+                pattern = re.escape(unquote(val)).replace("\\*", ".*")
+                return field is not None and re.search(pattern, str(field), re.IGNORECASE)
+            if op == "contains":
+                return isinstance(field, list) and val[0] in field
+            if op == "in":
+                return field in val
+            return False
+
         def _matches(row):
             for op, col, val in self._filters:
                 field = row.get(col)
-                if op == "eq" and field != val:
-                    return False
-                if op == "contains":
-                    if not isinstance(field, list) or val[0] not in field:
-                        return False
-                if op == "in" and field not in val:
+                if not _match_cond(field, op, val):
                     return False
             for group in self._or_filters:
-                if not any(row.get(col) == value for op, col, value in group if op == "eq"):
+                if not any(_match_cond(row.get(col), op, value) for op, col, value in group):
                     return False
             return True
 
@@ -148,6 +163,8 @@ class DummyTable:
                 res = res[0] if res else None
             if self._limit is not None and isinstance(res, list):
                 res = res[: self._limit]
+            if self._offset is not None and isinstance(res, list):
+                res = res[self._offset :]
             self._reset()
             return DummyResponse(res)
         self._reset()
@@ -163,6 +180,7 @@ class DummyTable:
         self._limit = None
         self._order = None
         self._or_filters = []
+        self._offset = None
 
 class DummySupabase:
     def __init__(self):
