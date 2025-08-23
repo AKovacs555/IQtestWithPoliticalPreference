@@ -377,6 +377,32 @@ async def submit_quiz(
     except Exception as e:  # pragma: no cover - best effort only
         logging.getLogger(__name__).warning("Could not update user record: %s", e)
 
+    try:
+        best = (
+            supabase.table("user_best_iq")
+            .select("best_iq")
+            .eq("user_id", user["hashed_id"])
+            .single()
+            .execute()
+            .data
+        )
+        current = None
+        if best and best.get("best_iq") is not None:
+            try:
+                current = float(best["best_iq"])
+            except (TypeError, ValueError):
+                current = None
+        if current is None:
+            supabase.table("user_best_iq").insert(
+                {"user_id": user["hashed_id"], "best_iq": iq}
+            ).execute()
+        elif iq > current:
+            supabase.table("user_best_iq").update({"best_iq": iq}).eq(
+                "user_id", user["hashed_id"]
+            ).execute()
+    except Exception:  # pragma: no cover - best effort only
+        pass
+
     if payload.surveys:
         rows = [
             {
