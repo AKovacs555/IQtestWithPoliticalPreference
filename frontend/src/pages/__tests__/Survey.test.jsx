@@ -1,7 +1,7 @@
 import React from 'react';
-import { render, fireEvent, screen, waitFor } from '@testing-library/react';
+import { render, fireEvent, screen, waitFor, cleanup } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { vi, test, expect } from 'vitest';
+import { vi, test, expect, afterEach } from 'vitest';
 
 vi.mock('../../hooks/useSession', () => ({
   useSession: () => ({ user: { id: 'u1' }, session: null }),
@@ -24,6 +24,15 @@ vi.mock('react-router-dom', async () => {
 
 import Survey from '../Survey.jsx';
 
+afterEach(() => {
+  cleanup();
+  navigate.mockReset();
+  if (global.fetch && 'mockReset' in global.fetch) {
+    // @ts-ignore - vitest mock
+    global.fetch.mockReset();
+  }
+});
+
 test('does not navigate on submit failure', async () => {
   global.fetch = vi.fn(() =>
     Promise.resolve({ ok: false, text: () => Promise.resolve('err') }),
@@ -36,7 +45,7 @@ test('does not navigate on submit failure', async () => {
     </MemoryRouter>,
   );
 
-  fireEvent.click(screen.getByText('A'));
+  fireEvent.click(screen.getAllByRole('button', { name: 'A' })[0]);
   fireEvent.click(container.querySelector('.btn-cta'));
 
   await waitFor(() => {
@@ -58,7 +67,7 @@ test('navigates home when no more surveys', async () => {
     </MemoryRouter>,
   );
 
-  fireEvent.click(screen.getByText('A'));
+  fireEvent.click(screen.getAllByRole('button', { name: 'A' })[0]);
   fireEvent.click(container.querySelector('.btn-cta'));
 
   await waitFor(() => {
@@ -87,7 +96,7 @@ test('loads next survey when available', async () => {
     </MemoryRouter>,
   );
 
-  fireEvent.click(screen.getByText('A'));
+  fireEvent.click(screen.getAllByRole('button', { name: 'A' })[0]);
   fireEvent.click(container.querySelector('.btn-cta'));
 
   await waitFor(() => {
