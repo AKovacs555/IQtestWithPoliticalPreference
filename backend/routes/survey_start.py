@@ -28,7 +28,7 @@ def start(lang: str = "en", user: Dict = Depends(get_current_user)):
     answered = (
         supabase.table("survey_answers")
         .select("survey_group_id")
-        .eq("user_id", user.get("hashed_id"))
+        .eq("user_id", user_id)
         .execute()
         .data
         or []
