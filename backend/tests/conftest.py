@@ -1,6 +1,7 @@
 import pytest
 import os
 import uuid
+from datetime import datetime
 
 os.environ.setdefault("SUPABASE_URL", "http://localhost")
 os.environ.setdefault("SUPABASE_SERVICE_ROLE_KEY", "dummy")
@@ -60,6 +61,12 @@ class DummyTable:
         self._filters.append(("eq", column, value))
         return self
 
+    def _process_row(self, row):
+        if self.name == "survey_answers" and "answered_on" not in row:
+            created = row.get("created_at") or datetime.utcnow().isoformat() + "Z"
+            row["answered_on"] = created[:10]
+        return row
+
     def or_(self, expression):
         """Support simple OR conditions like ``"a.eq.1,b.eq.2"``."""
         parts = []
@@ -113,11 +120,13 @@ class DummyTable:
         if getattr(self, '_insert', None) is not None:
             data = self._insert
             if isinstance(data, list):
-                self.rows.extend(data)
-                result = data
+                processed = [self._process_row(r) for r in data]
+                self.rows.extend(processed)
+                result = processed
             else:
-                self.rows.append(data)
-                result = data if self._single else [data]
+                processed = self._process_row(data)
+                self.rows.append(processed)
+                result = processed if self._single else [processed]
             self._reset()
             return DummyResponse(result)
         if getattr(self, '_delete', False):

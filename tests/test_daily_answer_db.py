@@ -7,14 +7,17 @@ sys.path.insert(0, os.path.abspath("backend"))
 from datetime import datetime
 from backend import db
 
+
 class DummyResponse:
     def __init__(self, data=None):
         self.data = data
         self.error = None
 
+
 class DummyTable:
-    def __init__(self, rows):
+    def __init__(self, rows, name):
         self.rows = rows
+        self.name = name
         self._filters = []
         self._select = False
         self._single = False
@@ -25,10 +28,17 @@ class DummyTable:
 
     def insert(self, data):
         if isinstance(data, list):
-            self.rows.extend(data)
+            for row in data:
+                self._insert_row(row)
         else:
-            self.rows.append(data)
+            self._insert_row(data)
         return self
+
+    def _insert_row(self, row):
+        if self.name == "survey_answers" and "answered_on" not in row:
+            created = row.get("created_at") or datetime.utcnow().isoformat() + "Z"
+            row["answered_on"] = created[:10]
+        self.rows.append(row)
 
     def eq(self, column, value):
         self._filters.append((column, value))
@@ -52,14 +62,20 @@ class DummyTable:
         self._select = False
         self._single = False
 
+
 class DummySupabase:
     def __init__(self):
-        self.tables = {"app_users": [], "survey_answers": []}
+        self.tables = {
+            "app_users": [],
+            "survey_answers": [],
+            "survey_items": [],
+            "surveys": [],
+        }
 
     def table(self, name):
         if name not in self.tables:
             self.tables[name] = []
-        return DummyTable(self.tables[name])
+        return DummyTable(self.tables[name], name)
 
 
 def test_insert_and_count(monkeypatch):
@@ -80,6 +96,13 @@ def test_insert_and_count(monkeypatch):
 
     # existing user with UUID
     supa.table("app_users").insert({"id": "uuid1", "hashed_id": "u1"}).execute()
+
+    # populate survey and item mappings
+    for i in range(3):
+        survey_id = f"s{i}"
+        group_id = f"g{i}"
+        supa.table("surveys").insert({"id": survey_id, "group_id": group_id}).execute()
+        supa.table("survey_items").insert({"id": f"q{i}", "survey_id": survey_id}).execute()
 
     for i in range(3):
         db.insert_daily_answer("u1", f"q{i}")
