@@ -118,7 +118,7 @@ async def start_quiz(
                 "message": "Please complete the survey before taking the IQ test.",
             },
         )
-    # Determine subscription status
+    # Determine subscription status (no point deduction yet)
     pro_active = False
     pro_until = user.get("pro_active_until")
     if pro_until:
@@ -128,22 +128,6 @@ async def start_quiz(
         except ValueError:
             pro_active = False
 
-    remaining = None
-    if not pro_active:
-        remaining = spend_points(user["hashed_id"], cost)
-        if remaining is None:
-            logger.error("points_insufficient", extra={"user_id": user["hashed_id"]})
-            raise HTTPException(
-                status_code=400,
-                detail={
-                    "error": "insufficient_points",
-                    "message": "ポイントが不足しています。",
-                },
-            )
-
-    logger.info(
-        "points_consume_ok", extra={"user_id": user["hashed_id"], "remaining": remaining}
-    )
     logger.info("quiz_start_allowed")
     if set_id:
         try:
@@ -307,6 +291,31 @@ async def submit_quiz(
     if not expires_at:
         request.app.state.sessions.pop(payload.attempt_id, None)
         raise HTTPException(status_code=400, detail="Invalid session")
+
+    # Consume points at submission time for non-pro users
+    pro_active = False
+    pro_until = user.get("pro_active_until")
+    if pro_until:
+        try:
+            pro_dt = datetime.fromisoformat(str(pro_until).replace("Z", ""))
+            pro_active = pro_dt > datetime.utcnow()
+        except ValueError:
+            pro_active = False
+    if not pro_active:
+        cost = get_setting_int(supabase, "attempt_cost_points", 1)
+        remaining = spend_points(user["hashed_id"], cost)
+        if remaining is None:
+            logger.error("points_insufficient", extra={"user_id": user["hashed_id"]})
+            raise HTTPException(
+                status_code=400,
+                detail={
+                    "error": "insufficient_points",
+                    "message": "ポイントが不足しています。",
+                },
+            )
+        logger.info(
+            "points_consume_ok", extra={"user_id": user["hashed_id"], "remaining": remaining}
+        )
 
     # If time is up, mark as timeout but still proceed to score answered questions
     expired = False
