@@ -1,8 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException
 from urllib.parse import quote
+import logging
 
 from db import get_supabase, get_points, insert_point_ledger
 from .dependencies import require_admin
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/admin", tags=["admin-users"])
 
@@ -50,8 +53,9 @@ async def search_users(query: str = "", limit: int = 20, offset: int = 0):
             .execute()
         )
         rows = resp.data or []
-    except Exception:
-        rows = []
+    except Exception as e:
+        logger.exception("User search failed")
+        raise HTTPException(status_code=500, detail="user_search_failed") from e
     return {"users": rows}
 
 

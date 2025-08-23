@@ -14,6 +14,7 @@ export default function AdminPointsGrant() {
 
   const search = async () => {
     setSelected(null);
+    setMsg('');
     if (!query) return;
     const token = session?.access_token;
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
@@ -26,6 +27,9 @@ export default function AdminPointsGrant() {
       setResults(data.users || []);
     } else {
       setResults([]);
+      if (res.status >= 500) {
+        setMsg('Search failed');
+      }
     }
   };
 
