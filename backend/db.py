@@ -265,9 +265,8 @@ def create_user(user_data: Dict[str, Any]) -> Dict[str, Any]:
     resp = supabase.from_("app_users").insert(data).execute()
     row = resp.data[0]
     uid = row.get("hashed_id") or row.get("id")
-    reward = get_setting_int(supabase, "signup_reward_points", 1)
-    if reward:
-        insert_point_ledger(uid, reward, "signup")
+    # Ensure signup reward is granted exactly once
+    get_points(uid)
     return row
 
 

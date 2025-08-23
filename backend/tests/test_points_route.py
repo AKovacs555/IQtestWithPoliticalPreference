@@ -8,6 +8,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..",
 
 from backend.routes import points as points_route
 from backend.tests.conftest import DummySupabase, DummyTable
+from backend import db
 
 
 class MissingPointsTable(DummyTable):
@@ -101,3 +102,18 @@ def test_missing_row_creates_minimal(monkeypatch, fake_supabase):
         for r in fake_supabase.tables["app_users"]
     )
     assert calls == [("newuser", 1, "signup")]
+
+
+def test_signup_reward_only_once(monkeypatch, fake_supabase):
+    # Create user without granting signup reward
+    db.create_user({"id": "u_new", "hashed_id": "u_new"})
+    monkeypatch.setattr(points_route, "get_supabase", lambda: fake_supabase)
+    first = asyncio.run(points_route.get_points("u_new"))
+    second = asyncio.run(points_route.get_points("u_new"))
+    assert first == {"points": 1}
+    assert second == {"points": 1}
+    ledger = [
+        r for r in fake_supabase.tables["point_ledger"]
+        if r["user_id"] == "u_new" and r["reason"] == "signup"
+    ]
+    assert len(ledger) == 1
