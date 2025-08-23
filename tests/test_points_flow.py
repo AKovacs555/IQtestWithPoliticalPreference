@@ -127,7 +127,14 @@ def _setup_app(monkeypatch, fake_supabase, points: int, seed_ledger: bool = True
         quiz,
         "get_balanced_random_questions_by_set",
         lambda n, set_id, lang=None: [
-            {"id": 1, "question": "Q1", "options": ["a", "b"], "answer": 0}
+            {
+                "id": 1,
+                "question": "Q1",
+                "options": ["a", "b"],
+                "answer": 0,
+                "irt_a": 1.0,
+                "irt_b": 0.0,
+            }
         ],
     )
     monkeypatch.setattr(quiz, "get_supabase_client", lambda: fake_supabase)
@@ -137,11 +144,18 @@ def _setup_app(monkeypatch, fake_supabase, points: int, seed_ledger: bool = True
 
 def test_consume_ok(monkeypatch, fake_supabase, caplog):
     app, uid = _setup_app(monkeypatch, fake_supabase, 2)
-    with TestClient(app) as client, caplog.at_level("INFO"):
-        res = client.get("/quiz/start?set_id=s1")
-    assert res.status_code == 200
     from backend.db import get_points
 
+    # Prime signup reward
+    get_points(uid)
+
+    with TestClient(app) as client, caplog.at_level("INFO"):
+        start = client.get("/quiz/start?set_id=s1").json()
+        sid = start["attempt_id"]
+        res = client.post(
+            "/quiz/submit", json={"attempt_id": sid, "answers": [{"id": 1, "answer": 0}]}
+        )
+    assert res.status_code == 200
     remaining = get_points(uid)
     assert remaining == 2
     assert "points_consume_ok" in caplog.text
@@ -153,7 +167,11 @@ def test_fallback_to_profile_when_no_ledger(monkeypatch, fake_supabase, caplog):
 
     assert get_points(uid) == 2
     with TestClient(app) as client, caplog.at_level("INFO"):
-        res = client.get("/quiz/start?set_id=s1")
+        start = client.get("/quiz/start?set_id=s1").json()
+        sid = start["attempt_id"]
+        res = client.post(
+            "/quiz/submit", json={"attempt_id": sid, "answers": [{"id": 1, "answer": 0}]}
+        )
     assert res.status_code == 200
     assert "points_consume_ok" in caplog.text
 
@@ -162,7 +180,11 @@ def test_need_payment_when_zero(monkeypatch, fake_supabase, caplog):
     app, uid = _setup_app(monkeypatch, fake_supabase, 0)
     fake_supabase.table("point_ledger").insert({"user_id": uid, "delta": 1, "reason": "signup"}).execute()
     with TestClient(app) as client, caplog.at_level("ERROR"):
-        res = client.get("/quiz/start?set_id=s1")
+        start = client.get("/quiz/start?set_id=s1").json()
+        sid = start["attempt_id"]
+        res = client.post(
+            "/quiz/submit", json={"attempt_id": sid, "answers": [{"id": 1, "answer": 0}]}
+        )
     assert res.status_code == 400
     err = res.json()
     assert err.get("error") == "insufficient_points" or err.get("detail", {}).get("error") == "insufficient_points"
