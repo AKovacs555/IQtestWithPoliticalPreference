@@ -40,3 +40,42 @@ def test_search_users_handles_special_chars(monkeypatch, fake_supabase, query):
         )
     assert r.status_code == 200
     assert any(u["email"] == "user@example.com" for u in r.json().get("users", []))
+
+
+def test_search_users_raises_on_query_error(monkeypatch):
+    class BrokenTable:
+        def select(self, *args, **kwargs):
+            return self
+
+        def or_(self, *args, **kwargs):
+            return self
+
+        def limit(self, *args, **kwargs):
+            return self
+
+        def offset(self, *args, **kwargs):
+            return self
+
+        def execute(self):
+            raise RuntimeError("boom")
+
+    class BrokenSupabase:
+        def table(self, name):
+            return BrokenTable()
+
+    token = create_token("admin", is_admin=True)
+    monkeypatch.setattr(db, "get_user", lambda _id: {"hashed_id": "admin", "is_admin": True})
+    monkeypatch.setattr(auth_deps, "get_user", lambda _id: {"hashed_id": "admin", "is_admin": True})
+    monkeypatch.setattr(db, "get_points", lambda _id: 0)
+    monkeypatch.setattr(auth_deps, "get_points", lambda _id: 0)
+    monkeypatch.setattr(admin_users_route, "get_supabase", lambda: BrokenSupabase())
+    monkeypatch.setattr(admin_users_route_pkg, "get_supabase", lambda: BrokenSupabase())
+
+    with TestClient(app) as client:
+        r = client.get(
+            "/admin/users/search",
+            params={"query": "oops"},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+    assert r.status_code == 500
+    assert r.json().get("detail") == "user_search_failed"
