@@ -1,7 +1,8 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from backend.db import get_supabase, with_retries
-import math
+from backend.services import db_read
+from fastapi.responses import JSONResponse
 
 router = APIRouter(prefix="/stats", tags=["stats"])
 
@@ -24,90 +25,46 @@ class SurveyStatsResponse(BaseModel):
 def survey_iq_by_option(survey_id: str):
     supabase = get_supabase()
     sres = with_retries(
-        lambda: (
-            supabase.table("surveys")
-            .select("id,title,question_text")
-            .eq("id", survey_id)
-            .limit(1)
-            .execute()
-        )
+        lambda: supabase.table("surveys").select("id,title,question_text").eq("id", survey_id).limit(1).execute()
     )
     if not sres.data:
         raise HTTPException(404, "survey_not_found")
     survey = sres.data[0]
-
-    best_rows = (
-        supabase.table("user_best_iq")
-        .select("user_id,best_iq")
-        .execute()
-        .data
-        or []
-    )
-    best_map: dict[str, float] = {}
-    for row in best_rows:
-        uid = row.get("user_id")
-        sc = row.get("best_iq")
-        try:
-            scf = float(sc)
-        except (TypeError, ValueError):
-            continue
-        if not math.isfinite(scf):
-            continue
-        best_map[uid] = scf
-
     items = with_retries(
-        lambda: (
-            supabase.table("survey_items")
-            .select("id,position,body")
-            .eq("survey_id", survey_id)
-            .order("position")
-            .execute()
-            .data
-        )
+        lambda: supabase.table("survey_items").select("id,position,body").eq("survey_id", survey_id).order("position").execute().data
     )
-    id_to_pos = {it["id"]: it["position"] for it in items}
-    idx_to_text = {it["position"]: it["body"] for it in items}
-
-    ans = with_retries(
-        lambda: (
-            supabase.table("survey_answers")
-            .select("user_id,survey_item_id")
-            .eq("survey_id", survey_id)
-            .execute()
-            .data
-            or []
-        )
-    )
-
-    buckets: dict[int, list[float]] = {}
-    for a in ans:
-        uid = a.get("user_id")
-        item_id = a.get("survey_item_id")
-        idx = id_to_pos.get(item_id)
-        if idx is None or uid not in best_map:
-            continue
-        buckets.setdefault(idx, []).append(best_map[uid])
-
+    stats = db_read.get_survey_choice_iq_stats(survey_id=survey_id)
+    if not stats:
+        best_rows = supabase.table('user_best_iq').select('user_id,best_iq').execute().data or []
+        best_map: dict[str, float] = {r['user_id']: float(r['best_iq']) for r in best_rows if r.get('user_id') and r.get('best_iq') is not None}
+        ans = supabase.table('survey_answers').select('user_id,survey_item_id').eq('survey_id', survey_id).execute().data or []
+        buckets: dict[str, list[float]] = {}
+        for a in ans:
+            uid = a.get('user_id')
+            item_id = a.get('survey_item_id')
+            if uid in best_map and item_id:
+                buckets.setdefault(item_id, []).append(best_map[uid])
+        stats = [db_read.SurveyChoiceIQStat(group_id=None, survey_id=survey_id, survey_item_id=k, responses_count=len(v), avg_iq=(sum(v)/len(v) if v else None)) for k,v in buckets.items()]
+    stat_map = {s.survey_item_id: s for s in stats}
     resp_items: list[SurveyOptionAvg] = []
-    for idx, text in idx_to_text.items():
-        values = buckets.get(idx, [])
-        avg = round(sum(values) / len(values), 2) if values else None
+    for it in items:
+        s = stat_map.get(it['id'])
         resp_items.append(
             SurveyOptionAvg(
-                option_index=idx,
-                option_text=text,
-                count=len(values),
-                avg_iq=avg,
+                option_index=it['position'],
+                option_text=it['body'],
+                count=s.responses_count if s else 0,
+                avg_iq=s.avg_iq if s else None,
             )
         )
-
-    return SurveyStatsResponse(
-        survey_id=survey["id"],
-        survey_title=survey["title"],
-        survey_question_text=survey.get("question_text"),
+    payload = SurveyStatsResponse(
+        survey_id=survey['id'],
+        survey_title=survey['title'],
+        survey_question_text=survey.get('question_text'),
         items=resp_items,
     )
-
+    data = payload.model_dump()
+    return JSONResponse(data, headers=db_read.cache_headers(data))
 
 @router.get("/surveys/with_data")
 def surveys_with_any_answers():

@@ -1,26 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import { useSession } from '../hooks/useSession';
-
-const API_BASE = import.meta.env.VITE_API_BASE || '';
+import { apiClient } from '../lib/apiClient';
 
 export default function PointsBadge({ userId, className = '' }) {
   const [points, setPoints] = useState(0);
-  const { session } = useSession();
 
   useEffect(() => {
     if (!userId) return;
 
     async function fetchPoints() {
-      const accessToken = session?.access_token;
       try {
-        const res = await fetch(`${API_BASE}/points/${userId}`, {
-          headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
-        });
-        if (res.status === 404) {
-          setPoints(0);
-          return;
-        }
-        const data = await res.json();
+        const data = await apiClient.get(`/points/${userId}`);
         setPoints(data?.points ?? 0);
       } catch {
         setPoints(0);
@@ -28,7 +17,7 @@ export default function PointsBadge({ userId, className = '' }) {
     }
 
     fetchPoints();
-  }, [userId, session]);
+  }, [userId]);
 
   return (
     <span

@@ -2,6 +2,8 @@ from fastapi import APIRouter, Depends, Header, Query, HTTPException
 from backend.deps.supabase_client import get_supabase_client
 from backend.deps.auth import get_current_user as _get_current_user, User
 from backend.utils.num import safe_float, to_2f
+from backend.services import db_read
+from fastapi.responses import JSONResponse
 import math
 
 router = APIRouter(tags=["leaderboard"])
@@ -74,4 +76,5 @@ async def get_leaderboard(limit: int = Query(100), user: User | None = Depends(m
             None,
         )
 
-    return {"total_users": len(ordered), "items": items, "my_rank": my_rank}
+    payload = {"total_users": len(ordered), "items": items, "my_rank": my_rank}
+    return JSONResponse(payload, headers=db_read.cache_headers(payload))

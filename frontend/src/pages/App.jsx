@@ -5,23 +5,16 @@ import useShareMeta from '../hooks/useShareMeta';
 import AppShell from '../components/AppShell';
 import Home from './Home';
 import AuthCallback from './AuthCallback';
-import Pricing from './Pricing';
-import Upgrade from './Upgrade';
-import Leaderboard from './Leaderboard';
-import Arena from './Arena';
 import SelectSet from './SelectSet';
-import SelectNationality from './SelectNationality';
 import Survey from './Survey.jsx';
 import DailySurvey from './DailySurvey';
 import Dashboard from './Dashboard';
 import Settings from './Settings.jsx';
 import DemographicsForm from './DemographicsForm.jsx';
-import History from './History.jsx';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import Login from './Login.jsx';
 import QuizStart from './QuizStart.jsx';
 import QuizPlay from './QuizPlay.jsx';
-import Contact from './Contact.jsx';
 import ErrorChunkReload from '../components/common/ErrorChunkReload';
 import ThemeDemo from './ThemeDemo.jsx';
 import Card from '../components/ui/Card';
@@ -57,6 +50,13 @@ const AdminPricing = lazy(() => import('./AdminPricing.jsx'));
 const AdminReferral = lazy(() => import('./AdminReferral.jsx'));
 const AdminPointsSettings = lazy(() => import('./AdminPointsSettings.jsx'));
 const AdminPointsGrant = lazy(() => import('./AdminPointsGrant'));
+const Pricing = lazy(() => import('./Pricing'));
+const Upgrade = lazy(() => import('./Upgrade'));
+const Leaderboard = lazy(() => import('./Leaderboard'));
+const Arena = lazy(() => import('./Arena'));
+const SelectNationality = lazy(() => import('./SelectNationality'));
+const Contact = lazy(() => import('./Contact.jsx'));
+const History = lazy(() => import('./History.jsx'));
 
 const PageTransition = ({ children }) => {
   const reduce = useReducedMotion();
@@ -154,18 +154,18 @@ export default function App() {
         <Route path="/test" element={<Navigate to="/quiz/start" replace />} />
         <Route path="/survey" element={<RequireAuth><Survey /></RequireAuth>} />
         <Route path="/daily-survey" element={<RequireAuth><DailySurvey /></RequireAuth>} />
-        <Route path="/pricing" element={<Pricing />} />
-        <Route path="/upgrade" element={<Upgrade />} />
-        <Route path="/contact" element={<Contact />} />
+        <Route path="/pricing" element={<Suspense fallback={<div />}><Pricing /></Suspense>} />
+        <Route path="/upgrade" element={<Suspense fallback={<div />}><Upgrade /></Suspense>} />
+        <Route path="/contact" element={<Suspense fallback={<div />}><Contact /></Suspense>} />
         <Route path="/result" element={<Result />} />
-        <Route path="/arena" element={<Arena />} />
-        <Route path="/leaderboard" element={<Leaderboard />} />
+        <Route path="/arena" element={<Suspense fallback={<div />}><Arena /></Suspense>} />
+        <Route path="/leaderboard" element={<Suspense fallback={<div />}><Leaderboard /></Suspense>} />
         <Route path="/dashboard" element={<RequireAuth><Dashboard /></RequireAuth>} />
         <Route path="/settings/:userId" element={<RequireAuth><Settings /></RequireAuth>} />
         <Route path="/profile" element={<RequireAuth><Profile /></RequireAuth>} />
-        <Route path="/history/:userId" element={<RequireAuth><History /></RequireAuth>} />
-        <Route path="/select-nationality" element={<RequireAuth><SelectNationality /></RequireAuth>} />
-        <Route path="/country" element={<RequireAuth><SelectNationality /></RequireAuth>} />
+        <Route path="/history/:userId" element={<RequireAuth><Suspense fallback={<div />}><History /></Suspense></RequireAuth>} />
+        <Route path="/select-nationality" element={<RequireAuth><Suspense fallback={<div />}><SelectNationality /></Suspense></RequireAuth>} />
+        <Route path="/country" element={<RequireAuth><Suspense fallback={<div />}><SelectNationality /></Suspense></RequireAuth>} />
         <Route path="/login" element={<Login />} />
         <Route path="/welcome" element={<Welcome />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
