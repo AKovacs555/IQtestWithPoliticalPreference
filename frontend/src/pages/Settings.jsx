@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from 'react';
+import { apiClient } from '../lib/apiClient';
 import { Link, useParams } from 'react-router-dom';
 import AppShell from '../components/AppShell';
-
-const API_BASE = import.meta.env.VITE_API_BASE || "";
 
 export default function Settings() {
   const { userId } = useParams();
@@ -10,9 +9,7 @@ export default function Settings() {
 
   useEffect(() => {
     if (!userId) return;
-    fetch(`${API_BASE}/user/stats/${userId}`)
-      .then(res => res.json())
-      .then(setStats);
+    apiClient.get(`/user/stats/${userId}`).then(setStats);
   }, [userId]);
 
   if (!userId) {

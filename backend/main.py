@@ -120,6 +120,16 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+from starlette.middleware.gzip import GZipMiddleware
+try:
+    from brotli_asgi import BrotliMiddleware
+except Exception:  # pragma: no cover
+    BrotliMiddleware = None
+
+app.add_middleware(GZipMiddleware, minimum_size=500)
+if BrotliMiddleware:
+    app.add_middleware(BrotliMiddleware)
+
 
 app.include_router(exam_router)
 
@@ -151,7 +161,6 @@ app.include_router(
 )
 app.include_router(custom_survey_router)
 app.include_router(custom_survey_admin_router)
-
 # SMS provider handled by sms_service module
 
 # Number of questions per quiz session
@@ -175,6 +184,7 @@ from db import (
     DEFAULT_RETRY_PRICE,
     DEFAULT_PRO_PRICE,
     insert_point_ledger,
+    with_retries,
     insert_daily_answer,
     get_daily_answer_count,
     spend_points,
@@ -1069,3 +1079,11 @@ async def share_meta():
     }
 
 
+@app.get("/healthz", include_in_schema=False)
+def healthz():
+    supabase = get_supabase()
+    try:
+        with_retries(lambda: supabase.table("app_users").select("id").limit(1).execute())
+        return {"status": "ok"}
+    except Exception:
+        raise HTTPException(503, "unhealthy")

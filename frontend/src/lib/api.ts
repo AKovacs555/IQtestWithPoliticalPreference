@@ -1,20 +1,7 @@
-import { supabase } from './supabaseClient';
-
-export async function fetchWithAuth(path: string, init: RequestInit = {}) {
-  const { data } = await supabase.auth.getSession();
-  const token = data.session?.access_token;
-  console.log('[API] Fetching', path, 'with token', token ? token.slice(0, 8) : 'NONE');
-  const headers = new Headers(init.headers || {});
-  if (token) headers.set('Authorization', `Bearer ${token}`);
-  if (!headers.has('Content-Type')) headers.set('Content-Type', 'application/json');
-  const base = import.meta.env.VITE_API_BASE || window.location.origin;
-  return fetch(`${base}${path}`, { ...init, headers });
-}
+import { apiClient } from './apiClient';
 
 export async function fetchProfile() {
-  const res = await fetchWithAuth('/user/profile');
-  if (!res.ok) throw new Error(String(res.status));
-  return res.json() as Promise<{ id: string; email?: string; username?: string; is_admin: boolean }>;
+  return apiClient.get('/user/profile');
 }
 
 export interface SurveyItemPayload {
@@ -34,50 +21,27 @@ export interface SurveyPayload {
 }
 
 export async function getSurveys() {
-  const res = await fetchWithAuth('/admin/surveys');
-  if (!res.ok) throw new Error(String(res.status));
-  return res.json() as Promise<{ surveys: any[] }>;
+  return apiClient.get('/admin/surveys');
 }
 
 export async function updateSurveyStatus(id: string, payload: { status: string; is_active: boolean }) {
-  const res = await fetchWithAuth(`/admin/surveys/${id}/status`, {
-    method: 'PATCH',
-    body: JSON.stringify(payload),
-  });
-  if (!res.ok) throw new Error(String(res.status));
-  return res.json();
+  return apiClient.post(`/admin/surveys/${id}/status`, payload);
 }
 
 export async function createSurvey(payload: SurveyPayload) {
-  const res = await fetchWithAuth('/admin/surveys', {
-    method: 'POST',
-    body: JSON.stringify(payload),
-  });
-  if (!res.ok) throw new Error(String(res.status));
-  return res.json();
+  return apiClient.post('/admin/surveys', payload);
 }
 
 export async function updateSurvey(id: string, payload: SurveyPayload) {
-  const res = await fetchWithAuth(`/admin/surveys/${id}`, {
-    method: 'PUT',
-    body: JSON.stringify(payload),
-  });
-  if (!res.ok) throw new Error(String(res.status));
-  return res.json();
+  return apiClient.post(`/admin/surveys/${id}`, payload);
 }
 
 export async function deleteSurvey(id: string) {
-  const res = await fetchWithAuth(`/admin/surveys/${id}`, { method: 'DELETE' });
-  if (!res.ok) throw new Error(String(res.status));
-  return res.json();
+  return apiClient.delete(`/admin/surveys/${id}`);
 }
 
 export async function getAvailableSurveys(lang: string, country: string) {
-  const res = await fetchWithAuth(
-    `/surveys/available?lang=${encodeURIComponent(lang)}&country=${encodeURIComponent(country)}`
-  );
-  if (!res.ok) throw new Error(String(res.status));
-  return res.json();
+  return apiClient.get(`/surveys/available?lang=${encodeURIComponent(lang)}&country=${encodeURIComponent(country)}`);
 }
 
 export async function respondSurvey(
@@ -85,22 +49,13 @@ export async function respondSurvey(
   optionIds: string[],
   otherTexts: Record<string, string>
 ) {
-  const res = await fetchWithAuth(`/surveys/${surveyId}/respond`, {
-    method: 'POST',
-    body: JSON.stringify({ option_ids: optionIds, other_texts: otherTexts }),
-  });
-  if (!res.ok) throw new Error(String(res.status));
-  return res.text();
+  return apiClient.post(`/surveys/${surveyId}/respond`, { option_ids: optionIds, other_texts: otherTexts });
 }
 
 export async function getSurveyStats(surveyId: string) {
-  const res = await fetchWithAuth(`/surveys/${surveyId}/stats`);
-  if (!res.ok) throw new Error(String(res.status));
-  return res.json();
+  return apiClient.get(`/surveys/${surveyId}/stats`);
 }
 
 export async function getAttemptQuestions(attemptId: string) {
-  const res = await fetchWithAuth(`/quiz/attempts/${attemptId}/questions`);
-  if (!res.ok) throw new Error(String(res.status));
-  return res.json();
+  return apiClient.get(`/quiz/attempts/${attemptId}/questions`);
 }
