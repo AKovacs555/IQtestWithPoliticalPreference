@@ -2,9 +2,21 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import LanguageSelector from '../LanguageSelector';
 import { useSession } from '../../hooks/useSession';
+import { supabase } from '../../lib/supabaseClient';
+import { refreshAnalytics } from '../../lib/supabase/analytics';
 
 export default function AdminHeroTop() {
-  const { userId, logout } = useSession();
+  const { userId, logout, isAdmin } = useSession();
+
+  const onRefreshAnalytics = async () => {
+    try {
+      await refreshAnalytics(supabase);
+      if (window?.toast) window.toast('Analytics refreshed');
+    } catch (e) {
+      console.error(e);
+      if (window?.toast) window.toast('Failed to refresh analytics');
+    }
+  };
   return (
     <div className="hero-stack" data-b-spec="hero-admin-top">
       <h1
@@ -26,6 +38,16 @@ export default function AdminHeroTop() {
           🚪 ログアウト
         </button>
         <Link to="/admin" className="pill">🧭 ダッシュボード</Link>
+        {isAdmin && (
+          <button
+            type="button"
+            onClick={onRefreshAnalytics}
+            className="pill"
+            data-b-spec="pill-refresh-analytics"
+          >
+            🔄 Refresh analytics
+          </button>
+        )}
       </div>
     </div>
   );
