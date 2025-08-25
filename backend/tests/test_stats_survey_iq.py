@@ -18,7 +18,7 @@ def test_survey_iq_by_option(fake_supabase):
         {"id": "i1", "survey_id": "s1", "position": 0, "body": "A"},
         {"id": "i2", "survey_id": "s1", "position": 1, "body": "B"},
     ]).execute()
-    supa.table("user_best_iq").insert([
+    supa.table("user_best_iq_unified").insert([
         {"user_id": "u1", "best_iq": 100},
         {"user_id": "u2", "best_iq": 80},
     ]).execute()

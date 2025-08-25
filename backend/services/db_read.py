@@ -43,7 +43,7 @@ def get_user_best_iq(user_id: str) -> Optional[UserBestIQ]:
     """Return a user's best IQ score."""
 
     supabase = db.get_supabase()
-    view = _table("user_best_iq")
+    view = _table("user_best_iq_unified")
     row = db.with_retries(
         lambda: supabase.table(view)
         .select("user_id,best_iq")

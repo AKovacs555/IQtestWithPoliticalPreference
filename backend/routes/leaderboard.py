@@ -22,7 +22,7 @@ async def maybe_user(authorization: str = Header(None)) -> User | None:
 async def get_leaderboard(limit: int = Query(100), user: User | None = Depends(maybe_user)):
     supabase = get_supabase_client()
     rows = (
-        supabase.table("user_best_iq")
+        supabase.table("user_best_iq_unified")
         .select("user_id,best_iq")
         .execute()
         .data

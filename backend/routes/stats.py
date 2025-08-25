@@ -35,7 +35,7 @@ def survey_iq_by_option(survey_id: str):
     )
     stats = db_read.get_survey_choice_iq_stats(survey_id=survey_id)
     if not stats:
-        best_rows = supabase.table('user_best_iq').select('user_id,best_iq').execute().data or []
+        best_rows = supabase.table('user_best_iq_unified').select('user_id,best_iq').execute().data or []
         best_map: dict[str, float] = {r['user_id']: float(r['best_iq']) for r in best_rows if r.get('user_id') and r.get('best_iq') is not None}
         ans = supabase.table('survey_answers').select('user_id,survey_item_id').eq('survey_id', survey_id).execute().data or []
         buckets: dict[str, list[float]] = {}

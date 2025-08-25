@@ -28,7 +28,7 @@ def test_leaderboard_aggregation_and_anonymous(monkeypatch, fake_supabase):
         {"hashed_id": "u1", "username": "Alice"},
         {"hashed_id": "u2", "username": ""},
     ]).execute()
-    supa.table("user_best_iq").insert(
+    supa.table("user_best_iq_unified").insert(
         [
             {"user_id": "u1", "best_iq": 120},
             {"user_id": "u2", "best_iq": 90},
