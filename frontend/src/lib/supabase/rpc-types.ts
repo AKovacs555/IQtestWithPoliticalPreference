@@ -1,3 +1,4 @@
+// Types for Supabase RPC responses
 export type SurveyFeedRow = {
   id: string;
   group_id: string;
