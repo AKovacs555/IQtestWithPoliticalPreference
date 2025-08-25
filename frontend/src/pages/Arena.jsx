@@ -1,37 +1,33 @@
 import React, { useEffect, useState } from 'react';
 import AppShell from '../components/AppShell';
 import SurveyStatsCard from '../components/SurveyStatsCard';
-import { apiGet } from '../api';
+import { apiGet, fetchSurveyFeed } from '../api';
 import { supabase } from '../lib/supabaseClient';
+import { useTranslation } from 'react-i18next';
 
 export default function Arena() {
   const [cards, setCards] = useState([]);
+  const { i18n } = useTranslation();
 
   useEffect(() => {
     (async () => {
-      let list = [];
       try {
-        list = await apiGet('/stats/surveys/with_data');
-      } catch (err) {
-        console.error('Failed to fetch surveys with data', err);
-        const { data } = await supabase
-          .from('survey_answers')
-          .select('survey_id');
-        const ids = Array.from(new Set((data || []).map(r => r.survey_id).filter(Boolean)));
-        list = ids.map(id => ({ id }));
-      }
-      const arr = [];
-      for (const s of list) {
-        try {
-          const st = await apiGet(`/stats/surveys/${s.id}/iq_by_option`);
-          arr.push({ id: s.id, title: st.survey_title, questionText: st.survey_question_text, items: st.items });
-        } catch (err) {
-          console.error('Failed to fetch survey stats', err);
+        const list = await fetchSurveyFeed(supabase, i18n.language ?? null, 50, 0);
+        const arr = [];
+        for (const s of list) {
+          try {
+            const st = await apiGet(`/stats/surveys/${s.id}/iq_by_option`);
+            arr.push({ id: s.id, title: st.survey_title, questionText: st.survey_question_text, items: st.items });
+          } catch (err) {
+            console.error('Failed to fetch survey stats', err);
+          }
         }
+        setCards(arr);
+      } catch (err) {
+        console.error('Failed to fetch surveys', err);
       }
-      setCards(arr);
     })();
-  }, []);
+  }, [i18n.language]);
 
   return (
     <AppShell>

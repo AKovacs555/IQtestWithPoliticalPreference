@@ -1,34 +1,27 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import SurveyStatsCard from './SurveyStatsCard';
-import { apiGet } from '../api';
+import { apiGet, fetchSurveyFeed } from '../api';
 import { supabase } from '../lib/supabaseClient';
+import { useTranslation } from 'react-i18next';
 
 export default function StatisticsBanner() {
   const [card, setCard] = useState(null);
+  const { i18n } = useTranslation();
 
   useEffect(() => {
     (async () => {
-      let list = [];
       try {
-        list = await apiGet('/stats/surveys/with_data');
-      } catch {
-        const { data } = await supabase
-          .from('survey_answers')
-          .select('survey_id');
-        const ids = Array.from(new Set((data || []).map(r => r.survey_id).filter(Boolean)));
-        list = ids.map(id => ({ id }));
-      }
-      if (!list?.length) return;
-      const pick = list[Math.floor(Math.random() * list.length)];
-      try {
+        const list = await fetchSurveyFeed(supabase, i18n.language ?? null, 50, 0);
+        if (!list?.length) return;
+        const pick = list[Math.floor(Math.random() * list.length)];
         const st = await apiGet(`/stats/surveys/${pick.id}/iq_by_option`);
         setCard({ id: pick.id, title: st.survey_title, questionText: st.survey_question_text, items: st.items });
-      } catch {
-        /* ignore */
+      } catch (err) {
+        console.error('Failed to load survey stats', err);
       }
     })();
-  }, []);
+  }, [i18n.language]);
 
   return (
     <div className="mb-4 rounded-2xl p-4 bg-gradient-to-r from-cyan-600/40 to-emerald-600/40">

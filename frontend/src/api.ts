@@ -1,4 +1,5 @@
 import { apiClient } from './lib/apiClient';
+export { fetchSurveyFeed, hasAnsweredToday, creditPoints, spendPoint } from './lib/supabase/feed';
 
 export const apiGet = apiClient.get;
 export const apiPost = apiClient.post;

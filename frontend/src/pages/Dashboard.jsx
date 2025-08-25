@@ -4,6 +4,8 @@ import AchievementModal from '../components/AchievementModal';
 import { Chart } from 'chart.js/auto';
 import { useTranslation } from 'react-i18next';
 import { useSession } from '../hooks/useSession';
+import { fetchSurveyFeed } from '../api';
+import { supabase } from '../lib/supabaseClient';
 
 const API_BASE = import.meta.env.VITE_API_BASE || '';
 
@@ -26,9 +28,9 @@ export default function Dashboard() {
       .then(r => r.json())
       .then(setHist);
 
-    fetch(`${API_BASE}/surveys?lang=${i18n.language}`)
-      .then(r => r.json())
-      .then(d => setSurveyList(d.questions || []));
+    fetchSurveyFeed(supabase, i18n.language ?? null, 50, 0)
+      .then((rows) => setSurveyList(rows))
+      .catch(() => setSurveyList([]));
 
     fetch(`${API_BASE}/admin/dashboard-default-survey`)
       .then(r => r.json())
@@ -126,8 +128,8 @@ export default function Dashboard() {
                   onChange={e => setSelectedSurvey(e.target.value)}
                 >
                   <option value="">--</option>
-                  {surveyList.map(s => (
-                    <option key={s.group_id} value={s.group_id}>{s.statement}</option>
+                  {surveyList.map((s) => (
+                    <option key={s.group_id} value={s.group_id}>{s.question_text}</option>
                   ))}
                 </select>
               </div>

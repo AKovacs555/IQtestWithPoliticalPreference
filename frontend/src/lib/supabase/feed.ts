@@ -1,8 +1,25 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { SurveyFeedRow } from './rpc-types';
+import type { Database } from './database.types';
+
+function logRpcError(name: string, error: unknown): void {
+  const payload = {
+    name,
+    message: error instanceof Error ? error.message : String(error),
+  };
+  try {
+    if (typeof navigator !== 'undefined' && navigator.sendBeacon) {
+      navigator.sendBeacon('/api/telemetry', JSON.stringify(payload));
+    }
+  } catch {
+    /* ignore */
+  }
+  // eslint-disable-next-line no-console
+  console.error(name, error);
+}
 
 export async function fetchSurveyFeed(
-  supabase: SupabaseClient,
+  supabase: SupabaseClient<Database>,
   lang: string | null,
   limit = 50,
   offset = 0
@@ -13,20 +30,26 @@ export async function fetchSurveyFeed(
       p_limit: limit,
       p_offset: offset
     });
-  if (error) throw error;
+  if (error) {
+    logRpcError('surveys_feed_for_me', error);
+    throw error;
+  }
   return data ?? [];
 }
 
 export async function hasAnsweredToday(
-  supabase: SupabaseClient
+  supabase: SupabaseClient<Database>
 ): Promise<boolean> {
   const { data, error } = await supabase.rpc<boolean>('me_has_answered_today');
-  if (error) throw error;
+  if (error) {
+    logRpcError('me_has_answered_today', error);
+    throw error;
+  }
   return data === true;
 }
 
 export async function creditPoints(
-  supabase: SupabaseClient,
+  supabase: SupabaseClient<Database>,
   userId: string,
   delta: number,
   reason: string,
@@ -38,11 +61,14 @@ export async function creditPoints(
     p_reason: reason,
     p_meta: meta,
   });
-  if (error) throw error;
+  if (error) {
+    logRpcError('credit_points', error);
+    throw error;
+  }
 }
 
 export async function spendPoint(
-  supabase: SupabaseClient,
+  supabase: SupabaseClient<Database>,
   userId: string,
   reason: string,
   meta: unknown
@@ -52,6 +78,9 @@ export async function spendPoint(
     p_reason: reason,
     p_meta: meta,
   });
-  if (error) throw error;
+  if (error) {
+    logRpcError('spend_point', error);
+    throw error;
+  }
   return !!data;
 }

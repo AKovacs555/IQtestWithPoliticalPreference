@@ -33,19 +33,53 @@ def survey_iq_by_option(survey_id: str):
     items = with_retries(
         lambda: supabase.table("survey_items").select("id,position,body").eq("survey_id", survey_id).order("position").execute().data
     )
-    stats = db_read.get_survey_choice_iq_stats(survey_id=survey_id)
-    if not stats:
-        best_rows = supabase.table('user_best_iq_unified').select('user_id,best_iq').execute().data or []
-        best_map: dict[str, float] = {r['user_id']: float(r['best_iq']) for r in best_rows if r.get('user_id') and r.get('best_iq') is not None}
-        ans = supabase.table('survey_answers').select('user_id,survey_item_id').eq('survey_id', survey_id).execute().data or []
+    rows = with_retries(
+        lambda: supabase
+        .table("survey_choice_iq_stats_v2")
+        .select("survey_item_id,responses_count,avg_iq")
+        .eq("survey_id", survey_id)
+        .execute()
+        .data
+        or []
+    )
+    if not rows:
+        best_rows = (
+            supabase.table("m_user_best_iq")
+            .select("user_id,best_iq")
+            .execute()
+            .data
+            or []
+        )
+        if not best_rows:
+            best_rows = (
+                supabase.table("user_best_iq_unified")
+                .select("user_id,best_iq")
+                .execute()
+                .data
+                or []
+            )
+        best_map: dict[str, float] = {
+            r["user_id"]: float(r["best_iq"]) for r in best_rows if r.get("user_id") and r.get("best_iq") is not None
+        }
+        ans = (
+            supabase.table("survey_answers")
+            .select("user_id,survey_item_id")
+            .eq("survey_id", survey_id)
+            .execute()
+            .data
+            or []
+        )
         buckets: dict[str, list[float]] = {}
         for a in ans:
-            uid = a.get('user_id')
-            item_id = a.get('survey_item_id')
+            uid = a.get("user_id")
+            item_id = a.get("survey_item_id")
             if uid in best_map and item_id:
                 buckets.setdefault(item_id, []).append(best_map[uid])
-        stats = [db_read.SurveyChoiceIQStat(group_id=None, survey_id=survey_id, survey_item_id=k, responses_count=len(v), avg_iq=(sum(v)/len(v) if v else None)) for k,v in buckets.items()]
-    stat_map = {s.survey_item_id: s for s in stats}
+        rows = [
+            {"survey_item_id": k, "responses_count": len(v), "avg_iq": (sum(v) / len(v) if v else None)}
+            for k, v in buckets.items()
+        ]
+    stat_map = {r["survey_item_id"]: r for r in rows}
     resp_items: list[SurveyOptionAvg] = []
     for it in items:
         s = stat_map.get(it['id'])
@@ -53,8 +87,8 @@ def survey_iq_by_option(survey_id: str):
             SurveyOptionAvg(
                 option_index=it['position'],
                 option_text=it['body'],
-                count=s.responses_count if s else 0,
-                avg_iq=s.avg_iq if s else None,
+                count=s["responses_count"] if s else 0,
+                avg_iq=s["avg_iq"] if s else None,
             )
         )
     payload = SurveyStatsResponse(
