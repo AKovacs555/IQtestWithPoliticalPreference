@@ -1,5 +1,10 @@
 import { describe, expect, test } from 'vitest';
-import { fetchSurveyFeed, hasAnsweredToday } from './feed';
+import {
+  creditPoints,
+  fetchSurveyFeed,
+  hasAnsweredToday,
+  spendPoint,
+} from './feed';
 
 describe('feed rpc helpers', () => {
   test('fetchSurveyFeed returns data', async () => {
@@ -39,5 +44,27 @@ describe('feed rpc helpers', () => {
   test('hasAnsweredToday throws on error', async () => {
     const client = { rpc: async () => ({ data: null, error: new Error('e') }) } as any;
     await expect(hasAnsweredToday(client)).rejects.toThrow('e');
+  });
+
+  test('creditPoints throws on error', async () => {
+    const client = { rpc: async () => ({ error: new Error('c') }) } as any;
+    await expect(
+      creditPoints(client, 'u', 1, 'reason', {})
+    ).rejects.toThrow('c');
+  });
+
+  test('spendPoint returns boolean', async () => {
+    const client = {
+      rpc: async () => ({ data: true, error: null }),
+    } as any;
+    const ok = await spendPoint(client, 'u', 'reason', {});
+    expect(ok).toBe(true);
+  });
+
+  test('spendPoint throws on error', async () => {
+    const client = {
+      rpc: async () => ({ data: null, error: new Error('s') }),
+    } as any;
+    await expect(spendPoint(client, 'u', 'r', {})).rejects.toThrow('s');
   });
 });
