@@ -21,26 +21,27 @@ async def maybe_user(authorization: str = Header(None)) -> User | None:
 @router.get("/leaderboard")
 async def get_leaderboard(limit: int = Query(100), user: User | None = Depends(maybe_user)):
     supabase = get_supabase_client()
-    rows = (
-        supabase.table("user_best_iq_unified")
+    limit = max(1, min(limit, 10000))
+    resp = (
+        supabase.table("leaderboard_best")
         .select("user_id,best_iq")
+        .order("best_iq", desc=True)
         .execute()
-        .data
-        or []
     )
+    rows = resp.data or []
+    if not rows:
+        rows = (
+            supabase.table("user_best_iq_unified")
+            .select("user_id,best_iq")
+            .execute()
+            .data
+            or []
+        )
+        rows.sort(key=lambda r: safe_float(r.get("best_iq")) or -math.inf, reverse=True)
+    total_users = len(rows)
+    top = rows[:limit]
 
-    best: dict[str, float] = {}
-    for row in rows:
-        uid = row.get("user_id")
-        iq = safe_float(row.get("best_iq"))
-        if uid is None or iq is None or not math.isfinite(iq):
-            continue
-        best[uid] = iq
-
-    ordered = sorted(best.items(), key=lambda x: x[1], reverse=True)
-    top = ordered[: max(1, min(limit, 10000))]
-
-    user_ids = [uid for uid, _ in top]
+    user_ids = [r.get("user_id") for r in top if r.get("user_id")]
     name_map: dict[str, str | None] = {}
     if user_ids:
         users = (
@@ -57,7 +58,11 @@ async def get_leaderboard(limit: int = Query(100), user: User | None = Depends(m
         }
 
     items = []
-    for rank, (uid, iq) in enumerate(top, start=1):
+    for rank, row in enumerate(top, start=1):
+        uid = row.get("user_id")
+        iq = safe_float(row.get("best_iq"))
+        if uid is None or iq is None or not math.isfinite(iq):
+            continue
         name = name_map.get(uid) or f"Guest-{uid[:4]}"
         items.append(
             {
@@ -69,12 +74,12 @@ async def get_leaderboard(limit: int = Query(100), user: User | None = Depends(m
         )
 
     my_rank = None
-    if user and user.get("hashed_id") in best:
-        target = user.get("hashed_id")
+    if user:
+        uid = user.get("hashed_id")
         my_rank = next(
-            (idx + 1 for idx, (uid, _) in enumerate(ordered) if uid == target),
+            (idx + 1 for idx, r in enumerate(rows) if r.get("user_id") == uid),
             None,
         )
 
-    payload = {"total_users": len(ordered), "items": items, "my_rank": my_rank}
+    payload = {"total_users": total_users, "items": items, "my_rank": my_rank}
     return JSONResponse(payload, headers=db_read.cache_headers(payload))

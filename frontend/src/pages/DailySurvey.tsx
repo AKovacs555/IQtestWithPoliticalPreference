@@ -4,7 +4,7 @@ import { useSession } from '../hooks/useSession';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../lib/supabaseClient';
-import { fetchSurveyFeed } from '../lib/supabase/feed';
+import { fetchSurveyFeed, hasAnsweredToday } from '../api';
 import { USE_RPC_FEED } from '../lib/env';
 
 // minimal toast shim
@@ -49,12 +49,9 @@ export default function DailySurvey() {
   const headers = session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {};
   const navigate = useNavigate();
   useEffect(() => {
-    async function checkAnswered() {
-      const ok = await supabase.rpc('me_has_answered_today');
-      if (ok.error) throw ok.error;
-      setAnsweredToday(ok.data === true);
-    }
-    checkAnswered().catch((e) => setError(e.message));
+    hasAnsweredToday(supabase)
+      .then((ok) => setAnsweredToday(ok))
+      .catch((e) => setError(e.message));
   }, []);
 
   const load = async () => {
