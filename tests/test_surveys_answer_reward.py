@@ -36,6 +36,10 @@ def _setup(monkeypatch):
         def utcnow(cls):
             return _State.now
 
+        @classmethod
+        def now(cls, tz=None):
+            return _State.now if tz is None else _State.now.astimezone(tz)
+
     monkeypatch.setattr("backend.routes.surveys.datetime", FakeDateTime)
 
     def fake_count(user_id, day=None):

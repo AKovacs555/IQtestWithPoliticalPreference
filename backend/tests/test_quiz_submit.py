@@ -3,7 +3,7 @@ from fastapi.testclient import TestClient
 import os
 import sys
 from types import SimpleNamespace
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
@@ -16,8 +16,8 @@ def test_submit_quiz_handles_missing_user_scores(monkeypatch):
     app = FastAPI()
     app.include_router(router)
     app.state.sessions = {"sess1": {1: {"answer": 0, "a": 1.0, "b": 0.0}}}
-    app.state.session_expires = {"sess1": datetime.utcnow() + timedelta(minutes=5)}
-    app.state.session_started = {"sess1": datetime.utcnow()}
+    app.state.session_expires = {"sess1": datetime.now(timezone.utc) + timedelta(minutes=5)}
+    app.state.session_started = {"sess1": datetime.now(timezone.utc)}
     app.dependency_overrides[get_current_user] = lambda: {"hashed_id": "u1"}
 
     class DummyTable:
