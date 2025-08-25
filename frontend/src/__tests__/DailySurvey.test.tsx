@@ -8,13 +8,10 @@ vi.mock('../hooks/useSession', () => ({
   useSession: () => ({ session: { access_token: 'token' } }),
 }));
 
-vi.mock('../hooks/useHasAnsweredToday', () => ({
-  useHasAnsweredToday: () => ({ answeredToday: false }),
-}));
-
 vi.mock('../lib/supabaseClient', () => ({
   supabase: {
     auth: { getUser: async () => ({ data: { user: { id: 'u1' } } }) },
+    rpc: async () => ({ data: false, error: null }),
   },
 }));
 

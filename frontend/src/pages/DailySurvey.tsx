@@ -5,7 +5,6 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../lib/supabaseClient';
 import { fetchSurveyFeed } from '../lib/supabase/feed';
-import { useHasAnsweredToday } from '../hooks/useHasAnsweredToday';
 
 // minimal toast shim
 const toast = {
@@ -44,12 +43,20 @@ export default function DailySurvey() {
   const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pendingIdx, setPendingIdx] = useState<number | null>(null);
+  const [answeredToday, setAnsweredToday] = useState<boolean | null>(null);
   const apiBase = import.meta.env.VITE_API_BASE || '';
   const { session } = useSession();
   const { i18n } = useTranslation();
   const headers = session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {};
   const navigate = useNavigate();
-  const { answeredToday } = useHasAnsweredToday();
+  useEffect(() => {
+    async function checkAnswered() {
+      const ok = await supabase.rpc('me_has_answered_today');
+      if (ok.error) throw ok.error;
+      setAnsweredToday(ok.data === true);
+    }
+    checkAnswered().catch((e) => setError(e.message));
+  }, []);
 
   const load = async () => {
     try {
