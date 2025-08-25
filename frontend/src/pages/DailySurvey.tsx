@@ -55,8 +55,6 @@ export default function DailySurvey() {
     try {
       setError(null);
       const lang = i18n?.language ?? null;
-      const { data: userRes } = await supabase.auth.getUser();
-      if (!userRes?.user) throw new Error('Auth required');
 
       if (USE_RPC_FEED) {
         const rows = await fetchSurveyFeed(supabase, lang, 3, 0);
@@ -64,12 +62,13 @@ export default function DailySurvey() {
           setDone(true);
           return;
         }
-        const mapped = rows.map(r => ({
+        const items = rows.map((r) => ({
           ...r,
+          question: (r as any).question ?? r.question_text,
           body: (r as any).body ?? r.question_text,
           choices: (r as any).choices ?? r.options,
         }));
-        setItems(mapped);
+        setItems(items);
       } else {
         const legacy = await fetchSurveysLegacy(apiBase, lang || 'en', headers);
         if (legacy.done || legacy.items.length === 0) {
@@ -77,12 +76,13 @@ export default function DailySurvey() {
           setDone(true);
           return;
         }
-        const mapped = legacy.items.map(r => ({
+        const items = legacy.items.map((r) => ({
           ...r,
+          question: (r as any).question ?? r.question_text,
           body: (r as any).body ?? r.question_text,
           choices: (r as any).choices ?? r.options,
         }));
-        setItems(mapped);
+        setItems(items);
       }
     } catch (e: any) {
       setError(e.message || 'ネットワークエラーが発生しました。');
