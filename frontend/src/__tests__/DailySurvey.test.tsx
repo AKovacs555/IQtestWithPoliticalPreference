@@ -1,6 +1,5 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
-import DailySurvey from '../pages/DailySurvey';
 import { MemoryRouter } from 'react-router-dom';
 import { vi, afterAll, test, expect } from 'vitest';
 import '@testing-library/jest-dom/vitest';
@@ -9,18 +8,32 @@ vi.mock('../hooks/useSession', () => ({
   useSession: () => ({ session: { access_token: 'token' } }),
 }));
 
+vi.mock('../hooks/useHasAnsweredToday', () => ({
+  useHasAnsweredToday: () => ({ answeredToday: false }),
+}));
+
+vi.mock('../lib/supabaseClient', () => ({
+  supabase: {
+    auth: { getUser: async () => ({ data: { user: { id: 'u1' } } }) },
+  },
+}));
+
+vi.mock('../lib/supabase/feed', () => ({
+  fetchSurveyFeed: async () => [
+    { id: 'i1', question_text: 'Q1', options: ['a', 'b'], group_id: 'g', lang: 'en', created_at: '', respondents: 0, answered_by_me: false },
+    { id: 'i2', question_text: 'Q2', options: ['a', 'b'], group_id: 'g', lang: 'en', created_at: '', respondents: 0, answered_by_me: false },
+  ],
+  hasAnsweredToday: async () => false,
+}));
+
 vi.stubGlobal('fetch', (url: RequestInfo, opts?: RequestInit) => {
-  if (typeof url === 'string' && url.includes('/surveys/daily3')) {
-    return Promise.resolve({
-      ok: true,
-      json: () => Promise.resolve({ items: [{ id: 'i1', body: 'Q1', choices: ['a', 'b'] }, { id: 'i2', body: 'Q2', choices: ['a', 'b'] }] })
-    }) as any;
-  }
   if (typeof url === 'string' && url.includes('/surveys/answer')) {
     return Promise.resolve({ ok: true, json: () => Promise.resolve({}) }) as any;
   }
   return Promise.resolve({ ok: true, json: () => Promise.resolve({}) }) as any;
 });
+
+const DailySurvey = (await import('../pages/DailySurvey')).default;
 
 afterAll(() => {
   (fetch as any).mockClear && (fetch as any).mockClear();

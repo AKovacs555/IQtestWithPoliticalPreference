@@ -2,6 +2,10 @@ import React, { useEffect, useState } from 'react';
 import SurveyCard from '../components/survey/SurveyCard';
 import { useSession } from '../hooks/useSession';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { supabase } from '../lib/supabaseClient';
+import { fetchSurveyFeed } from '../lib/supabase/feed';
+import { useHasAnsweredToday } from '../hooks/useHasAnsweredToday';
 
 // minimal toast shim
 const toast = {
@@ -15,6 +19,25 @@ const toast = {
   },
 };
 
+const USE_RPC_FEED = (import.meta.env.VITE_USE_RPC_FEED ?? 'true') !== 'false';
+if (USE_RPC_FEED) console.info('Using RPC feed');
+
+async function fetchSurveysLegacy(apiBase: string, lang: string, headers: Record<string, string>) {
+  const res = await fetch(`${apiBase}/surveys/daily3?lang=${lang}`, { headers });
+  if (!res.ok) {
+    if (res.status === 409) {
+      const err = await res.json().catch(() => ({}));
+      if (err?.detail?.error === 'daily_quota_exceeded') {
+        return { items: [], done: true };
+      }
+    }
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err?.detail || 'Failed to load.');
+  }
+  const d = await res.json();
+  return { items: d.items || [], done: false };
+}
+
 export default function DailySurvey() {
   const [items, setItems] = useState<any[]>([]);
   const [current, setCurrent] = useState(0);
@@ -23,24 +46,44 @@ export default function DailySurvey() {
   const [pendingIdx, setPendingIdx] = useState<number | null>(null);
   const apiBase = import.meta.env.VITE_API_BASE || '';
   const { session } = useSession();
+  const { i18n } = useTranslation();
   const headers = session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {};
   const navigate = useNavigate();
+  const { answeredToday } = useHasAnsweredToday();
 
   const load = async () => {
     try {
       setError(null);
-      const res = await fetch(`${apiBase}/surveys/daily3?lang=ja`, { headers });
-      if (!res.ok) {
-        if (res.status === 409) {
+      const lang = i18n?.language ?? null;
+      const { data: userRes } = await supabase.auth.getUser();
+      if (!userRes?.user) throw new Error('Auth required');
+
+      if (USE_RPC_FEED) {
+        const rows = await fetchSurveyFeed(supabase, lang, 3, 0);
+        if (!rows.length) {
+          setDone(true);
+          return;
+        }
+        const mapped = rows.map(r => ({
+          ...r,
+          body: (r as any).body ?? r.question_text,
+          choices: (r as any).choices ?? r.options,
+        }));
+        setItems(mapped);
+      } else {
+        const legacy = await fetchSurveysLegacy(apiBase, lang || 'en', headers);
+        if (legacy.done || legacy.items.length === 0) {
           toast.info('Daily 3 completed!');
           setDone(true);
           return;
         }
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err?.detail || 'Failed to load.');
+        const mapped = legacy.items.map(r => ({
+          ...r,
+          body: (r as any).body ?? r.question_text,
+          choices: (r as any).choices ?? r.options,
+        }));
+        setItems(mapped);
       }
-      const d = await res.json();
-      setItems(d.items || []);
     } catch (e: any) {
       setError(e.message || 'ネットワークエラーが発生しました。');
     }
@@ -52,8 +95,13 @@ export default function DailySurvey() {
       navigate('/select-nationality');
       return;
     }
-    if (session) load();
-  }, [session, navigate]);
+    if (answeredToday === true) {
+      toast.info('Daily 3 completed!');
+      setDone(true);
+      return;
+    }
+    if (session && answeredToday === false) load();
+  }, [session, navigate, answeredToday]);
 
   const handleAnswer = async (idx: number) => {
     const item = items[current];
