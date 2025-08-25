@@ -8,13 +8,13 @@ export async function fetchSurveyFeed(
   offset = 0
 ): Promise<SurveyFeedRow[]> {
   const { data, error } = await supabase
-    .rpc<SurveyFeedRow>('surveys_feed_for_me', {
+    .rpc<SurveyFeedRow[]>('surveys_feed_for_me', {
       p_lang: lang ?? null,
       p_limit: limit,
       p_offset: offset
     });
   if (error) throw error;
-  return (data ?? []) as SurveyFeedRow[];
+  return data ?? [];
 }
 
 export async function hasAnsweredToday(
