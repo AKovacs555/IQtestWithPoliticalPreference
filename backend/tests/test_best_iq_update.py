@@ -1,6 +1,6 @@
 import os
 import sys
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
@@ -41,8 +41,8 @@ def _submit(app, client, iq, monkeypatch):
     monkeypatch.setattr(quiz, "iq_score", lambda theta: iq)
     sid = f"sess{iq}"
     app.state.sessions[sid] = {1: {"answer": 0, "a": 1.0, "b": 0.0}}
-    app.state.session_expires[sid] = datetime.utcnow() + timedelta(minutes=5)
-    app.state.session_started[sid] = datetime.utcnow()
+    app.state.session_expires[sid] = datetime.now(timezone.utc) + timedelta(minutes=5)
+    app.state.session_started[sid] = datetime.now(timezone.utc)
     payload = {"attempt_id": sid, "answers": [{"id": 1, "answer": 0}]}
     resp = client.post("/quiz/submit", json=payload)
     assert resp.status_code == 200

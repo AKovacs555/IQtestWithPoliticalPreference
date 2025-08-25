@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Dict, List
 from uuid import uuid4
-from datetime import datetime
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Response
 from pydantic import BaseModel, Field
@@ -103,7 +103,7 @@ def daily_answer(payload: AnswerPayload, user: dict = Depends(get_current_user))
     """Record a daily survey answer and grant points after three responses."""
 
     db.insert_daily_answer(user["hashed_id"], payload.item_id)
-    answered_count = db.get_daily_answer_count(user["hashed_id"], datetime.utcnow().date())
+    answered_count = db.get_daily_answer_count(user["hashed_id"], datetime.now(timezone.utc).date())
     if answered_count >= 3:
         supabase = get_supabase_client()
         reward = get_setting_int(supabase, "daily_reward_points", 1)

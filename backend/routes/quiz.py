@@ -4,7 +4,7 @@ import logging
 import uuid
 from pathlib import Path
 from typing import List, Optional
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, HTTPException, Request, Depends
 from starlette.responses import RedirectResponse
 import random
@@ -124,7 +124,7 @@ async def start_quiz(
     if pro_until:
         try:
             pro_dt = datetime.fromisoformat(str(pro_until).replace("Z", ""))
-            pro_active = pro_dt > datetime.utcnow()
+            pro_active = pro_dt > datetime.now(timezone.utc)
         except ValueError:
             pro_active = False
 
@@ -209,14 +209,14 @@ async def start_quiz(
         supabase.table("question_sets").insert({
             "id": set_id,
             "question_ids": question_ids,
-            "created_at": datetime.utcnow().isoformat(),
+            "created_at": datetime.now(timezone.utc).isoformat(),
         }).execute()
     except Exception:
         # If insertion fails (e.g., duplicate set_id), ignore and proceed
         pass
 
     attempt_id = str(uuid.uuid4())
-    expires_at = datetime.utcnow() + timedelta(minutes=QUIZ_DURATION_MINUTES or 10)
+    expires_at = datetime.now(timezone.utc) + timedelta(minutes=QUIZ_DURATION_MINUTES or 10)
     request.app.state.sessions[attempt_id] = {
         str(q["id"]): {"answer": q["answer"], "a": q.get("irt_a"), "b": q.get("irt_b")}
         for q in questions
@@ -226,7 +226,7 @@ async def start_quiz(
     if not hasattr(request.app.state, "session_started"):
         request.app.state.session_started = {}
     request.app.state.session_expires[attempt_id] = expires_at
-    request.app.state.session_started[attempt_id] = datetime.utcnow()
+    request.app.state.session_started[attempt_id] = datetime.now(timezone.utc)
     try:
         supabase.table("quiz_attempts").insert(
             {
@@ -298,7 +298,7 @@ async def submit_quiz(
     if pro_until:
         try:
             pro_dt = datetime.fromisoformat(str(pro_until).replace("Z", ""))
-            pro_active = pro_dt > datetime.utcnow()
+            pro_active = pro_dt > datetime.now(timezone.utc)
         except ValueError:
             pro_active = False
     if not pro_active:
@@ -319,7 +319,7 @@ async def submit_quiz(
 
     # If time is up, mark as timeout but still proceed to score answered questions
     expired = False
-    if datetime.utcnow() > expires_at:
+    if datetime.now(timezone.utc) > expires_at:
         expired = True
         logger.info("quiz_timeout", extra={"attempt_id": payload.attempt_id})
 
@@ -350,7 +350,7 @@ async def submit_quiz(
     start_time = getattr(request.app.state, "session_started", {}).get(payload.attempt_id)
     duration = None
     if start_time:
-        duration = int((datetime.utcnow() - start_time).total_seconds())
+        duration = int((datetime.now(timezone.utc) - start_time).total_seconds())
     try:
         update_data = {
             "status": "timeout" if expired else "submitted",
@@ -369,7 +369,7 @@ async def submit_quiz(
             {
                 "iq": iq,
                 "percentile": pct,
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
             }
         ]
         plays = (user.get("plays") or 0) + 1

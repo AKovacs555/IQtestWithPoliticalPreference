@@ -1,7 +1,7 @@
 import os
 import sys
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
@@ -44,7 +44,7 @@ def test_session_timeout(monkeypatch, fake_supabase):
     with TestClient(app) as client:
         start = client.get("/quiz/start?set_id=x").json()
         sid = start["attempt_id"]
-        app.state.session_expires[sid] = datetime.utcnow() - timedelta(seconds=1)
+        app.state.session_expires[sid] = datetime.now(timezone.utc) - timedelta(seconds=1)
         resp = client.post(
             "/quiz/submit",
             json={"attempt_id": sid, "answers": [{"id": 1, "answer": 0}]},

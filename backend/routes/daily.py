@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
@@ -35,16 +35,16 @@ def _quota(user_id: str, now: datetime) -> dict:
 
 @router.get("/quota")
 async def quota(user: dict = Depends(get_current_user)):
-    return _quota(user["hashed_id"], datetime.utcnow())
+    return _quota(user["hashed_id"], datetime.now(timezone.utc))
 
 
 @router.post("/answer")
 async def answer(payload: DailyAnswer, user: dict = Depends(get_current_user)):
     insert_daily_answer(user["hashed_id"], payload.question_id)
-    answered_count = get_daily_answer_count(user["hashed_id"], datetime.utcnow().date())
+    answered_count = get_daily_answer_count(user["hashed_id"], datetime.now(timezone.utc).date())
     if answered_count >= 3:
         supabase = get_supabase_client()
         reward = get_setting_int(supabase, "daily_reward_points", 1)
         insert_point_ledger(user["hashed_id"], reward, reason="daily3")
         update_user(supabase, user["hashed_id"], {"survey_completed": True})
-    return _quota(user["hashed_id"], datetime.utcnow())
+    return _quota(user["hashed_id"], datetime.now(timezone.utc))
