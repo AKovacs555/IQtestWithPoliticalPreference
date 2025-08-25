@@ -24,3 +24,34 @@ export async function hasAnsweredToday(
   if (error) throw error;
   return data === true;
 }
+
+export async function creditPoints(
+  supabase: SupabaseClient,
+  userId: string,
+  delta: number,
+  reason: string,
+  meta: unknown
+): Promise<void> {
+  const { error } = await supabase.rpc('credit_points', {
+    p_user_id: userId,
+    p_delta: delta,
+    p_reason: reason,
+    p_meta: meta,
+  });
+  if (error) throw error;
+}
+
+export async function spendPoint(
+  supabase: SupabaseClient,
+  userId: string,
+  reason: string,
+  meta: unknown
+): Promise<boolean> {
+  const { data, error } = await supabase.rpc<boolean>('spend_point', {
+    p_user_id: userId,
+    p_reason: reason,
+    p_meta: meta,
+  });
+  if (error) throw error;
+  return !!data;
+}
