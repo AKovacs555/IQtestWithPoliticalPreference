@@ -52,6 +52,7 @@ def test_user_best_iq_updates(monkeypatch, fake_supabase):
     app = setup_app(monkeypatch, fake_supabase)
     with TestClient(app) as client:
         _submit(app, client, 100, monkeypatch)
+        fake_supabase.tables["user_best_iq_unified"] = [r.copy() for r in fake_supabase.tables.get("user_best_iq", [])]
         row = (
             fake_supabase.table("user_best_iq")
             .select("*")
@@ -62,6 +63,7 @@ def test_user_best_iq_updates(monkeypatch, fake_supabase):
         )
         assert row["best_iq"] == 100
         _submit(app, client, 80, monkeypatch)
+        fake_supabase.tables["user_best_iq_unified"] = [r.copy() for r in fake_supabase.tables.get("user_best_iq", [])]
         row = (
             fake_supabase.table("user_best_iq")
             .select("*")
@@ -72,6 +74,7 @@ def test_user_best_iq_updates(monkeypatch, fake_supabase):
         )
         assert row["best_iq"] == 100
         _submit(app, client, 130, monkeypatch)
+        fake_supabase.tables["user_best_iq_unified"] = [r.copy() for r in fake_supabase.tables.get("user_best_iq", [])]
         row = (
             fake_supabase.table("user_best_iq")
             .select("*")

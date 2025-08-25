@@ -12,8 +12,8 @@ def reload_db_read(monkeypatch, use_v2: bool):
 
 
 def test_get_user_best_iq(monkeypatch, fake_supabase):
-    fake_supabase.tables.setdefault("user_best_iq", []).append({"user_id": "u1", "best_iq": 100})
-    fake_supabase.tables.setdefault("user_best_iq_v2", []).append({"user_id": "u1", "best_iq": 150})
+    fake_supabase.tables.setdefault("user_best_iq_unified", []).append({"user_id": "u1", "best_iq": 100})
+    fake_supabase.tables.setdefault("user_best_iq_unified_v2", []).append({"user_id": "u1", "best_iq": 150})
 
     reload_db_read(monkeypatch, False)
     res = db_read.get_user_best_iq("u1")

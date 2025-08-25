@@ -379,7 +379,7 @@ async def submit_quiz(
 
     try:
         best = (
-            supabase.table("user_best_iq")
+            supabase.table("user_best_iq_unified")
             .select("best_iq")
             .eq("user_id", user["hashed_id"])
             .single()
