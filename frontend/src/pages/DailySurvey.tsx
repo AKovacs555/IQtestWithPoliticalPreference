@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../lib/supabaseClient';
 import { fetchSurveyFeed } from '../lib/supabase/feed';
+import { USE_RPC_FEED } from '../lib/env';
 
 // minimal toast shim
 const toast = {
@@ -18,8 +19,6 @@ const toast = {
   },
 };
 
-const USE_RPC_FEED = (import.meta.env.VITE_USE_RPC_FEED ?? 'true') !== 'false';
-if (USE_RPC_FEED) console.info('Using RPC feed');
 
 async function fetchSurveysLegacy(apiBase: string, lang: string, headers: Record<string, string>) {
   const res = await fetch(`${apiBase}/surveys/daily3?lang=${lang}`, { headers });

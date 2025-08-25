@@ -2,6 +2,9 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 // Build trigger comment
+import { USE_RPC_FEED } from './lib/env';
+
+console.info(`USE_RPC_FEED: ${USE_RPC_FEED}`);
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.getRegistrations().then((rs) => rs.forEach((r) => r.unregister()));

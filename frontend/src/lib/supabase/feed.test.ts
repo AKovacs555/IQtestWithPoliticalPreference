@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'vitest';
+import { describe, expect, test, vi } from 'vitest';
 import {
   creditPoints,
   fetchSurveyFeed,
@@ -7,10 +7,10 @@ import {
 } from './feed';
 
 describe('feed rpc helpers', () => {
-  test('fetchSurveyFeed returns data', async () => {
-    const client = {
-      rpc: async (_fn: string, _args: any) => ({
-        data: [{
+  test('fetchSurveyFeed calls rpc and returns data', async () => {
+    const rpc = vi.fn().mockResolvedValue({
+      data: [
+        {
           id: '1',
           group_id: 'g',
           question_text: 'Q',
@@ -19,30 +19,37 @@ describe('feed rpc helpers', () => {
           created_at: '',
           respondents: 0,
           answered_by_me: false,
-        }],
-        error: null,
-      }),
-    } as any;
-    const rows = await fetchSurveyFeed(client, 'en', 50, 0);
-    expect(rows.length).toBe(1);
+        },
+      ],
+      error: null,
+    });
+    const client = { rpc } as any;
+    const rows = await fetchSurveyFeed(client, 'en', 3, 1);
+    expect(rpc).toHaveBeenCalledWith('surveys_feed_for_me', {
+      p_lang: 'en',
+      p_limit: 3,
+      p_offset: 1,
+    });
     expect(rows[0].question_text).toBe('Q');
   });
 
   test('fetchSurveyFeed throws on error', async () => {
-    const client = {
-      rpc: async () => ({ data: null, error: new Error('boom') }),
-    } as any;
+    const rpc = vi.fn().mockResolvedValue({ data: null, error: new Error('boom') });
+    const client = { rpc } as any;
     await expect(fetchSurveyFeed(client, 'en')).rejects.toThrow('boom');
   });
 
   test('hasAnsweredToday returns boolean', async () => {
-    const client = { rpc: async () => ({ data: true, error: null }) } as any;
+    const rpc = vi.fn().mockResolvedValue({ data: true, error: null });
+    const client = { rpc } as any;
     const ok = await hasAnsweredToday(client);
+    expect(rpc).toHaveBeenCalledWith('me_has_answered_today');
     expect(ok).toBe(true);
   });
 
   test('hasAnsweredToday throws on error', async () => {
-    const client = { rpc: async () => ({ data: null, error: new Error('e') }) } as any;
+    const rpc = vi.fn().mockResolvedValue({ data: null, error: new Error('e') });
+    const client = { rpc } as any;
     await expect(hasAnsweredToday(client)).rejects.toThrow('e');
   });
 
